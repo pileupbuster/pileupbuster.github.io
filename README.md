@@ -22,6 +22,33 @@ pileup-buster/
 
 ## Quick Start
 
+### 🐳 Docker (Recommended)
+
+Run the complete application with Docker:
+
+```bash
+# Clone the repository
+git clone https://github.com/brianbruff/pileup-buster.git
+cd pileup-buster
+
+# Start all services
+docker compose up -d
+```
+
+Services will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
+- MongoDB: localhost:27017
+
+For development with hot-reload:
+```bash
+docker compose -f docker-compose.dev.yml up
+```
+
+See [Docker Setup Guide](docs/DOCKER.md) for detailed instructions.
+
+### Manual Setup
+
 ### Frontend Development
 
 ```bash
@@ -64,6 +91,11 @@ The API will be available at http://localhost:5000
 ## Technology Stack
 
 - **Frontend**: React 18, CSS3, HTML5
-- **Backend**: Python 3, Flask, Flask-CORS
-- **Database**: MongoDB Atlas
+- **Backend**: Python 3, FastAPI, uvicorn
+- **Database**: MongoDB (MongoDB Atlas or local)
+- **Containerization**: Docker, Docker Compose
 - **Development**: Node.js, npm, pip
+
+## GitHub Codespaces
+
+This repository includes dev container configurations for GitHub Codespaces. Simply open the repository in Codespaces and the development environment will be automatically configured.
