@@ -1,31 +1,43 @@
-from flask import Flask
-from flask_cors import CORS
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
+import uvicorn
 
 def create_app():
     # Load environment variables
     load_dotenv()
     
-    # Create Flask app
-    app = Flask(__name__)
+    # Create FastAPI app
+    app = FastAPI(
+        title="Pileup Buster API",
+        description="Ham radio callsign queue management system",
+        version="1.0.0"
+    )
     
     # Enable CORS for frontend communication
-    CORS(app)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # In production, specify exact origins
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     
-    # Configuration
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
-    app.config['MONGO_URI'] = os.getenv('MONGO_URI', 'mongodb://localhost:27017/pileup_buster')
+    # Configuration (stored as app state)
+    app.state.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key')
+    app.state.mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/pileup_buster')
     
-    # Register blueprints
-    from app.routes.queue import queue_bp
-    from app.routes.admin import admin_bp
+    # Include routers
+    from app.routes.queue import queue_router
+    from app.routes.admin import admin_router
     
-    app.register_blueprint(queue_bp, url_prefix='/api/queue')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.include_router(queue_router, prefix="/api/queue", tags=["queue"])
+    app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
     
     return app
 
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=5000)
