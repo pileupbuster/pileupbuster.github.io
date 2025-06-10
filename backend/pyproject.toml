@@ -12,6 +12,7 @@ uvicorn = {extras = ["standard"], version = "^0.24.0"}
 pymongo = "^4.5.0"
 python-dotenv = "^1.0.0"
 dnspython = "^2.4.2"
+httpx = "^0.25.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
@@ -36,4 +37,4 @@ line_length = 88
 
 # add entry points for CLI commands
 [tool.poetry.scripts]
-start = "app.main:main"
+start = "app.app:main"
