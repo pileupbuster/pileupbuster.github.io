@@ -1,0 +1,7 @@
+# Database configuration
+MONGO_URI=mongodb+srv://b:DHs3mz1Ql5qfigNP@freecluster.opgloqp.mongodb.net/?retryWrites=true&w=majority&appName=FreeCluster
+SECRET_KEY=your-secret-key-here
+
+# FastAPI configuration
+ENVIRONMENT=development
+DEBUG=True
