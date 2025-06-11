@@ -30,67 +30,65 @@ class QRZService:
         Returns:
             Dict with callsign info or error placeholder
         """
-        # Default response for when QRZ lookup fails or user not found
-        default_response = {
-            'qrz_found': False,
-            'name': None,
-            'address': None,
-            'bio': 'QRZ.com profile not found or unavailable',
-            'email': None,
-            'country': None,
-            'grid': None,
-            'license_class': None
-        }
-        
-        # Check if QRZ credentials are configured
-        if not self.username or not self.password:
-            default_response['bio'] = 'QRZ.com integration not configured'
-            return default_response
-        
-        # Authenticate if we don't have a client
-        if not self.qrz_client and not self._authenticate():
-            default_response['bio'] = 'QRZ.com authentication failed'
-            return default_response
         
         try:
-            # Lookup the callsign using callsignlookuptools
+        
+            # Check if QRZ credentials are configured if not throw an error
+            if not self.username or not self.password:
+                raise Exception(
+                    'QRZ.com credentials not configured. Please set QRZ_USERNAME and QRZ_PASSWORD environment variables.'
+                )
+                
+            
+            # Authenticate if we don't have a client
+            if not self.qrz_client and not self._authenticate():
+                    raise Exception(
+                        'QRZ.com authentication failed. Please check your credentials.'
+                    )
+
+            # Lookup the callsign using callsignlookuptools       
             result = self.qrz_client.search(callsign)
             
             # If no results found
             if not result:
-                return default_response
-            
-            # Extract and format available fields
-            qrz_info = {
-                'qrz_found': True,
-                'name': result.get('fname') or result.get('name'),
-                'address': self._format_address(result),
-                'bio': result.get('bio') or 'No biography available',
-                'email': result.get('email'),
-                'country': result.get('country'),
-                'grid': result.get('grid'),
-                'license_class': result.get('class')
+                raise Exception(f'No QRZ.com profile found for callsign {callsign}')
+
+            response = {
+                'callsign': callsign,
+                'name': result.name.formatted_name,
+                'address': self._format_address(result.address),
+                'image': result.image.url,
+                'error': None
             }
-            
-            return qrz_info
+            return response
             
         except Exception as e:
             print(f"QRZ lookup error for {callsign}: {e}")
-            default_response['bio'] = 'QRZ.com lookup failed'
-            return default_response
+            return {
+                'callsign': callsign,
+                'name': None,
+                'address': None,
+                'error': str(e)
+            }
     
-    def _format_address(self, callsign_data) -> Optional[str]:
+    def _format_address(self, address) -> Optional[str]:
         """Format address from QRZ data"""
-        addr = callsign_data.get('addr1')
-        addr2 = callsign_data.get('addr2')
-        state = callsign_data.get('state')
-        zip_code = callsign_data.get('zip')
-        
+        addr = address.line1
+        addr2 = address.line2
+        state = address.state
+        city = address.city
+        country = address.country
+        zip_code = address.zip
+
         parts = []
         if addr:
             parts.append(addr)
         if addr2:
             parts.append(addr2)
+        if city:
+            parts.append(city)
+        if country:
+            parts.append(country)
         if state:
             parts.append(state)
         if zip_code:
