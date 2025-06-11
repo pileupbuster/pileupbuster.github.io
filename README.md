@@ -16,9 +16,10 @@ pileup-buster/
 
 - **User Interface**: React-based frontend for callsign registration
 - **Admin Panel**: Secured admin interface for queue management
-- **API Backend**: Python Flask REST API
+- **API Backend**: Python FastAPI REST API
 - **Database**: MongoDB Atlas for data persistence
 - **Queue Management**: FIFO queue system for callsign callbacks
+- **QRZ.com Integration**: Automatic lookup of amateur radio callsign information
 
 ## Quick Start
 
@@ -73,13 +74,17 @@ The API will be available at http://localhost:5000
 
 1. Copy `backend/.env.example` to `backend/.env`
 2. Update MongoDB connection string and secret key
-3. Ensure MongoDB Atlas cluster is accessible
+3. **Optional: Configure QRZ.com integration**:
+   - Set `QRZ_USERNAME` to your QRZ.com username
+   - Set `QRZ_PASSWORD` to your QRZ.com password
+   - If not configured, QRZ.com lookups will return "not configured" message
+4. Ensure MongoDB Atlas cluster is accessible
 
 ## API Endpoints
 
 ### Queue Management
 - `POST /api/queue/register` - Register a callsign
-- `GET /api/queue/status/<callsign>` - Get callsign position
+- `GET /api/queue/status/<callsign>` - Get callsign position with QRZ.com profile data
 - `GET /api/queue/list` - List current queue
 
 ### Admin Functions
