@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.database import queue_db
+from app.auth import verify_admin_credentials
 
 admin_router = APIRouter()
 
 @admin_router.get('/queue')
-def admin_queue():
+def admin_queue(username: str = Depends(verify_admin_credentials)):
     """Admin view of the queue"""
     try:
         queue_list = queue_db.get_queue_list()
@@ -17,7 +18,7 @@ def admin_queue():
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
 
 @admin_router.delete('/queue/{callsign}')
-def remove_callsign(callsign: str):
+def remove_callsign(callsign: str, username: str = Depends(verify_admin_credentials)):
     """Remove a callsign from the queue"""
     callsign = callsign.upper().strip()
     
@@ -35,7 +36,7 @@ def remove_callsign(callsign: str):
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
 
 @admin_router.post('/queue/clear')
-def clear_queue():
+def clear_queue(username: str = Depends(verify_admin_credentials)):
     """Clear the entire queue"""
     try:
         count = queue_db.clear_queue()
@@ -47,7 +48,7 @@ def clear_queue():
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
 
 @admin_router.post('/queue/next')
-def next_callsign():
+def next_callsign(username: str = Depends(verify_admin_credentials)):
     """Process the next callsign in queue"""
     try:
         next_entry = queue_db.get_next_callsign()
