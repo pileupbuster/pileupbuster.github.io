@@ -26,13 +26,8 @@ def register_callsign(request: CallsignRequest):
     if not callsign:
         raise HTTPException(status_code=400, detail='Callsign is required')
     
-    # Check database connection
-    if not queue_db.is_connected():
-        logger.error("Database not connected")
-        raise HTTPException(status_code=503, detail='Database service unavailable')
-    
     try:
-        entry = queue_db.add_to_queue(callsign)
+        entry = queue_db.register_callsign(callsign)
         return {'message': 'Callsign registered successfully', 'entry': entry}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -45,13 +40,8 @@ def get_status(callsign: str):
     """Get position of callsign in queue with QRZ.com profile information"""
     callsign = callsign.upper().strip()
     
-    # Check database connection
-    if not queue_db.is_connected():
-        logger.error("Database not connected")
-        raise HTTPException(status_code=503, detail='Database service unavailable')
-    
     try:
-        entry = queue_db.get_queue_position(callsign)
+        entry = queue_db.find_callsign(callsign)
         if not entry:
             raise HTTPException(status_code=404, detail='Callsign not found in queue')
         
@@ -67,13 +57,8 @@ def get_status(callsign: str):
 @queue_router.get('/list')
 def list_queue():
     """Get current queue status"""
-    # Check database connection
-    if not queue_db.is_connected():
-        logger.error("Database not connected")
-        raise HTTPException(status_code=503, detail='Database service unavailable')
-    
     try:
-        queue = queue_db.get_full_queue()
+        queue = queue_db.get_queue_list()
         return {'queue': queue, 'total': len(queue)}
     except Exception as e:
         logger.error(f"Failed to get queue list: {e}")
