@@ -20,14 +20,14 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ env.DOCKERHUB_NAME }}
+          username: ${{ vars.DOCKERHUB_NAME }}
           password: ${{ secrets.DOCKERHUB_PAT }}
           
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.GITHUB_NAME }}/pileup-buster
+          images: ${{ vars.DOCKERHUB_NAME }}/pileup-buster
           tags: |
             type=semver,pattern={{version}}
             type=sha
