@@ -2,50 +2,12 @@
 
 ## Prerequisites
 
-### Docker Setup (Recommended)
-- Docker Desktop or Docker Engine
-- docker-compose (included with Docker Desktop)
-
-### Manual Setup
 - Node.js 16+ and npm
-- Python 3.8+
+- Python 3.9+
+- Poetry (Python dependency management)
 - MongoDB Atlas account (or local MongoDB)
 
-## Quick Start with Docker
-
-### 1. Clone Repository
-```bash
-git clone https://github.com/brianbruff/pileup-buster.git
-cd pileup-buster
-```
-
-### 2. Start Development Environment
-```bash
-# Start development stack with hot reload
-make dev
-# OR
-docker compose -f docker-compose.dev.yml up
-```
-
-This will start:
-- Backend API on http://localhost:5000 (with hot reload)
-- Frontend dev server on http://localhost:3000 (with hot reload)
-- MongoDB on localhost:27017
-
-### 3. Development Commands
-
-See all available commands:
-```bash
-make help
-```
-
-Common commands:
-- `make dev` - Start development environment
-- `make logs` - View logs from all services  
-- `make test-api` - Test the backend API
-- `make down` - Stop all services
-
-## Manual Setup (Without Docker)
+## Quick Start
 
 ### 1. Clone Repository
 ```bash
@@ -56,11 +18,16 @@ cd pileup-buster
 ### 2. Backend Setup
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+
+# Install Poetry if not already installed
+pip install poetry
+
+# Install dependencies
+poetry install
+
+# Copy environment file and configure
 cp .env.example .env
-# Edit .env with your MongoDB Atlas connection string
+# Edit .env with your MongoDB connection string
 ```
 
 ### 3. Frontend Setup
@@ -76,8 +43,11 @@ npm install
 **Terminal 1 - Backend:**
 ```bash
 cd backend
-source venv/bin/activate
-python app.py
+# Quick start script (recommended)
+./run.sh
+
+# OR use Poetry directly
+poetry run dev
 ```
 
 **Terminal 2 - Frontend:**
@@ -86,34 +56,111 @@ cd frontend
 npm start
 ```
 
-### MongoDB Atlas Setup
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
+- API Documentation: http://localhost:5000/docs
 
+### Production Mode
+
+**Backend:**
+```bash
+cd backend
+poetry run start-server
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm run build
+# Serve the build folder with your preferred web server
+```
+
+## Available Backend Commands
+
+- `./run.sh` - Quick start with dependency checks
+- `poetry run dev` - Development server with auto-reload
+- `poetry run start-server` - Production server
+- `poetry run black .` - Code formatting
+- `poetry run flake8` - Code linting
+- `poetry run pytest` - Run tests
+
+## MongoDB Setup
+
+### Option 1: MongoDB Atlas (Recommended)
 1. Create a MongoDB Atlas account
 2. Create a new cluster
 3. Create a database user
 4. Get connection string
 5. Update `MONGO_URI` in `backend/.env`
 
-## GitHub Codespaces
+### Option 2: Local MongoDB
+1. Install MongoDB locally
+2. Start MongoDB service
+3. Set `MONGO_URI=mongodb://localhost:27017/pileup_buster` in `backend/.env`
 
-This repository is pre-configured for GitHub Codespaces development:
+## Environment Variables
 
-1. **Open in Codespaces**: Click the "Code" button and select "Open with Codespaces"
-2. **Automatic Setup**: The dev container will automatically:
-   - Install all dependencies
-   - Configure the development environment
-   - Forward necessary ports (3000, 5000, 27017)
-3. **Start Development**: Run `make dev` to start all services
+Copy `backend/.env.example` to `backend/.env` and configure:
 
-The Codespaces configuration includes:
-- VS Code extensions for Python and React development
-- Docker-in-Docker support
-- Pre-configured port forwarding
-- Automatic dependency installation
+```bash
+# Database configuration
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/pileup_buster
+SECRET_KEY=your-secret-key-here
+
+# FastAPI configuration
+ENVIRONMENT=development
+DEBUG=true
+
+# Admin authentication configuration
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-secure-admin-password
+```
 
 ## Project Architecture
 
 - **Frontend**: Single-page React application
-- **Backend**: RESTful API using Flask
+- **Backend**: RESTful API using FastAPI
 - **Database**: MongoDB for queue persistence
 - **Communication**: HTTP/JSON between frontend and backend
+
+## Development Workflow
+
+1. Make changes to backend code
+2. The development server will automatically reload
+3. Make changes to frontend code
+4. The React dev server will automatically reload
+5. Test your changes in the browser
+6. Commit your changes to Git
+
+## Testing
+
+### Backend Tests
+```bash
+cd backend
+poetry run pytest
+```
+
+### Frontend Tests
+```bash
+cd frontend
+npm test
+```
+
+## Troubleshooting
+
+### Backend won't start
+- Check that Poetry is installed: `poetry --version`
+- Ensure dependencies are installed: `poetry install`
+- Check MongoDB connection in `.env` file
+- Check if port 5000 is already in use
+
+### Frontend won't start
+- Check Node.js version: `node --version` (should be 16+)
+- Clear node_modules and reinstall: `rm -rf node_modules && npm install`
+- Check if port 3000 is already in use
+
+### Database connection issues
+- Verify MongoDB Atlas connection string
+- Check network connectivity
+- Ensure database user has proper permissions

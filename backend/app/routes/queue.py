@@ -2,12 +2,13 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Dict, Any
+from app.services.qrz import qrz_service
+from app.database import queue_db
+import logging
+
+logger = logging.getLogger(__name__)
 
 queue_router = APIRouter()
-
-# In-memory storage for demo purposes
-# In production, this would use MongoDB
-queue_storage: List[Dict[str, Any]] = []
 
 class CallsignRequest(BaseModel):
     callsign: str
@@ -25,38 +26,40 @@ def register_callsign(request: CallsignRequest):
     if not callsign:
         raise HTTPException(status_code=400, detail='Callsign is required')
     
-    # Check if callsign already in queue
-    for entry in queue_storage:
-        if entry['callsign'] == callsign:
-            raise HTTPException(status_code=400, detail='Callsign already in queue')
-    
-    # Add to queue
-    entry = {
-        'callsign': callsign,
-        'timestamp': datetime.utcnow().isoformat(),
-        'position': len(queue_storage) + 1
-    }
-    queue_storage.append(entry)
-    
-    return {'message': 'Callsign registered successfully', 'entry': entry}
+    try:
+        entry = queue_db.register_callsign(callsign)
+        return {'message': 'Callsign registered successfully', 'entry': entry}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to register callsign: {e}")
+        raise HTTPException(status_code=500, detail='Failed to register callsign')
 
 @queue_router.get('/status/{callsign}')
 def get_status(callsign: str):
-    """Get position of callsign in queue"""
+    """Get position of callsign in queue with QRZ.com profile information"""
     callsign = callsign.upper().strip()
     
-    for i, entry in enumerate(queue_storage):
-        if entry['callsign'] == callsign:
-            entry['position'] = i + 1
-            return entry
-    
-    raise HTTPException(status_code=404, detail='Callsign not found in queue')
+    try:
+        entry = queue_db.find_callsign(callsign)
+        if not entry:
+            raise HTTPException(status_code=404, detail='Callsign not found in queue')
+        
+        # Add QRZ.com information
+        qrz_info = qrz_service.lookup_callsign(callsign)
+        entry['qrz'] = qrz_info
+        
+        return entry
+    except Exception as e:
+        logger.error(f"Failed to get callsign status: {e}")
+        raise HTTPException(status_code=500, detail='Failed to get callsign status')
 
 @queue_router.get('/list')
 def list_queue():
     """Get current queue status"""
-    # Update positions
-    for i, entry in enumerate(queue_storage):
-        entry['position'] = i + 1
-    
-    return {'queue': queue_storage, 'total': len(queue_storage)}
+    try:
+        queue = queue_db.get_queue_list()
+        return {'queue': queue, 'total': len(queue)}
+    except Exception as e:
+        logger.error(f"Failed to get queue list: {e}")
+        raise HTTPException(status_code=500, detail='Failed to get queue list')
