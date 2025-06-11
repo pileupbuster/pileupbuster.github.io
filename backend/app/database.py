@@ -51,8 +51,15 @@ class QueueDatabase:
         if existing:
             raise ValueError("Callsign already in queue")
         
+        # Get current queue count and check against limit
+        current_count = self.collection.count_documents({})
+        max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
+        
+        if current_count >= max_queue_size:
+            raise ValueError(f"Queue is full. Maximum queue size is {max_queue_size}")
+        
         # Get current position (count + 1)
-        position = self.collection.count_documents({}) + 1
+        position = current_count + 1
         
         # Create entry
         entry = {
