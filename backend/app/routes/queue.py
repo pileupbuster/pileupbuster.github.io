@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Dict, Any
+from app.services.qrz import qrz_service
 from app.database import queue_db
 
 queue_router = APIRouter()
@@ -34,12 +35,16 @@ def register_callsign(request: CallsignRequest):
 
 @queue_router.get('/status/{callsign}')
 def get_status(callsign: str):
-    """Get position of callsign in queue"""
+    """Get position of callsign in queue with QRZ.com profile information"""
     callsign = callsign.upper().strip()
     
     try:
         entry = queue_db.find_callsign(callsign)
         if entry:
+            # Add QRZ.com information
+            qrz_info = qrz_service.lookup_callsign(callsign)
+            entry['qrz'] = qrz_info
+            
             return entry
         raise HTTPException(status_code=404, detail='Callsign not found in queue')
     except Exception as e:
