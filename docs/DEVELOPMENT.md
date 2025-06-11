@@ -111,6 +111,10 @@ SECRET_KEY=your-secret-key-here
 # FastAPI configuration
 ENVIRONMENT=development
 DEBUG=true
+
+# Admin authentication configuration
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-secure-admin-password
 ```
 
 ## Project Architecture
