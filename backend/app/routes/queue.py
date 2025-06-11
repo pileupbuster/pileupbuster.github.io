@@ -2,12 +2,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Dict, Any
+from app.database import queue_db
 
 queue_router = APIRouter()
-
-# In-memory storage for demo purposes
-# In production, this would use MongoDB
-queue_storage: List[Dict[str, Any]] = []
 
 class CallsignRequest(BaseModel):
     callsign: str
@@ -25,38 +22,36 @@ def register_callsign(request: CallsignRequest):
     if not callsign:
         raise HTTPException(status_code=400, detail='Callsign is required')
     
-    # Check if callsign already in queue
-    for entry in queue_storage:
-        if entry['callsign'] == callsign:
+    try:
+        entry = queue_db.register_callsign(callsign)
+        return {'message': 'Callsign registered successfully', 'entry': entry}
+    except ValueError as e:
+        if "already in queue" in str(e):
             raise HTTPException(status_code=400, detail='Callsign already in queue')
-    
-    # Add to queue
-    entry = {
-        'callsign': callsign,
-        'timestamp': datetime.utcnow().isoformat(),
-        'position': len(queue_storage) + 1
-    }
-    queue_storage.append(entry)
-    
-    return {'message': 'Callsign registered successfully', 'entry': entry}
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
 
 @queue_router.get('/status/{callsign}')
 def get_status(callsign: str):
     """Get position of callsign in queue"""
     callsign = callsign.upper().strip()
     
-    for i, entry in enumerate(queue_storage):
-        if entry['callsign'] == callsign:
-            entry['position'] = i + 1
+    try:
+        entry = queue_db.find_callsign(callsign)
+        if entry:
             return entry
-    
-    raise HTTPException(status_code=404, detail='Callsign not found in queue')
+        raise HTTPException(status_code=404, detail='Callsign not found in queue')
+    except Exception as e:
+        if "not found" in str(e):
+            raise HTTPException(status_code=404, detail='Callsign not found in queue')
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
 
 @queue_router.get('/list')
 def list_queue():
     """Get current queue status"""
-    # Update positions
-    for i, entry in enumerate(queue_storage):
-        entry['position'] = i + 1
-    
-    return {'queue': queue_storage, 'total': len(queue_storage)}
+    try:
+        queue_list = queue_db.get_queue_list()
+        return {'queue': queue_list, 'total': len(queue_list)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
