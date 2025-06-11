@@ -74,11 +74,14 @@ The API will be available at http://localhost:5000
 
 1. Copy `backend/.env.example` to `backend/.env`
 2. Update MongoDB connection string and secret key
-3. **Optional: Configure QRZ.com integration**:
+3. **Configure admin authentication**:
+   - Set `ADMIN_USERNAME` to your desired admin username
+   - Set `ADMIN_PASSWORD` to your desired admin password
+4. **Optional: Configure QRZ.com integration**:
    - Set `QRZ_USERNAME` to your QRZ.com username
    - Set `QRZ_PASSWORD` to your QRZ.com password
    - If not configured, QRZ.com lookups will return "not configured" message
-4. Ensure MongoDB Atlas cluster is accessible
+5. Ensure MongoDB Atlas cluster is accessible
 
 ## API Endpoints
 
@@ -87,7 +90,7 @@ The API will be available at http://localhost:5000
 - `GET /api/queue/status/<callsign>` - Get callsign position with QRZ.com profile data
 - `GET /api/queue/list` - List current queue
 
-### Admin Functions
+### Admin Functions (Protected with HTTP Basic Auth)
 - `GET /api/admin/queue` - Admin view of queue
 - `DELETE /api/admin/queue/<callsign>` - Remove callsign
 - `POST /api/admin/queue/clear` - Clear entire queue
