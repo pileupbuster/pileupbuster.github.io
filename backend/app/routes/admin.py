@@ -53,18 +53,46 @@ def clear_queue(username: str = Depends(verify_admin_credentials)):
 
 @admin_router.post('/queue/next')
 def next_callsign(username: str = Depends(verify_admin_credentials)):
-    """Process the next callsign in queue"""
+    """Process the next callsign in queue and manage QSO status"""
     try:
+        # Clear any existing current QSO
+        current_qso = queue_db.clear_current_qso()
+        
+        # Get the next callsign from queue
         next_entry = queue_db.get_next_callsign()
+        
         if not next_entry:
-            raise HTTPException(status_code=400, detail='Queue is empty')
+            # If no one is in queue and no current QSO: do nothing
+            # If no one is in queue but had current QSO: it was already cleared
+            if current_qso:
+                return {
+                    'message': 'Queue is empty. Cleared current QSO.',
+                    'cleared_qso': current_qso,
+                    'remaining': 0
+                }
+            else:
+                return {
+                    'message': 'Queue is empty. No action taken.',
+                    'remaining': 0
+                }
+        
+        # Put the next callsign into QSO status
+        new_qso = queue_db.set_current_qso(next_entry["callsign"])
         
         remaining_count = queue_db.get_queue_count()
-        return {
-            'message': f'Next callsign: {next_entry["callsign"]}',
+        
+        response = {
+            'message': f'Next callsign: {next_entry["callsign"]} is now in QSO',
             'processed': next_entry,
+            'current_qso': new_qso,
             'remaining': remaining_count
         }
+        
+        if current_qso:
+            response['cleared_qso'] = current_qso
+        
+        return response
+        
     except HTTPException:
         raise
     except Exception as e:

@@ -15,6 +15,7 @@ class QueueDatabase:
         self.db = None
         self.collection: Optional[Collection] = None
         self.status_collection: Optional[Collection] = None
+        self.currentqso_collection: Optional[Collection] = None
         self._connect()
     
     def _connect(self):
@@ -31,6 +32,7 @@ class QueueDatabase:
             self.db = self.client[db_name]
             self.collection = self.db.queue
             self.status_collection = self.db.status
+            self.currentqso_collection = self.db.currentqso
             
             # Test connection with short timeout
             self.client.admin.command('ping')
@@ -43,6 +45,7 @@ class QueueDatabase:
             self.db = None
             self.collection = None
             self.status_collection = None
+            self.currentqso_collection = None
     
     def register_callsign(self, callsign: str) -> Dict[str, Any]:
         """Register a callsign in the queue"""
@@ -234,6 +237,63 @@ class QueueDatabase:
             result["cleared_count"] = cleared_count
         
         return result
+    
+    def get_current_qso(self) -> Optional[Dict[str, Any]]:
+        """Get the current callsign in QSO"""
+        if self.currentqso_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Find the current QSO entry (should be only one)
+        entry = self.currentqso_collection.find_one({"_id": "current_qso"})
+        if not entry:
+            return None
+        
+        # Remove MongoDB ObjectId from response
+        result = {
+            "callsign": entry.get("callsign"),
+            "timestamp": entry.get("timestamp")
+        }
+        
+        return result
+    
+    def set_current_qso(self, callsign: str) -> Dict[str, Any]:
+        """Set the current callsign in QSO"""
+        if self.currentqso_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Create QSO entry
+        qso_entry = {
+            "_id": "current_qso",
+            "callsign": callsign,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Use replace_one with upsert to ensure only one QSO entry exists
+        self.currentqso_collection.replace_one(
+            {"_id": "current_qso"},
+            qso_entry,
+            upsert=True
+        )
+        
+        return {
+            "callsign": callsign,
+            "timestamp": qso_entry["timestamp"]
+        }
+    
+    def clear_current_qso(self) -> Optional[Dict[str, Any]]:
+        """Clear the current QSO"""
+        if self.currentqso_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Find and delete the current QSO entry
+        entry = self.currentqso_collection.find_one_and_delete({"_id": "current_qso"})
+        if not entry:
+            return None
+        
+        return {
+            "callsign": entry.get("callsign"),
+            "timestamp": entry.get("timestamp")
+        }
     
     def is_system_active(self) -> bool:
         """Check if the system is currently active"""
