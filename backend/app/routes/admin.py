@@ -62,48 +62,21 @@ def next_callsign(username: str = Depends(verify_admin_credentials)):
         next_entry = queue_db.get_next_callsign()
         
         if not next_entry:
-            # If no one is in queue and no current QSO: do nothing
-            # If no one is in queue but had current QSO: it was already cleared
-            if current_qso:
-                return {
-                    'message': 'Queue is empty. Cleared current QSO.',
-                    'cleared_qso': current_qso,
-                    'remaining': 0
-                }
-            else:
-                return {
-                    'message': 'Queue is empty. No action taken.',
-                    'remaining': 0
-                }
+            # If no one is in queue, return None for current_qso
+            return None
         
         # Put the next callsign into QSO status
         new_qso = queue_db.set_current_qso(next_entry["callsign"])
         
-        remaining_count = queue_db.get_queue_count()
+        # Add QRZ.com information to the current QSO
+        from app.services.qrz import qrz_service
+        qrz_info = qrz_service.lookup_callsign(next_entry["callsign"])
+        new_qso['qrz'] = qrz_info
         
-        response = {
-            'message': f'Next callsign: {next_entry["callsign"]} is now in QSO',
-            'processed': next_entry,
-            'current_qso': new_qso,
-            'remaining': remaining_count
-        }
-        
-        if current_qso:
-            response['cleared_qso'] = current_qso
-        
-        return response
+        return new_qso
         
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
-
-@admin_router.get('/status')
-def get_system_status(username: str = Depends(verify_admin_credentials)):
-    """Get the current system status (active/inactive)"""
-    try:
-        status = queue_db.get_system_status()
-        return status
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
 

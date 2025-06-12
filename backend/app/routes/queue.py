@@ -96,3 +96,28 @@ def list_queue():
     except Exception as e:
         logger.error(f"Failed to get queue list: {e}")
         raise HTTPException(status_code=500, detail='Failed to get queue list')
+
+@queue_router.get('/current')
+def get_current_qso():
+    """Get the current callsign in QSO with QRZ.com profile information"""
+    try:
+        # Check if system is active
+        system_status = queue_db.get_system_status()
+        if not system_status.get('active', False):
+            raise HTTPException(status_code=503, detail='System is currently inactive.')
+        
+        # Get current QSO
+        current_qso = queue_db.get_current_qso()
+        if not current_qso:
+            return None
+        
+        # Add QRZ.com information
+        qrz_info = qrz_service.lookup_callsign(current_qso['callsign'])
+        current_qso['qrz'] = qrz_info
+        
+        return current_qso
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions (like system inactive)
+    except Exception as e:
+        logger.error(f"Failed to get current QSO: {e}")
+        raise HTTPException(status_code=500, detail='Failed to get current QSO')
