@@ -20,6 +20,9 @@ def test_client(mock_database):
     """Create a test client with mocked database"""
     app = create_app()
     
+    # Mock the system as active for tests
+    mock_database.is_system_active.return_value = True
+    
     # Patch the database instance
     with patch('app.routes.queue.queue_db', mock_database):
         with TestClient(app) as client:
@@ -149,9 +152,14 @@ class TestDatabaseDuplicatePrevention:
         """Test the database duplicate check logic using a mock database instance"""
         # Create a database instance with a mocked collection
         mock_collection = Mock()
+        mock_status_collection = Mock()
         
         db = QueueDatabase()
         db.collection = mock_collection  # Directly set the mock collection
+        db.status_collection = mock_status_collection  # Mock status collection
+        
+        # Mock system as active
+        mock_status_collection.find_one.return_value = {'active': True}
         
         # Test existing callsign
         mock_collection.find_one.return_value = {'callsign': 'KC1ABC', 'timestamp': '2024-01-01T12:00:00'}
@@ -166,9 +174,14 @@ class TestDatabaseDuplicatePrevention:
         """Test successful new callsign registration at database level"""
         # Create a database instance with a mocked collection
         mock_collection = Mock()
+        mock_status_collection = Mock()
         
         db = QueueDatabase()
         db.collection = mock_collection  # Directly set the mock collection
+        db.status_collection = mock_status_collection  # Mock status collection
+        
+        # Mock system as active
+        mock_status_collection.find_one.return_value = {'active': True}
         
         # Mock no existing callsign and successful insert
         mock_collection.find_one.return_value = None
