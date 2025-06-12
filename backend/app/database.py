@@ -14,6 +14,7 @@ class QueueDatabase:
         self.client = None
         self.db = None
         self.collection: Optional[Collection] = None
+        self.status_collection: Optional[Collection] = None
         self._connect()
     
     def _connect(self):
@@ -29,6 +30,7 @@ class QueueDatabase:
             
             self.db = self.client[db_name]
             self.collection = self.db.queue
+            self.status_collection = self.db.status
             
             # Test connection with short timeout
             self.client.admin.command('ping')
@@ -40,11 +42,16 @@ class QueueDatabase:
             self.client = None
             self.db = None
             self.collection = None
+            self.status_collection = None
     
     def register_callsign(self, callsign: str) -> Dict[str, Any]:
         """Register a callsign in the queue"""
         if self.collection is None:
             raise Exception("Database connection not available")
+        
+        # Check if system is active
+        if not self.is_system_active():
+            raise ValueError("System is currently inactive. Registration is not available.")
         
         # Check if callsign already exists
         existing = self.collection.find_one({"callsign": callsign})
@@ -69,7 +76,7 @@ class QueueDatabase:
         }
         
         # Insert into database
-        result = self.collection.insert_one(entry)
+        self.collection.insert_one(entry)
         # Remove MongoDB ObjectId from response
         if '_id' in entry:
             del entry['_id']
@@ -159,6 +166,83 @@ class QueueDatabase:
             return 0
         
         return self.collection.count_documents({})
+    
+    def get_system_status(self) -> Dict[str, Any]:
+        """Get the current system status (active/inactive)"""
+        if self.status_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Try to find existing status document
+        status_doc = self.status_collection.find_one({"_id": "system_status"})
+        
+        if not status_doc:
+            # If no status document exists, create one with default inactive state
+            default_status = {
+                "_id": "system_status",
+                "active": False,
+                "last_updated": datetime.utcnow().isoformat(),
+                "updated_by": "system"
+            }
+            self.status_collection.insert_one(default_status)
+            return {
+                "active": False,
+                "last_updated": default_status["last_updated"],
+                "updated_by": "system"
+            }
+        
+        # Remove MongoDB ObjectId from response
+        result = {
+            "active": status_doc.get("active", False),
+            "last_updated": status_doc.get("last_updated"),
+            "updated_by": status_doc.get("updated_by")
+        }
+        
+        return result
+    
+    def set_system_status(self, active: bool, updated_by: str = "admin") -> Dict[str, Any]:
+        """Set the system status (active/inactive) and optionally clear queue when deactivating"""
+        if self.status_collection is None:
+            raise Exception("Database connection not available")
+        
+        # If deactivating the system, clear the queue first
+        cleared_count = 0
+        if not active:
+            cleared_count = self.clear_queue()
+        
+        # Update or create status document
+        status_update = {
+            "_id": "system_status",
+            "active": active,
+            "last_updated": datetime.utcnow().isoformat(),
+            "updated_by": updated_by
+        }
+        
+        self.status_collection.replace_one(
+            {"_id": "system_status"},
+            status_update,
+            upsert=True
+        )
+        
+        result = {
+            "active": active,
+            "last_updated": status_update["last_updated"],
+            "updated_by": updated_by
+        }
+        
+        if not active:
+            result["queue_cleared"] = True
+            result["cleared_count"] = cleared_count
+        
+        return result
+    
+    def is_system_active(self) -> bool:
+        """Check if the system is currently active"""
+        try:
+            status = self.get_system_status()
+            return status.get("active", False)
+        except Exception:
+            # If we can't check status, default to inactive for safety
+            return False
 
 
 # Global database instance

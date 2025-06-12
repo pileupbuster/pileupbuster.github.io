@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 from app.database import queue_db
 from app.auth import verify_admin_credentials
 
 admin_router = APIRouter()
+
+class SystemStatusRequest(BaseModel):
+    active: bool
 
 @admin_router.get('/queue')
 def admin_queue(username: str = Depends(verify_admin_credentials)):
@@ -65,3 +69,37 @@ def next_callsign(username: str = Depends(verify_admin_credentials)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.get('/status')
+def get_system_status(username: str = Depends(verify_admin_credentials)):
+    """Get the current system status (active/inactive)"""
+    try:
+        status = queue_db.get_system_status()
+        return status
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.post('/status')
+def set_system_status(
+    request: SystemStatusRequest, 
+    username: str = Depends(verify_admin_credentials)
+):
+    """Set the system status (activate/deactivate)"""
+    try:
+        status = queue_db.set_system_status(request.active, username)
+        action = "activated" if request.active else "deactivated"
+        message = f'System {action} successfully'
+        
+        if not request.active and status.get('queue_cleared'):
+            cleared_count = status.get("cleared_count", 0)
+            message += f'. Queue cleared ({cleared_count} entries removed)'
+        
+        return {
+            'message': message,
+            'status': status
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f'Database error: {str(e)}'
+        )
