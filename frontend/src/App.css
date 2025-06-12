@@ -1,42 +1,309 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
+/* Pileup Buster App Styles */
+
+.pileup-buster-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, Arial, sans-serif;
+  background-color: #f5f5f5;
+}
+
+/* Header Styles */
+.header {
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #fff;
+  border-bottom: 2px solid #ddd;
+  position: relative;
+}
+
+.hamburger-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+  margin-right: 1rem;
+}
+
+.hamburger-line {
+  width: 25px;
+  height: 3px;
+  background-color: #333;
+  border-radius: 2px;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
   padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Current Active Callsign Section (Green Border) */
+.current-active-section {
+  border: 3px solid #28a745;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background-color: #fff;
+}
+
+.current-active-card {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.operator-image-large {
+  flex-shrink: 0;
+}
+
+.operator-image-large .placeholder-image {
+  width: 120px;
+  height: 120px;
+  background-color: #e9ecef;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: #6c757d;
+}
+
+.active-info {
+  flex: 1;
+}
+
+.active-callsign {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.active-name {
+  font-size: 1.3rem;
+  color: #666;
+  margin-bottom: 0.3rem;
+}
+
+.active-location {
+  font-size: 1.1rem;
+  color: #888;
+  margin-bottom: 1rem;
+}
+
+.qrz-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.qrz-button:hover {
+  background-color: #0056b3;
+}
+
+/* Waiting Queue Section (Red Border) */
+.queue-section {
+  border: 3px solid #dc3545;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background-color: #fff;
+}
+
+.queue-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.queue-container {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+/* Callsign Cards (Yellow Border) */
+.callsign-card {
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: #fff;
+  min-width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.operator-image .placeholder-image {
+  width: 60px;
+  height: 60px;
+  background-color: #e9ecef;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #6c757d;
+  margin-bottom: 0.75rem;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.card-callsign {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.card-location {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.3;
+}
+
+/* Entry Form Section (Blue Border) */
+.entry-form-section {
+  border: 3px solid #007bff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 2rem 2rem 2rem;
+  background-color: #fff;
+}
+
+.entry-form {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.callsign-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+.callsign-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.process-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.process-button:hover {
+  background-color: #1e7e34;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .header {
+    padding: 1rem;
   }
-  to {
-    transform: rotate(360deg);
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .main-content {
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+  
+  .current-active-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .active-callsign {
+    font-size: 2rem;
+  }
+  
+  .queue-container {
+    gap: 0.75rem;
+  }
+  
+  .callsign-card {
+    min-width: 150px;
+  }
+  
+  .entry-form {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .callsign-input,
+  .process-button {
+    width: 100%;
+  }
+  
+  .entry-form-section {
+    margin: 1rem;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+@media (max-width: 480px) {
+  .operator-image-large .placeholder-image {
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
   }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+  
+  .active-callsign {
+    font-size: 1.8rem;
+  }
+  
+  .active-name {
+    font-size: 1.1rem;
+  }
+  
+  .callsign-card {
+    min-width: 120px;
+    padding: 0.75rem;
+  }
+  
+  .operator-image .placeholder-image {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+  
+  .card-callsign {
+    font-size: 1rem;
+  }
+  
+  .card-location {
+    font-size: 0.8rem;
+  }
 }
