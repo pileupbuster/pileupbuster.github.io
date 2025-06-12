@@ -31,7 +31,8 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=sha
-
+        
+      # build and push the Docker image
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
