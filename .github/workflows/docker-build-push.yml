@@ -2,8 +2,8 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
 
 jobs:
   build-and-push:
@@ -13,29 +13,33 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ env.DOCKERHUB_NAME }}
+          username: ${{ vars.DOCKERHUB_NAME }}
           password: ${{ secrets.DOCKERHUB_PAT }}
           
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.GITHUB_NAME }}/pileup-buster
+          images: ${{ vars.DOCKERHUB_NAME }}/pileup-buster
           tags: |
             type=semver,pattern={{version}}
+            type=semver,pattern=latest
             type=sha
-            
+        
+      # build and push the Docker image
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./backend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          
