@@ -14,6 +14,8 @@ class QueueDatabase:
         self.client = None
         self.db = None
         self.collection: Optional[Collection] = None
+        self.status_collection: Optional[Collection] = None
+        self.currentqso_collection: Optional[Collection] = None
         self._connect()
     
     def _connect(self):
@@ -29,6 +31,8 @@ class QueueDatabase:
             
             self.db = self.client[db_name]
             self.collection = self.db.queue
+            self.status_collection = self.db.status
+            self.currentqso_collection = self.db.currentqso
             
             # Test connection with short timeout
             self.client.admin.command('ping')
@@ -40,11 +44,17 @@ class QueueDatabase:
             self.client = None
             self.db = None
             self.collection = None
+            self.status_collection = None
+            self.currentqso_collection = None
     
     def register_callsign(self, callsign: str) -> Dict[str, Any]:
         """Register a callsign in the queue"""
         if self.collection is None:
             raise Exception("Database connection not available")
+        
+        # Check if system is active
+        if not self.is_system_active():
+            raise ValueError("System is currently inactive. Registration is not available.")
         
         # Check if callsign already exists
         existing = self.collection.find_one({"callsign": callsign})
@@ -69,7 +79,7 @@ class QueueDatabase:
         }
         
         # Insert into database
-        result = self.collection.insert_one(entry)
+        self.collection.insert_one(entry)
         # Remove MongoDB ObjectId from response
         if '_id' in entry:
             del entry['_id']
@@ -159,6 +169,136 @@ class QueueDatabase:
             return 0
         
         return self.collection.count_documents({})
+    
+    def get_system_status(self) -> Dict[str, Any]:
+        """Get the current system status (active/inactive)"""
+        if self.status_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Try to find existing status document
+        status_doc = self.status_collection.find_one({"_id": "system_status"})
+        
+        if not status_doc:
+            # If no status document exists, create one with default inactive state
+            default_status = {
+                "_id": "system_status",
+                "active": False,
+                "last_updated": datetime.utcnow().isoformat(),
+                "updated_by": "system"
+            }
+            self.status_collection.insert_one(default_status)
+            return {
+                "active": False,
+                "last_updated": default_status["last_updated"],
+                "updated_by": "system"
+            }
+        
+        # Remove MongoDB ObjectId from response
+        result = {
+            "active": status_doc.get("active", False),
+            "last_updated": status_doc.get("last_updated"),
+            "updated_by": status_doc.get("updated_by")
+        }
+        
+        return result
+    
+    def set_system_status(self, active: bool, updated_by: str = "admin") -> Dict[str, Any]:
+        """Set the system status (active/inactive) and clear queue when changing status"""
+        if self.status_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Clear the queue whenever the system status changes (activate or deactivate)
+        cleared_count = self.clear_queue()
+        
+        # Update or create status document
+        status_update = {
+            "_id": "system_status",
+            "active": active,
+            "last_updated": datetime.utcnow().isoformat(),
+            "updated_by": updated_by
+        }
+        
+        self.status_collection.replace_one(
+            {"_id": "system_status"},
+            status_update,
+            upsert=True
+        )
+        
+        result = {
+            "active": active,
+            "last_updated": status_update["last_updated"],
+            "updated_by": updated_by,
+            "queue_cleared": True,
+            "cleared_count": cleared_count
+        }
+        
+        return result
+    
+    def get_current_qso(self) -> Optional[Dict[str, Any]]:
+        """Get the current callsign in QSO"""
+        if self.currentqso_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Find the current QSO entry (should be only one)
+        entry = self.currentqso_collection.find_one({"_id": "current_qso"})
+        if not entry:
+            return None
+        
+        # Remove MongoDB ObjectId from response
+        result = {
+            "callsign": entry.get("callsign"),
+            "timestamp": entry.get("timestamp")
+        }
+        
+        return result
+    
+    def set_current_qso(self, callsign: str) -> Dict[str, Any]:
+        """Set the current callsign in QSO"""
+        if self.currentqso_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Create QSO entry
+        qso_entry = {
+            "_id": "current_qso",
+            "callsign": callsign,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Use replace_one with upsert to ensure only one QSO entry exists
+        self.currentqso_collection.replace_one(
+            {"_id": "current_qso"},
+            qso_entry,
+            upsert=True
+        )
+        
+        return {
+            "callsign": callsign,
+            "timestamp": qso_entry["timestamp"]
+        }
+    
+    def clear_current_qso(self) -> Optional[Dict[str, Any]]:
+        """Clear the current QSO"""
+        if self.currentqso_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Find and delete the current QSO entry
+        entry = self.currentqso_collection.find_one_and_delete({"_id": "current_qso"})
+        if not entry:
+            return None
+        
+        return {
+            "callsign": entry.get("callsign"),
+            "timestamp": entry.get("timestamp")
+        }
+    
+    def is_system_active(self) -> bool:
+        """Check if the system is currently active"""
+        try:
+            status = self.get_system_status()
+            return status.get("active", False)
+        except Exception:
+            # If we can't check status, default to inactive for safety
+            return False
 
 
 # Global database instance

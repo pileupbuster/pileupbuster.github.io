@@ -12,7 +12,16 @@ def create_app():
     app = FastAPI(
         title="Pileup Buster API",
         description="Ham radio callsign queue management system",
-        version="1.0.0"
+        version="1.0.0",
+        swagger_ui_parameters={
+            "tryItOutEnabled": True,
+            "persistAuthorization": True,
+            "displayRequestDuration": True,
+            "docExpansion": "list",
+            "defaultModelsExpandDepth": 2,
+            "defaultModelExpandDepth": 2,
+            "filter": True
+        }
     )
     
     # Enable CORS for frontend communication
@@ -31,9 +40,11 @@ def create_app():
     # Include routers
     from app.routes.queue import queue_router
     from app.routes.admin import admin_router
+    from app.routes.public import public_router
     
     app.include_router(queue_router, prefix="/api/queue", tags=["queue"])
     app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
+    app.include_router(public_router, prefix="/api/public", tags=["public"])
     
     return app
 

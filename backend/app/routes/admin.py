@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 from app.database import queue_db
 from app.auth import verify_admin_credentials
 
 admin_router = APIRouter()
+
+class SystemStatusRequest(BaseModel):
+    active: bool
 
 @admin_router.get('/queue')
 def admin_queue(username: str = Depends(verify_admin_credentials)):
@@ -49,19 +53,51 @@ def clear_queue(username: str = Depends(verify_admin_credentials)):
 
 @admin_router.post('/queue/next')
 def next_callsign(username: str = Depends(verify_admin_credentials)):
-    """Process the next callsign in queue"""
+    """Process the next callsign in queue and manage QSO status"""
     try:
-        next_entry = queue_db.get_next_callsign()
-        if not next_entry:
-            raise HTTPException(status_code=400, detail='Queue is empty')
+        # Clear any existing current QSO
+        current_qso = queue_db.clear_current_qso()
         
-        remaining_count = queue_db.get_queue_count()
-        return {
-            'message': f'Next callsign: {next_entry["callsign"]}',
-            'processed': next_entry,
-            'remaining': remaining_count
-        }
+        # Get the next callsign from queue
+        next_entry = queue_db.get_next_callsign()
+        
+        if not next_entry:
+            # If no one is in queue, return None for current_qso
+            return None
+        
+        # Put the next callsign into QSO status
+        new_qso = queue_db.set_current_qso(next_entry["callsign"])
+        
+        # Add QRZ.com information to the current QSO
+        from app.services.qrz import qrz_service
+        qrz_info = qrz_service.lookup_callsign(next_entry["callsign"])
+        new_qso['qrz'] = qrz_info
+        
+        return new_qso
+        
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.post('/status')
+def set_system_status(
+    request: SystemStatusRequest, 
+    username: str = Depends(verify_admin_credentials)
+):
+    """Set the system status (activate/deactivate)"""
+    try:
+        status = queue_db.set_system_status(request.active, username)
+        action = "activated" if request.active else "deactivated"
+        cleared_count = status.get("cleared_count", 0)
+        message = f'System {action} successfully. Queue cleared ({cleared_count} entries removed)'
+        
+        return {
+            'message': message,
+            'status': status
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f'Database error: {str(e)}'
+        )

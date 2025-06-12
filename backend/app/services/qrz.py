@@ -57,7 +57,7 @@ class QRZService:
                 'callsign': callsign,
                 'name': result.name.formatted_name,
                 'address': self._format_address(result.address),
-                'image': result.image.url,
+                'image': result.image.url if hasattr(result, 'image') and result.image else None,
                 'error': None
             }
             return response

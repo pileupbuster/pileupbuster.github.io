@@ -90,11 +90,16 @@ The API will be available at http://localhost:5000
 - `GET /api/queue/status/<callsign>` - Get callsign position with QRZ.com profile data
 - `GET /api/queue/list` - List current queue
 
+### Public Endpoints (No Authentication Required)
+- `GET /api/public/status` - Get system active status (public)
+
 ### Admin Functions (Protected with HTTP Basic Auth)
 - `GET /api/admin/queue` - Admin view of queue
 - `DELETE /api/admin/queue/<callsign>` - Remove callsign
 - `POST /api/admin/queue/clear` - Clear entire queue
 - `POST /api/admin/queue/next` - Process next callsign
+- `GET /api/admin/status` - Get system status (admin)
+- `POST /api/admin/status` - Set system status (admin)
 
 ## Technology Stack
 
