@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import './App.css'
+import CurrentActiveCallsign, { type CurrentActiveUser } from './components/CurrentActiveCallsign'
+import WaitingQueue, { type QueueItem } from './components/WaitingQueue'
 
 // Sample data for demonstration
-const sampleQueueData = [
+const sampleQueueData: QueueItem[] = [
   { callsign: 'WP3XZ', location: 'San Juan, Puerto Rico' },
   { callsign: 'K4ABC', location: 'Atlanta, Georgia' },
   { callsign: 'VE7XYZ', location: 'Vancouver, Canada' },
@@ -10,7 +12,7 @@ const sampleQueueData = [
   { callsign: 'G0GHI', location: 'London, England' },
 ]
 
-const currentActiveUser = {
+const currentActiveUser: CurrentActiveUser = {
   callsign: 'WP3XYZ',
   name: 'John Smith',
   location: 'San Juan, Puerto Rico'
@@ -40,37 +42,10 @@ function App() {
 
       <main className="main-content">
         {/* Current Active Callsign (Green Border) */}
-        <section className="current-active-section">
-          <div className="current-active-card">
-            <div className="operator-image-large">
-              <div className="placeholder-image">👤</div>
-            </div>
-            <div className="active-info">
-              <div className="active-callsign">{currentActiveUser.callsign}</div>
-              <div className="active-name">{currentActiveUser.name}</div>
-              <div className="active-location">{currentActiveUser.location}</div>
-              <button className="qrz-button">QRZ.COM INFO</button>
-            </div>
-          </div>
-        </section>
+        <CurrentActiveCallsign activeUser={currentActiveUser} />
 
         {/* Waiting Queue Container (Red Border) */}
-        <section className="queue-section">
-          <h2 className="queue-title">Waiting Queue</h2>
-          <div className="queue-container">
-            {sampleQueueData.map((item, index) => (
-              <div key={index} className="callsign-card">
-                <div className="operator-image">
-                  <div className="placeholder-image">👤</div>
-                </div>
-                <div className="card-info">
-                  <div className="card-callsign">{item.callsign}</div>
-                  <div className="card-location">{item.location}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <WaitingQueue queueData={sampleQueueData} />
       </main>
 
       {/* Callsign Entry Form (Blue Border) */}
