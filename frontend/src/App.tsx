@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import './App.css'
 import CurrentActiveCallsign, { type CurrentActiveUser } from './components/CurrentActiveCallsign'
 import WaitingQueue, { type QueueItem } from './components/WaitingQueue'
@@ -18,14 +17,6 @@ const currentActiveUser: CurrentActiveUser = {
 }
 
 function App() {
-  const [callsignInput, setCallsignInput] = useState('')
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // TODO: Backend integration will be added later
-    console.log('Processing callsign:', callsignInput)
-    setCallsignInput('')
-  }
 
   return (
     <div className="pileup-buster-app">
@@ -46,22 +37,6 @@ function App() {
         {/* Waiting Queue Container (Red Border) */}
         <WaitingQueue queueData={sampleQueueData} />
       </main>
-
-      {/* Callsign Entry Form (Blue Border) */}
-      <footer className="entry-form-section">
-        <form onSubmit={handleSubmit} className="entry-form">
-          <input
-            type="text"
-            value={callsignInput}
-            onChange={(e) => setCallsignInput(e.target.value.toUpperCase())}
-            placeholder="Enter call sign"
-            className="callsign-input"
-          />
-          <button type="submit" className="process-button">
-            PROCESS
-          </button>
-        </form>
-      </footer>
     </div>
   )
 }
