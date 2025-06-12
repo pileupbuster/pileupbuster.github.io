@@ -12,7 +12,16 @@ def create_app():
     app = FastAPI(
         title="Pileup Buster API",
         description="Ham radio callsign queue management system",
-        version="1.0.0"
+        version="1.0.0",
+        swagger_ui_parameters={
+            "tryItOutEnabled": True,
+            "persistAuthorization": True,
+            "displayRequestDuration": True,
+            "docExpansion": "list",
+            "defaultModelsExpandDepth": 2,
+            "defaultModelExpandDepth": 2,
+            "filter": True
+        }
     )
     
     # Enable CORS for frontend communication
