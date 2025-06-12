@@ -116,11 +116,8 @@ def set_system_status(
     try:
         status = queue_db.set_system_status(request.active, username)
         action = "activated" if request.active else "deactivated"
-        message = f'System {action} successfully'
-        
-        if not request.active and status.get('queue_cleared'):
-            cleared_count = status.get("cleared_count", 0)
-            message += f'. Queue cleared ({cleared_count} entries removed)'
+        cleared_count = status.get("cleared_count", 0)
+        message = f'System {action} successfully. Queue cleared ({cleared_count} entries removed)'
         
         return {
             'message': message,

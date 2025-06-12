@@ -203,14 +203,12 @@ class QueueDatabase:
         return result
     
     def set_system_status(self, active: bool, updated_by: str = "admin") -> Dict[str, Any]:
-        """Set the system status (active/inactive) and optionally clear queue when deactivating"""
+        """Set the system status (active/inactive) and clear queue when changing status"""
         if self.status_collection is None:
             raise Exception("Database connection not available")
         
-        # If deactivating the system, clear the queue first
-        cleared_count = 0
-        if not active:
-            cleared_count = self.clear_queue()
+        # Clear the queue whenever the system status changes (activate or deactivate)
+        cleared_count = self.clear_queue()
         
         # Update or create status document
         status_update = {
@@ -229,12 +227,10 @@ class QueueDatabase:
         result = {
             "active": active,
             "last_updated": status_update["last_updated"],
-            "updated_by": updated_by
+            "updated_by": updated_by,
+            "queue_cleared": True,
+            "cleared_count": cleared_count
         }
-        
-        if not active:
-            result["queue_cleared"] = True
-            result["cleared_count"] = cleared_count
         
         return result
     

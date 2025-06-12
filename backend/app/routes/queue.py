@@ -40,8 +40,15 @@ def register_callsign(request: CallsignRequest):
         raise HTTPException(status_code=400, detail='Callsign is required')
     
     try:
+        # Check if system is active before allowing registration
+        system_status = queue_db.get_system_status()
+        if not system_status.get('active', False):
+            raise HTTPException(status_code=503, detail='System is currently inactive. Registration is not available.')
+        
         entry = queue_db.register_callsign(callsign)
         return {'message': 'Callsign registered successfully', 'entry': entry}
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions (like system inactive)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -54,6 +61,11 @@ def get_status(callsign: str):
     callsign = callsign.upper().strip()
     
     try:
+        # Check if system is active
+        system_status = queue_db.get_system_status()
+        if not system_status.get('active', False):
+            raise HTTPException(status_code=503, detail='System is currently inactive.')
+        
         entry = queue_db.find_callsign(callsign)
         if not entry:
             raise HTTPException(status_code=404, detail='Callsign not found in queue')
@@ -63,6 +75,8 @@ def get_status(callsign: str):
         entry['qrz'] = qrz_info
         
         return entry
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions (like system inactive or not found)
     except Exception as e:
         logger.error(f"Failed to get callsign status: {e}")
         raise HTTPException(status_code=500, detail='Failed to get callsign status')
@@ -71,21 +85,14 @@ def get_status(callsign: str):
 def list_queue():
     """Get current queue status"""
     try:
+        # Check if system is active
+        system_status = queue_db.get_system_status()
+        if not system_status.get('active', False):
+            # Return empty queue if system is inactive
+            return {'queue': [], 'total': 0, 'system_active': False}
+        
         queue = queue_db.get_queue_list()
-        return {'queue': queue, 'total': len(queue)}
+        return {'queue': queue, 'total': len(queue), 'system_active': True}
     except Exception as e:
         logger.error(f"Failed to get queue list: {e}")
         raise HTTPException(status_code=500, detail='Failed to get queue list')
-
-@queue_router.get('/status')
-def get_public_system_status():
-    """Get the current system status (active/inactive) - public endpoint"""
-    try:
-        status = queue_db.get_system_status()
-        # Return only the active status for public consumption
-        # Exclude sensitive information like updated_by (admin usernames)
-        return {
-            'active': status.get('active', False)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')

@@ -90,11 +90,13 @@ class TestSystemActivation:
         """Test activating the system"""
         client, mock_db = test_client
         
-        # Mock successful activation
+        # Mock successful activation with queue clearing
         mock_db.set_system_status.return_value = {
             'active': True,
             'last_updated': '2024-01-01T12:00:00Z',
-            'updated_by': 'admin'
+            'updated_by': 'admin',
+            'queue_cleared': True,
+            'cleared_count': 2
         }
         
         response = client.post(
@@ -106,7 +108,10 @@ class TestSystemActivation:
         assert response.status_code == 200
         data = response.json()
         assert 'System activated successfully' in data['message']
+        assert 'Queue cleared (2 entries removed)' in data['message']
         assert data['status']['active'] is True
+        assert data['status']['queue_cleared'] is True
+        assert data['status']['cleared_count'] == 2
         mock_db.set_system_status.assert_called_once_with(True, 'admin')
     
     def test_deactivate_system_with_queue_clearing(self, test_client):
@@ -250,7 +255,7 @@ class TestDatabaseSystemStatus:
         assert '_id' not in result  # MongoDB ObjectId should be removed
     
     def test_set_system_status_activate(self):
-        """Test activating the system"""
+        """Test activating the system clears the queue"""
         mock_status_collection = Mock()
         mock_collection = Mock()
         
@@ -258,14 +263,21 @@ class TestDatabaseSystemStatus:
         db.status_collection = mock_status_collection
         db.collection = mock_collection
         
+        # Mock queue clearing
+        mock_collection.count_documents.return_value = 1
+        mock_collection.delete_many.return_value = Mock()
         mock_status_collection.replace_one.return_value = Mock()
         
         result = db.set_system_status(True, 'admin')
         
         assert result['active'] is True
         assert result['updated_by'] == 'admin'
+        assert result['queue_cleared'] is True
+        assert result['cleared_count'] == 1
         assert 'last_updated' in result
-        assert 'queue_cleared' not in result  # Should not clear queue when activating
+        
+        # Verify queue was cleared
+        mock_collection.delete_many.assert_called_once_with({})
         
         # Verify the status was updated
         mock_status_collection.replace_one.assert_called_once()
