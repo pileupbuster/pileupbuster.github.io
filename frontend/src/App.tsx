@@ -5,17 +5,16 @@ import WaitingQueue, { type QueueItem } from './components/WaitingQueue'
 
 // Sample data for demonstration
 const sampleQueueData: QueueItem[] = [
-  { callsign: 'WP3XZ', location: 'San Juan, Puerto Rico' },
-  { callsign: 'K4ABC', location: 'Atlanta, Georgia' },
-  { callsign: 'VE7XYZ', location: 'Vancouver, Canada' },
-  { callsign: 'JA1DEF', location: 'Tokyo, Japan' },
-  { callsign: 'G0GHI', location: 'London, England' },
+  { callsign: 'EI6JGB', location: 'San Juan, Puerto Rico' },
+  { callsign: 'EI5JBB', location: 'Atlanta, Georgia' },
+  { callsign: 'EI2HF', location: 'Vancouver, Canada' },
+  
 ]
 
 const currentActiveUser: CurrentActiveUser = {
-  callsign: 'WP3XYZ',
-  name: 'John Smith',
-  location: 'San Juan, Puerto Rico'
+  callsign: 'EI5JDB',
+  name: 'Jack Daniels Burbon',
+  location: 'Near Jamie, Clonmel, Ireland',
 }
 
 function App() {

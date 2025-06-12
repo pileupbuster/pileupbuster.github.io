@@ -13,7 +13,7 @@ function CurrentActiveCallsign({ activeUser }: CurrentActiveCallsignProps) {
     <section className="current-active-section">
       <div className="current-active-card">
         <div className="operator-image-large">
-          <div className="placeholder-image">👤</div>
+          <img src="https://cdn-bio.qrz.com/b/ei5jdb/to_use_21st_May.jpg" alt="Operator" className="operator-image" />
         </div>
         <div className="active-info">
           <div className="active-callsign">{activeUser.callsign}</div>

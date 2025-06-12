@@ -225,6 +225,51 @@
   background-color: #1e7e34;
 }
 
+/* Add Queue Item Styles */
+.add-queue-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-style: dashed !important;
+  background-color: #f8f9fa;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.add-queue-item:hover {
+  background-color: #e9ecef;
+  border-color: #28a745 !important;
+}
+
+.add-icon {
+  font-size: 2rem;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.add-queue-item:hover .add-icon {
+  color: #28a745;
+}
+
+.callsign-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  color: #333;
+  width: 100%;
+  padding: 0.5rem;
+}
+
+.callsign-input::placeholder {
+  color: #999;
+  font-weight: normal;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .header {
