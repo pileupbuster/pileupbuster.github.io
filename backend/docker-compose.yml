@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   pileup-buster:
+    # image: brianbruff/pileup-buster
     build: .
     ports:
       - "8000:8000"
