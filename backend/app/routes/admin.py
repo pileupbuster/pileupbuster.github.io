@@ -92,7 +92,14 @@ def set_system_status(
         status = queue_db.set_system_status(request.active, username)
         action = "activated" if request.active else "deactivated"
         cleared_count = status.get("cleared_count", 0)
-        message = f'System {action} successfully. Queue cleared ({cleared_count} entries removed)'
+        qso_cleared = status.get("qso_cleared", False)
+        
+        # Build message with queue and QSO clearing information
+        message_parts = [f'System {action} successfully.']
+        message_parts.append(f'Queue cleared ({cleared_count} entries removed)')
+        if qso_cleared:
+            message_parts.append('Current QSO cleared')
+        message = '. '.join(message_parts)
         
         return {
             'message': message,
@@ -110,5 +117,14 @@ def get_system_status(username: str = Depends(verify_admin_credentials)):
     try:
         status = queue_db.get_system_status()
         return status
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.get('/current')
+def admin_get_current_qso(username: str = Depends(verify_admin_credentials)):
+    """Admin endpoint to get current QSO regardless of system status"""
+    try:
+        current_qso = queue_db.get_current_qso()
+        return current_qso
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
