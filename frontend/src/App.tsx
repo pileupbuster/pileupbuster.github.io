@@ -23,7 +23,8 @@ function App() {
   const convertQueueEntryToItemData = (entry: QueueEntry): QueueItemData => {
     return {
       callsign: entry.callsign,
-      location: 'Location not available' // Backend doesn't provide location for queue items
+      location: entry.qrz?.address || 'Location not available',
+      qrz: entry.qrz
     }
   }
 
