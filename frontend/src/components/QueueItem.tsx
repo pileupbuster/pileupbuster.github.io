@@ -1,3 +1,5 @@
+import React from 'react';
+
 export interface QueueItemData {
   callsign: string
   location: string
@@ -16,7 +18,13 @@ export interface QueueItemProps {
 }
 
 export default function QueueItem({ item, index }: QueueItemProps) {
-  const hasQrzImage = item.qrz?.image && !item.qrz?.error;
+  const [imageLoadFailed, setImageLoadFailed] = React.useState(false);
+  const hasQrzImage = item.qrz?.image && !item.qrz?.error && !imageLoadFailed;
+  
+  // Reset image load failure state when image URL changes
+  React.useEffect(() => {
+    setImageLoadFailed(false);
+  }, [item.qrz?.image]);
   
   return (
     <div key={index} className="callsign-card">
@@ -26,15 +34,13 @@ export default function QueueItem({ item, index }: QueueItemProps) {
             src={item.qrz.image} 
             alt={`${item.callsign} profile`}
             className="operator-image-qrz"
-            onError={(e) => {
-              // Fallback to placeholder if image fails to load
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              target.nextElementSibling?.classList.remove('hidden');
+            onError={() => {
+              setImageLoadFailed(true);
             }}
           />
-        ) : null}
-        <div className={`placeholder-image ${hasQrzImage ? 'hidden' : ''}`}>👤</div>
+        ) : (
+          <div className="placeholder-image">👤</div>
+        )}
       </div>
       <div className="card-info">
         <div className="card-callsign">{item.callsign}</div>
