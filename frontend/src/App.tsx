@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import './App.css'
-import pileupBusterLogo from './assets/react.svg' // TODO: Replace with actual logo when available
+import pileupBusterLogo from './assets/pileup-buster-logo.svg'
 import CurrentActiveCallsign, { type CurrentActiveUser } from './components/CurrentActiveCallsign'
 import WaitingQueue from './components/WaitingQueue'
 import AdminLogin from './components/AdminLogin'
