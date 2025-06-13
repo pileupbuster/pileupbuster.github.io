@@ -48,8 +48,20 @@ class TestIntegrationDuplicatePrevention:
         assert response2.json()['detail'] == 'Callsign already in queue'
         
     @patch('app.routes.queue.queue_db')
-    def test_case_insensitive_duplicate_detection(self, mock_db, test_client):
+    @patch('app.routes.queue.qrz_service')
+    def test_case_insensitive_duplicate_detection(self, mock_qrz_service, mock_db, test_client):
         """Test that duplicate detection works across different case variations"""
+        
+        # Mock QRZ service
+        mock_qrz_service.lookup_callsign.return_value = {
+            'callsign': 'KC1ABC',
+            'name': None,
+            'address': None,
+            'error': 'QRZ.com credentials not configured. Please set QRZ_USERNAME and QRZ_PASSWORD environment variables.'
+        }
+        
+        # Mock active system
+        mock_db.get_system_status.return_value = {'active': True}
         
         # Mock that the uppercase version already exists
         mock_db.register_callsign.side_effect = ValueError("Callsign already in queue")
@@ -60,12 +72,26 @@ class TestIntegrationDuplicatePrevention:
         assert response.status_code == 400
         assert response.json()['detail'] == 'Callsign already in queue'
         
-        # Verify the database was called with normalized uppercase callsign
-        mock_db.register_callsign.assert_called_with('KC1ABC')
+        # Verify the database was called with normalized uppercase callsign and QRZ info
+        args, kwargs = mock_db.register_callsign.call_args
+        assert args[0] == 'KC1ABC'  # First argument is callsign
+        assert args[1]['callsign'] == 'KC1ABC'  # Second argument is QRZ info dict
         
     @patch('app.routes.queue.queue_db')
-    def test_whitespace_handling_in_duplicate_detection(self, mock_db, test_client):
+    @patch('app.routes.queue.qrz_service')
+    def test_whitespace_handling_in_duplicate_detection(self, mock_qrz_service, mock_db, test_client):
         """Test that whitespace is properly handled in duplicate detection"""
+        
+        # Mock QRZ service
+        mock_qrz_service.lookup_callsign.return_value = {
+            'callsign': 'KC1ABC',
+            'name': None,
+            'address': None,
+            'error': 'QRZ.com credentials not configured. Please set QRZ_USERNAME and QRZ_PASSWORD environment variables.'
+        }
+        
+        # Mock active system
+        mock_db.get_system_status.return_value = {'active': True}
         
         # Mock that the trimmed version already exists
         mock_db.register_callsign.side_effect = ValueError("Callsign already in queue")
@@ -76,8 +102,10 @@ class TestIntegrationDuplicatePrevention:
         assert response.status_code == 400
         assert response.json()['detail'] == 'Callsign already in queue'
         
-        # Verify the database was called with trimmed callsign
-        mock_db.register_callsign.assert_called_with('KC1ABC')
+        # Verify the database was called with trimmed callsign and QRZ info
+        args, kwargs = mock_db.register_callsign.call_args
+        assert args[0] == 'KC1ABC'  # First argument is callsign
+        assert args[1]['callsign'] == 'KC1ABC'  # Second argument is QRZ info dict
         
     @patch('app.routes.queue.queue_db')
     def test_admin_endpoints_do_not_bypass_validation(self, mock_db, test_client):
