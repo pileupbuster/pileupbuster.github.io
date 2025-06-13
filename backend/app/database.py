@@ -151,7 +151,14 @@ class QueueDatabase:
             raise Exception("Database connection not available")
         
         count = self.collection.count_documents({})
-        self.collection.delete_many({})
+        print(f"DEBUG: clear_queue() - Found {count} documents to delete")
+        result = self.collection.delete_many({})
+        print(f"DEBUG: clear_queue() - Deleted {result.deleted_count} documents")
+        
+        # Verify the queue is actually empty
+        remaining_count = self.collection.count_documents({})
+        print(f"DEBUG: clear_queue() - {remaining_count} documents remaining after deletion")
+        
         return count
     
     def get_next_callsign(self) -> Optional[Dict[str, Any]]:
@@ -214,8 +221,12 @@ class QueueDatabase:
         if self.status_collection is None:
             raise Exception("Database connection not available")
         
+        print(f"DEBUG: set_system_status() - Setting system to {'active' if active else 'inactive'}")
+        
         # Clear the queue whenever the system status changes (activate or deactivate)
+        print("DEBUG: set_system_status() - About to clear queue")
         cleared_count = self.clear_queue()
+        print(f"DEBUG: set_system_status() - Queue clearing completed, {cleared_count} entries removed")
         
         # Update or create status document
         status_update = {
@@ -230,6 +241,8 @@ class QueueDatabase:
             status_update,
             upsert=True
         )
+        
+        print(f"DEBUG: set_system_status() - Status document updated successfully")
         
         result = {
             "active": active,

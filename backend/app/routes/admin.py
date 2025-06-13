@@ -103,3 +103,12 @@ def set_system_status(
             status_code=500, 
             detail=f'Database error: {str(e)}'
         )
+
+@admin_router.get('/status')
+def get_system_status(username: str = Depends(verify_admin_credentials)):
+    """Get the current system status"""
+    try:
+        status = queue_db.get_system_status()
+        return status
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
