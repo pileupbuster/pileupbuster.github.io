@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 from app.services.qrz import qrz_service
 from app.database import queue_db
+from app.validation import validate_callsign
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,9 @@ def register_callsign(request: CallsignRequest):
     
     if not callsign:
         raise HTTPException(status_code=400, detail='Callsign is required')
+    
+    if not validate_callsign(callsign):
+        raise HTTPException(status_code=400, detail='Invalid callsign format. Must follow ITU standards (e.g., KC1ABC, W1AW)')
     
     try:
         # Check if system is active before allowing registration
