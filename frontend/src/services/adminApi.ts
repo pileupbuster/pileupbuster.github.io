@@ -1,5 +1,5 @@
 // API service for admin functionality
-const API_BASE_URL = '/api'
+import { API_BASE_URL } from '../config/api'
 
 export interface AdminCredentials {
   username: string
