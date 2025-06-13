@@ -88,8 +88,8 @@ class AdminApiService {
 
   async getSystemStatus(): Promise<boolean> {
     try {
-      // Use public endpoint for status (no auth required)
-      const response = await fetch(`${API_BASE_URL}/public/status`)
+      // Use queue endpoint for status (no auth required)
+      const response = await fetch(`${API_BASE_URL}/queue/status`)
       if (response.ok) {
         const data = await response.json()
         return data.active
