@@ -17,16 +17,27 @@ def mock_database():
 
 @pytest.fixture
 def test_client(mock_database):
-    """Create a test client with mocked database"""
+    """Create a test client with mocked database and QRZ service"""
     app = create_app()
     
     # Mock the system as active for tests
     mock_database.is_system_active.return_value = True
     
-    # Patch the database instance
+    # Mock QRZ service response  
+    mock_qrz_info = {
+        'callsign': 'KC1ABC',
+        'name': None,
+        'address': None,
+        'image': None,
+        'error': 'QRZ.com credentials not configured. Please set QRZ_USERNAME and QRZ_PASSWORD environment variables.'
+    }
+    
+    # Patch both the database and QRZ service
     with patch('app.routes.queue.queue_db', mock_database):
-        with TestClient(app) as client:
-            yield client, mock_database
+        with patch('app.routes.queue.qrz_service') as mock_qrz:
+            mock_qrz.lookup_callsign.return_value = mock_qrz_info
+            with TestClient(app) as client:
+                yield client, mock_database
 
 
 class TestDuplicateCallsignPrevention:
@@ -48,7 +59,11 @@ class TestDuplicateCallsignPrevention:
         assert response.status_code == 200
         assert response.json()['message'] == 'Callsign registered successfully'
         assert response.json()['entry']['callsign'] == 'KC1ABC'
-        mock_db.register_callsign.assert_called_once_with('KC1ABC')
+        
+        # Verify register_callsign was called with callsign and QRZ info
+        args, kwargs = mock_db.register_callsign.call_args
+        assert args[0] == 'KC1ABC'  # First argument is callsign
+        assert args[1]['callsign'] == 'KC1ABC'  # Second argument is QRZ info dict
     
     def test_register_duplicate_callsign_fails(self, test_client):
         """Test that registering a duplicate callsign fails with proper error"""
@@ -61,7 +76,11 @@ class TestDuplicateCallsignPrevention:
         
         assert response.status_code == 400
         assert response.json()['detail'] == 'Callsign already in queue'
-        mock_db.register_callsign.assert_called_once_with('KC1ABC')
+        
+        # Verify register_callsign was called with callsign and QRZ info
+        args, kwargs = mock_db.register_callsign.call_args
+        assert args[0] == 'KC1ABC'  # First argument is callsign
+        assert args[1]['callsign'] == 'KC1ABC'  # Second argument is QRZ info dict
     
     def test_callsign_case_insensitive_handling(self, test_client):
         """Test that callsigns are handled case-insensitively"""
@@ -77,8 +96,10 @@ class TestDuplicateCallsignPrevention:
         response = client.post('/api/queue/register', json={'callsign': 'kc1abc'})
         
         assert response.status_code == 200
-        # Verify the database was called with uppercase callsign
-        mock_db.register_callsign.assert_called_once_with('KC1ABC')
+        # Verify the database was called with uppercase callsign and QRZ info
+        args, kwargs = mock_db.register_callsign.call_args
+        assert args[0] == 'KC1ABC'  # First argument is callsign
+        assert args[1]['callsign'] == 'KC1ABC'  # Second argument is QRZ info dict
     
     def test_callsign_whitespace_trimming(self, test_client):
         """Test that whitespace is properly trimmed from callsigns"""
@@ -93,8 +114,10 @@ class TestDuplicateCallsignPrevention:
         response = client.post('/api/queue/register', json={'callsign': '  KC1ABC  '})
         
         assert response.status_code == 200
-        # Verify the database was called with trimmed callsign
-        mock_db.register_callsign.assert_called_once_with('KC1ABC')
+        # Verify the database was called with trimmed callsign and QRZ info
+        args, kwargs = mock_db.register_callsign.call_args
+        assert args[0] == 'KC1ABC'  # First argument is callsign
+        assert args[1]['callsign'] == 'KC1ABC'  # Second argument is QRZ info dict
     
     def test_empty_callsign_validation(self, test_client):
         """Test that empty callsigns are rejected"""
@@ -142,7 +165,9 @@ class TestDuplicateCallsignPrevention:
         assert response.status_code == 400
         assert response.json()['detail'] == 'Callsign already in queue'
         # Should have been normalized to uppercase before database call
-        mock_db.register_callsign.assert_called_once_with('KC1ABC')
+        args, kwargs = mock_db.register_callsign.call_args
+        assert args[0] == 'KC1ABC'  # First argument is callsign
+        assert args[1]['callsign'] == 'KC1ABC'  # Second argument is QRZ info dict
 
 
 class TestDatabaseDuplicatePrevention:

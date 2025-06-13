@@ -45,7 +45,11 @@ def register_callsign(request: CallsignRequest):
         if not system_status.get('active', False):
             raise HTTPException(status_code=503, detail='System is currently inactive. Registration is not available.')
         
-        entry = queue_db.register_callsign(callsign)
+        # Fetch QRZ information at registration time
+        qrz_info = qrz_service.lookup_callsign(callsign)
+        
+        # Register callsign with QRZ information
+        entry = queue_db.register_callsign(callsign, qrz_info)
         return {'message': 'Callsign registered successfully', 'entry': entry}
     except HTTPException:
         raise  # Re-raise HTTP exceptions (like system inactive)
@@ -57,7 +61,7 @@ def register_callsign(request: CallsignRequest):
 
 @queue_router.get('/status/{callsign}')
 def get_status(callsign: str):
-    """Get position of callsign in queue with QRZ.com profile information"""
+    """Get position of callsign in queue with stored QRZ.com profile information"""
     callsign = callsign.upper().strip()
     
     try:
@@ -70,10 +74,7 @@ def get_status(callsign: str):
         if not entry:
             raise HTTPException(status_code=404, detail='Callsign not found in queue')
         
-        # Add QRZ.com information
-        qrz_info = qrz_service.lookup_callsign(callsign)
-        entry['qrz'] = qrz_info
-        
+        # QRZ information is already stored in the entry - no need for additional lookup
         return entry
     except HTTPException:
         raise  # Re-raise HTTP exceptions (like system inactive or not found)
@@ -99,25 +100,20 @@ def list_queue():
 
 @queue_router.get('/current')
 def get_current_qso():
-    """Get the current callsign in QSO with QRZ.com profile information"""
+    """Get the current callsign in QSO with stored QRZ.com profile information"""
     try:
         # Check if system is active
         system_status = queue_db.get_system_status()
         if not system_status.get('active', False):
-            raise HTTPException(status_code=503, detail='System is currently inactive.')
+            # Return None instead of error when system is inactive
+            return None
         
-        # Get current QSO
+        # Get current QSO - QRZ information is already stored
         current_qso = queue_db.get_current_qso()
         if not current_qso:
             return None
         
-        # Add QRZ.com information
-        qrz_info = qrz_service.lookup_callsign(current_qso['callsign'])
-        current_qso['qrz'] = qrz_info
-        
         return current_qso
-    except HTTPException:
-        raise  # Re-raise HTTP exceptions (like system inactive)
     except Exception as e:
         logger.error(f"Failed to get current QSO: {e}")
         raise HTTPException(status_code=500, detail='Failed to get current QSO')

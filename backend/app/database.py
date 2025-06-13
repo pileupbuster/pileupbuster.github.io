@@ -47,8 +47,8 @@ class QueueDatabase:
             self.status_collection = None
             self.currentqso_collection = None
     
-    def register_callsign(self, callsign: str) -> Dict[str, Any]:
-        """Register a callsign in the queue"""
+    def register_callsign(self, callsign: str, qrz_info: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Register a callsign in the queue with optional QRZ information"""
         if self.collection is None:
             raise Exception("Database connection not available")
         
@@ -71,11 +71,18 @@ class QueueDatabase:
         # Get current position (count + 1)
         position = current_count + 1
         
-        # Create entry
+        # Create entry with QRZ information
         entry = {
             'callsign': callsign,
             'timestamp': datetime.utcnow().isoformat(),
-            'position': position
+            'position': position,
+            'qrz': qrz_info or {
+                'callsign': callsign,
+                'name': None,
+                'address': None,
+                'image': None,
+                'error': 'QRZ information not available'
+            }
         }
         
         # Insert into database
@@ -210,6 +217,10 @@ class QueueDatabase:
         # Clear the queue whenever the system status changes (activate or deactivate)
         cleared_count = self.clear_queue()
         
+        # Also clear any current QSO when changing system status
+        cleared_qso = self.clear_current_qso()
+        qso_cleared = cleared_qso is not None
+        
         # Update or create status document
         status_update = {
             "_id": "system_status",
@@ -229,7 +240,8 @@ class QueueDatabase:
             "last_updated": status_update["last_updated"],
             "updated_by": updated_by,
             "queue_cleared": True,
-            "cleared_count": cleared_count
+            "cleared_count": cleared_count,
+            "qso_cleared": qso_cleared
         }
         
         return result
@@ -247,21 +259,35 @@ class QueueDatabase:
         # Remove MongoDB ObjectId from response
         result = {
             "callsign": entry.get("callsign"),
-            "timestamp": entry.get("timestamp")
+            "timestamp": entry.get("timestamp"),
+            "qrz": entry.get("qrz", {
+                'callsign': entry.get("callsign"),
+                'name': None,
+                'address': None,
+                'image': None,
+                'error': 'QRZ information not available'
+            })
         }
         
         return result
     
-    def set_current_qso(self, callsign: str) -> Dict[str, Any]:
-        """Set the current callsign in QSO"""
+    def set_current_qso(self, callsign: str, qrz_info: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Set the current callsign in QSO with QRZ information"""
         if self.currentqso_collection is None:
             raise Exception("Database connection not available")
         
-        # Create QSO entry
+        # Create QSO entry with QRZ information
         qso_entry = {
             "_id": "current_qso",
             "callsign": callsign,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
+            "qrz": qrz_info or {
+                'callsign': callsign,
+                'name': None,
+                'address': None,
+                'image': None,
+                'error': 'QRZ information not available'
+            }
         }
         
         # Use replace_one with upsert to ensure only one QSO entry exists
@@ -273,7 +299,8 @@ class QueueDatabase:
         
         return {
             "callsign": callsign,
-            "timestamp": qso_entry["timestamp"]
+            "timestamp": qso_entry["timestamp"],
+            "qrz": qso_entry["qrz"]
         }
     
     def clear_current_qso(self) -> Optional[Dict[str, Any]]:
@@ -288,7 +315,14 @@ class QueueDatabase:
         
         return {
             "callsign": entry.get("callsign"),
-            "timestamp": entry.get("timestamp")
+            "timestamp": entry.get("timestamp"),
+            "qrz": entry.get("qrz", {
+                'callsign': entry.get("callsign"),
+                'name': None,
+                'address': None,
+                'image': None,
+                'error': 'QRZ information not available'
+            })
         }
     
     def is_system_active(self) -> bool:
