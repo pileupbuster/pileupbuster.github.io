@@ -2,14 +2,22 @@ import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 import CurrentActiveCallsign, { type CurrentActiveUser } from './components/CurrentActiveCallsign'
 import WaitingQueue from './components/WaitingQueue'
+import AdminLogin from './components/AdminLogin'
+import AdminSection from './components/AdminSection'
 import { type QueueItemData } from './components/QueueItem'
 import { apiService, type CurrentQsoData, type QueueEntry, ApiError } from './services/api'
+import { adminApiService } from './services/adminApi'
 
 function App() {
+  // Real data state
   const [currentQso, setCurrentQso] = useState<CurrentQsoData | null>(null)
   const [queueData, setQueueData] = useState<QueueItemData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Admin state
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
+  const [systemStatus, setSystemStatus] = useState<boolean | null>(null)
 
   // Convert QueueEntry to QueueItemData format
   const convertQueueEntryToItemData = (entry: QueueEntry): QueueItemData => {
@@ -61,6 +69,18 @@ function App() {
     }
   }, [])
 
+  // Load admin system status
+  const loadSystemStatus = async () => {
+    try {
+      const status = await adminApiService.getSystemStatus()
+      setSystemStatus(status)
+    } catch (error) {
+      console.error('Failed to load system status:', error)
+      // Set default status if can't load
+      setSystemStatus(false)
+    }
+  }
+
   // Initial data load
   useEffect(() => {
     const loadData = async () => {
@@ -77,6 +97,15 @@ function App() {
 
     loadData()
   }, [fetchCurrentQso, fetchQueueList])
+
+  // Admin initialization
+  useEffect(() => {
+    // Check if admin is already logged in
+    setIsAdminLoggedIn(adminApiService.isLoggedIn())
+    
+    // Load initial system status
+    loadSystemStatus()
+  }, [])
 
   // Polling for real-time updates
   useEffect(() => {
@@ -106,6 +135,39 @@ function App() {
     }
   }
 
+  // Admin handlers
+  const handleAdminLogin = async (username: string, password: string): Promise<boolean> => {
+    const success = await adminApiService.login(username, password)
+    if (success) {
+      setIsAdminLoggedIn(true)
+      // Reload system status after login
+      await loadSystemStatus()
+    }
+    return success
+  }
+
+  const handleAdminLogout = () => {
+    adminApiService.logout()
+    setIsAdminLoggedIn(false)
+  }
+
+  const handleToggleSystemStatus = async (active: boolean): Promise<boolean> => {
+    try {
+      const newStatus = await adminApiService.setSystemStatus(active)
+      setSystemStatus(newStatus)
+      return true
+    } catch (error) {
+      console.error('Failed to toggle system status:', error)
+      return false
+    }
+  }
+
+  const handleWorkNextUser = async (): Promise<void> => {
+    await adminApiService.workNextUser()
+    // Refresh queue data after working next user
+    await fetchQueueList()
+  }
+
   return (
     <div className="pileup-buster-app">
       {/* Header */}
@@ -116,6 +178,11 @@ function App() {
           <div className="hamburger-line"></div>
         </div>
         <h1 className="title">PILEUP BUSTER</h1>
+        <AdminLogin 
+          onLogin={handleAdminLogin}
+          isLoggedIn={isAdminLoggedIn}
+          onLogout={handleAdminLogout}
+        />
       </header>
 
       <main className="main-content">
@@ -132,6 +199,14 @@ function App() {
         <WaitingQueue 
           queueData={queueData} 
           onAddCallsign={handleCallsignRegistration}
+        />
+
+        {/* Admin Section - Only visible when logged in */}
+        <AdminSection 
+          isLoggedIn={isAdminLoggedIn}
+          onToggleSystemStatus={handleToggleSystemStatus}
+          onWorkNextUser={handleWorkNextUser}
+          systemStatus={systemStatus}
         />
       </main>
     </div>
