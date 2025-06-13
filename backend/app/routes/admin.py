@@ -65,13 +65,15 @@ def next_callsign(username: str = Depends(verify_admin_credentials)):
             # If no one is in queue, return None for current_qso
             return None
         
-        # Put the next callsign into QSO status
-        new_qso = queue_db.set_current_qso(next_entry["callsign"])
-        
-        # Add QRZ.com information to the current QSO
-        from app.services.qrz import qrz_service
-        qrz_info = qrz_service.lookup_callsign(next_entry["callsign"])
-        new_qso['qrz'] = qrz_info
+        # Put the next callsign into QSO status with stored QRZ information
+        qrz_info = next_entry.get('qrz', {
+            'callsign': next_entry["callsign"],
+            'name': None,
+            'address': None,
+            'image': None,
+            'error': 'QRZ information not available'
+        })
+        new_qso = queue_db.set_current_qso(next_entry["callsign"], qrz_info)
         
         return new_qso
         
