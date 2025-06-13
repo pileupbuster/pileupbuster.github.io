@@ -18,7 +18,7 @@ export interface CurrentQsoData {
   timestamp: string
   qrz?: {
     name?: string
-    addr2?: string
+    address?: string
     image?: string
     url?: string
   }

@@ -34,7 +34,7 @@ function App() {
     return {
       callsign: qso.callsign,
       name: qso.qrz?.name || 'Name not available',
-      location: qso.qrz?.addr2 || 'Location not available'
+      location: qso.qrz?.address || 'Location not available'
     }
   }
 

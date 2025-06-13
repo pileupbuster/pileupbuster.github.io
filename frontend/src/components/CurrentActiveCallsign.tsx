@@ -6,7 +6,7 @@ interface CurrentActiveUser {
 
 interface QrzData {
   name?: string;
-  addr2?: string;
+  address?: string;
   image?: string;
   url?: string;
 }
