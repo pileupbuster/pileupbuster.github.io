@@ -1,38 +1,75 @@
+import { useState, useEffect, useCallback } from 'react'
 import './App.css'
-import { useState, useEffect } from 'react'
 import CurrentActiveCallsign, { type CurrentActiveUser } from './components/CurrentActiveCallsign'
 import WaitingQueue from './components/WaitingQueue'
 import AdminLogin from './components/AdminLogin'
 import AdminSection from './components/AdminSection'
 import { type QueueItemData } from './components/QueueItem'
+import { apiService, type CurrentQsoData, type QueueEntry, ApiError } from './services/api'
 import { adminApiService } from './services/adminApi'
 
-// Sample data for demonstration
-const sampleQueueData: QueueItemData[] = [
-  { callsign: 'EI6JGB', location: 'San Juan, Puerto Rico' },
-  { callsign: 'EI5JBB', location: 'Atlanta, Georgia' },
-  { callsign: 'EI2HF', location: 'Vancouver, Canada' },
-  
-]
-
-const currentActiveUser: CurrentActiveUser = {
-  callsign: 'EI5JDB',
-  name: 'Jack Daniels Burbon',
-  location: 'Near Jamie, Clonmel, Ireland',
-}
-
 function App() {
+  // Real data state
+  const [currentQso, setCurrentQso] = useState<CurrentQsoData | null>(null)
+  const [queueData, setQueueData] = useState<QueueItemData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
+  // Admin state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
   const [systemStatus, setSystemStatus] = useState<boolean | null>(null)
 
-  useEffect(() => {
-    // Check if admin is already logged in
-    setIsAdminLoggedIn(adminApiService.isLoggedIn())
-    
-    // Load initial system status
-    loadSystemStatus()
+  // Convert QueueEntry to QueueItemData format
+  const convertQueueEntryToItemData = (entry: QueueEntry): QueueItemData => {
+    return {
+      callsign: entry.callsign,
+      location: 'Location not available' // Backend doesn't provide location for queue items
+    }
+  }
+
+  // Convert CurrentQsoData to CurrentActiveUser format
+  const convertCurrentQsoToActiveUser = (qso: CurrentQsoData): CurrentActiveUser => {
+    return {
+      callsign: qso.callsign,
+      name: qso.qrz?.name || 'Name not available',
+      location: qso.qrz?.addr2 || 'Location not available'
+    }
+  }
+
+  // Fetch current QSO data
+  const fetchCurrentQso = useCallback(async () => {
+    try {
+      const data = await apiService.getCurrentQso()
+      setCurrentQso(data)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        console.error('Failed to fetch current QSO:', err.detail || err.message)
+        setError(err.detail || err.message)
+      } else {
+        console.error('Failed to fetch current QSO:', err)
+        setError('Failed to load current QSO')
+      }
+    }
   }, [])
 
+  // Fetch queue list
+  const fetchQueueList = useCallback(async () => {
+    try {
+      const response = await apiService.getQueueList()
+      const queueItems = response.queue.map(convertQueueEntryToItemData)
+      setQueueData(queueItems)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        console.error('Failed to fetch queue list:', err.detail || err.message)
+        setError(err.detail || err.message)
+      } else {
+        console.error('Failed to fetch queue list:', err)
+        setError('Failed to load queue')
+      }
+    }
+  }, [])
+
+  // Load admin system status
   const loadSystemStatus = async () => {
     try {
       const status = await adminApiService.getSystemStatus()
@@ -44,6 +81,61 @@ function App() {
     }
   }
 
+  // Initial data load
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      setError(null)
+      
+      await Promise.all([
+        fetchCurrentQso(),
+        fetchQueueList()
+      ])
+      
+      setLoading(false)
+    }
+
+    loadData()
+  }, [fetchCurrentQso, fetchQueueList])
+
+  // Admin initialization
+  useEffect(() => {
+    // Check if admin is already logged in
+    setIsAdminLoggedIn(adminApiService.isLoggedIn())
+    
+    // Load initial system status
+    loadSystemStatus()
+  }, [])
+
+  // Polling for real-time updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchCurrentQso()
+      fetchQueueList()
+    }, 5000) // Poll every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [fetchCurrentQso, fetchQueueList])
+
+  // Handle callsign registration
+  const handleCallsignRegistration = async (callsign: string) => {
+    try {
+      await apiService.registerCallsign(callsign)
+      // Refresh queue data after successful registration
+      await fetchQueueList()
+    } catch (err) {
+      if (err instanceof ApiError) {
+        console.error('Failed to register callsign:', err.detail || err.message)
+        // You might want to show a user-visible error here
+        throw new Error(err.detail || err.message)
+      } else {
+        console.error('Failed to register callsign:', err)
+        throw new Error('Failed to register callsign')
+      }
+    }
+  }
+
+  // Admin handlers
   const handleAdminLogin = async (username: string, password: string): Promise<boolean> => {
     const success = await adminApiService.login(username, password)
     if (success) {
@@ -72,7 +164,8 @@ function App() {
 
   const handleWorkNextUser = async (): Promise<void> => {
     await adminApiService.workNextUser()
-    // Could refresh queue data here if we had real queue data
+    // Refresh queue data after working next user
+    await fetchQueueList()
   }
 
   return (
@@ -93,11 +186,20 @@ function App() {
       </header>
 
       <main className="main-content">
+        {loading && <div>Loading...</div>}
+        {error && <div style={{ color: 'red' }}>Error: {error}</div>}
+        
         {/* Current Active Callsign (Green Border) */}
-        <CurrentActiveCallsign activeUser={currentActiveUser} />
+        <CurrentActiveCallsign 
+          activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
+          qrzData={currentQso?.qrz}
+        />
 
         {/* Waiting Queue Container (Red Border) */}
-        <WaitingQueue queueData={sampleQueueData} />
+        <WaitingQueue 
+          queueData={queueData} 
+          onAddCallsign={handleCallsignRegistration}
+        />
 
         {/* Admin Section - Only visible when logged in */}
         <AdminSection 

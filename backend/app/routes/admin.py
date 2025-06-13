@@ -65,13 +65,15 @@ def next_callsign(username: str = Depends(verify_admin_credentials)):
             # If no one is in queue, return None for current_qso
             return None
         
-        # Put the next callsign into QSO status
-        new_qso = queue_db.set_current_qso(next_entry["callsign"])
-        
-        # Add QRZ.com information to the current QSO
-        from app.services.qrz import qrz_service
-        qrz_info = qrz_service.lookup_callsign(next_entry["callsign"])
-        new_qso['qrz'] = qrz_info
+        # Put the next callsign into QSO status with stored QRZ information
+        qrz_info = next_entry.get('qrz', {
+            'callsign': next_entry["callsign"],
+            'name': None,
+            'address': None,
+            'image': None,
+            'error': 'QRZ information not available'
+        })
+        new_qso = queue_db.set_current_qso(next_entry["callsign"], qrz_info)
         
         return new_qso
         
@@ -90,7 +92,14 @@ def set_system_status(
         status = queue_db.set_system_status(request.active, username)
         action = "activated" if request.active else "deactivated"
         cleared_count = status.get("cleared_count", 0)
-        message = f'System {action} successfully. Queue cleared ({cleared_count} entries removed)'
+        qso_cleared = status.get("qso_cleared", False)
+        
+        # Build message with queue and QSO clearing information
+        message_parts = [f'System {action} successfully.']
+        message_parts.append(f'Queue cleared ({cleared_count} entries removed)')
+        if qso_cleared:
+            message_parts.append('Current QSO cleared')
+        message = '. '.join(message_parts)
         
         return {
             'message': message,
@@ -101,3 +110,21 @@ def set_system_status(
             status_code=500, 
             detail=f'Database error: {str(e)}'
         )
+
+@admin_router.get('/status')
+def get_system_status(username: str = Depends(verify_admin_credentials)):
+    """Get the current system status"""
+    try:
+        status = queue_db.get_system_status()
+        return status
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.get('/current')
+def admin_get_current_qso(username: str = Depends(verify_admin_credentials)):
+    """Admin endpoint to get current QSO regardless of system status"""
+    try:
+        current_qso = queue_db.get_current_qso()
+        return current_qso
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
