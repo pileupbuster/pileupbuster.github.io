@@ -48,6 +48,20 @@ export default function AdminSection({
     <section className="admin-section">
       <h2 className="admin-title">Admin Controls</h2>
       <div className="admin-controls">
+        
+        
+        <div className="queue-control">
+          <button
+            className="work-next-button"
+            onClick={handleWorkNext}
+            disabled={isWorkingNext || !systemStatus}
+            type="button"
+          >
+            {isWorkingNext ? 'Working...' : 'Work Next User in Queue'}
+          </button>
+        </div>
+
+
         <div className="system-status-control">
           <label className="status-toggle-label">
             <span className="status-label">System Status:</span>
@@ -68,17 +82,8 @@ export default function AdminSection({
             </div>
           </label>
         </div>
+
         
-        <div className="queue-control">
-          <button
-            className="work-next-button"
-            onClick={handleWorkNext}
-            disabled={isWorkingNext || !systemStatus}
-            type="button"
-          >
-            {isWorkingNext ? 'Working...' : 'Work Next User in Queue'}
-          </button>
-        </div>
       </div>
     </section>
   )
