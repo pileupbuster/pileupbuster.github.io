@@ -4,6 +4,13 @@ export interface QueueEntry {
   callsign: string
   timestamp: string
   position: number
+  qrz?: {
+    callsign?: string
+    name?: string
+    address?: string
+    image?: string
+    error?: string
+  }
 }
 
 export interface CurrentQsoData {
