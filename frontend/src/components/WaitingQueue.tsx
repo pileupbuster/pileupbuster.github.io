@@ -5,9 +5,10 @@ import type { QueueItemData } from './QueueItem'
 export interface WaitingQueueProps {
   queueData: QueueItemData[]
   onAddCallsign: (callsign: string) => Promise<void>
+  systemActive?: boolean
 }
 
-export default function WaitingQueue({ queueData, onAddCallsign }: WaitingQueueProps) {
+export default function WaitingQueue({ queueData, onAddCallsign, systemActive = true }: WaitingQueueProps) {
   const handleAddCallsign = async (callsign: string) => {
     try {
       await onAddCallsign(callsign)
@@ -18,7 +19,7 @@ export default function WaitingQueue({ queueData, onAddCallsign }: WaitingQueueP
     }
   }
 
-  const showAddButton = queueData.length < 4
+  const showAddButton = queueData.length < 4 && systemActive
 
   return (
     <section className="queue-section">

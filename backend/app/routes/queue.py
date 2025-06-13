@@ -105,7 +105,8 @@ def get_current_qso():
         # Check if system is active
         system_status = queue_db.get_system_status()
         if not system_status.get('active', False):
-            raise HTTPException(status_code=503, detail='System is currently inactive.')
+            # Return None instead of error when system is inactive
+            return None
         
         # Get current QSO - QRZ information is already stored
         current_qso = queue_db.get_current_qso()
@@ -113,8 +114,6 @@ def get_current_qso():
             return None
         
         return current_qso
-    except HTTPException:
-        raise  # Re-raise HTTP exceptions (like system inactive)
     except Exception as e:
         logger.error(f"Failed to get current QSO: {e}")
         raise HTTPException(status_code=500, detail='Failed to get current QSO')

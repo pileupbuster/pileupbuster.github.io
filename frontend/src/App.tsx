@@ -155,6 +155,17 @@ function App() {
     try {
       const newStatus = await adminApiService.setSystemStatus(active)
       setSystemStatus(newStatus)
+      
+      // Clear error state when system is activated
+      if (active) {
+        setError(null)
+        // Refresh data after activation
+        await Promise.all([
+          fetchCurrentQso(),
+          fetchQueueList()
+        ])
+      }
+      
       return true
     } catch (error) {
       console.error('Failed to toggle system status:', error)
@@ -187,7 +198,25 @@ function App() {
 
       <main className="main-content">
         {loading && <div>Loading...</div>}
-        {error && <div style={{ color: 'red' }}>Error: {error}</div>}
+        
+        {/* Show system status info instead of red error when system is inactive */}
+        {systemStatus === false && (
+          <div style={{ 
+            color: '#ff6600', 
+            backgroundColor: '#fff3cd', 
+            border: '1px solid #ffeaa7',
+            padding: '10px',
+            borderRadius: '4px',
+            margin: '10px 0'
+          }}>
+            ⚠️ System is currently inactive. Registration and queue access are disabled.
+          </div>
+        )}
+        
+        {/* Show errors only if they're not system inactive related */}
+        {error && systemStatus !== false && (
+          <div style={{ color: 'red' }}>Error: {error}</div>
+        )}
         
         {/* Current Active Callsign (Green Border) */}
         <CurrentActiveCallsign 
@@ -199,6 +228,7 @@ function App() {
         <WaitingQueue 
           queueData={queueData} 
           onAddCallsign={handleCallsignRegistration}
+          systemActive={systemStatus === true}
         />
 
         {/* Admin Section - Only visible when logged in */}
