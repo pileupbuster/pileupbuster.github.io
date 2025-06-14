@@ -18,6 +18,77 @@ def create_mock_screenshot() -> str:
     return base64.b64encode(mock_png).decode('utf-8')
 
 
+def capture_screenshot_with_playwright(url: str) -> Optional[str]:
+    """
+    Capture screenshot using playwright (if available)
+    
+    Args:
+        url: The URL to capture
+        
+    Returns:
+        Base64 encoded screenshot image, or None if capture fails
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+        
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(url, timeout=30000)
+            screenshot_bytes = page.screenshot(type='png', full_page=True)
+            browser.close()
+            
+            return base64.b64encode(screenshot_bytes).decode('utf-8')
+            
+    except ImportError:
+        logger.warning("Playwright not available, falling back to mock screenshot")
+        return None
+    except Exception as e:
+        logger.error(f"Playwright screenshot failed: {e}")
+        return None
+
+
+def capture_screenshot_with_selenium(url: str) -> Optional[str]:
+    """
+    Capture screenshot using selenium (if available)
+    
+    Args:
+        url: The URL to capture
+        
+    Returns:
+        Base64 encoded screenshot image, or None if capture fails
+    """
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1920,1080")
+        
+        driver = webdriver.Chrome(options=chrome_options)
+        driver.get(url)
+        
+        # Wait a moment for page to load
+        import time
+        time.sleep(2)
+        
+        screenshot_b64 = driver.get_screenshot_as_base64()
+        driver.quit()
+        
+        return screenshot_b64
+        
+    except ImportError:
+        logger.warning("Selenium not available, falling back to mock screenshot")
+        return None
+    except Exception as e:
+        logger.error(f"Selenium screenshot failed: {e}")
+        return None
+
+
 def capture_screenshot(url: str) -> Optional[str]:
     """
     Capture a screenshot of the given URL
@@ -29,14 +100,27 @@ def capture_screenshot(url: str) -> Optional[str]:
         Base64 encoded screenshot image, or None if capture fails
     """
     try:
-        # For now, return a mock screenshot
-        # In production, this would use playwright or selenium
         logger.info(f"Capturing screenshot of {url}")
+        
+        # Try playwright first
+        screenshot_b64 = capture_screenshot_with_playwright(url)
+        if screenshot_b64:
+            logger.info("Screenshot captured with playwright")
+            return screenshot_b64
+        
+        # Try selenium as fallback
+        screenshot_b64 = capture_screenshot_with_selenium(url)
+        if screenshot_b64:
+            logger.info("Screenshot captured with selenium")
+            return screenshot_b64
+        
+        # Fall back to mock screenshot
+        logger.info("Using mock screenshot as fallback")
         return create_mock_screenshot()
         
     except Exception as e:
         logger.error(f"Failed to capture screenshot: {e}")
-        return None
+        return create_mock_screenshot()
 
 
 def generate_status_html(screenshot_b64: str, frontend_url: str, timestamp: str) -> str:
@@ -121,6 +205,14 @@ def generate_status_html(screenshot_b64: str, frontend_url: str, timestamp: str)
             color: #666;
             font-size: 14px;
         }}
+        .mock-notice {{
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+            font-size: 14px;
+        }}
     </style>
 </head>
 <body>
@@ -145,6 +237,12 @@ def generate_status_html(screenshot_b64: str, frontend_url: str, timestamp: str)
         <div class="note">
             This page shows a screenshot of the Pileup Buster frontend application. 
             Click the link above to access the live application.
+        </div>
+        
+        <div class="mock-notice">
+            <strong>Note:</strong> Currently using a mock screenshot. 
+            To enable real screenshots, install playwright (<code>pip install playwright && playwright install chromium</code>) 
+            or selenium with chrome driver.
         </div>
     </div>
 </body>
