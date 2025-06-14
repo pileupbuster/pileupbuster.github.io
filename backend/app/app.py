@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
 import uvicorn
@@ -116,19 +117,28 @@ def generate_status_html_optimized(frontend_url: str, timestamp: str, system_sta
             overflow: hidden;
         }}
         .header {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background-color: #ffffff;
             padding: 30px;
             text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }}
+        .header-logo {{
+            max-height: 80px;
+            max-width: 300px;
+            height: auto;
+            width: auto;
+            margin-bottom: 15px;
         }}
         .header h1 {{
             margin: 0 0 10px 0;
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 700;
+            color: #2d3748;
         }}
         .timestamp {{
-            opacity: 0.9;
+            opacity: 0.7;
             font-size: 0.9rem;
+            color: #718096;
         }}
         .status-banner {{
             background-color: {status_color};
@@ -264,8 +274,12 @@ def generate_status_html_optimized(frontend_url: str, timestamp: str, system_sta
             .header {{
                 padding: 20px;
             }}
+            .header-logo {{
+                max-height: 60px;
+                max-width: 250px;
+            }}
             .header h1 {{
-                font-size: 2rem;
+                font-size: 1.5rem;
             }}
             .content {{
                 padding: 20px;
@@ -286,7 +300,8 @@ def generate_status_html_optimized(frontend_url: str, timestamp: str, system_sta
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎢 Pileup Buster Status</h1>
+            <img src="/static/logo.png" alt="Pileup Buster Logo" class="header-logo" onerror="this.style.display='none';">
+            <h1>Pileup Buster Status</h1>
             <div class="timestamp">Last updated: {timestamp}</div>
         </div>
         
@@ -358,6 +373,10 @@ def create_app():
     # Configuration (stored as app state)
     app.state.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key')
     app.state.mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/pileup_buster')
+    
+    # Mount static files (logo, etc.)
+    static_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+    app.mount("/static", StaticFiles(directory=static_path), name="static")
     
     # Add the status endpoint at root level
     @app.get('/status', response_class=HTMLResponse)
