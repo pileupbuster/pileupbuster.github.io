@@ -43,27 +43,25 @@ def create_app():
     # Add the status endpoint at root level
     @app.get('/status', response_class=HTMLResponse)
     async def get_status_page():
-        """Get static HTML status page with screenshot of frontend"""
+        """Get static HTML status page with optional screenshot and system status"""
         from app.services.screenshot import capture_screenshot, generate_status_html
+        from app.database import queue_db
         
         try:
             # Get frontend URL from environment variable
             frontend_url = os.getenv('FRONTEND_URL', 'https://briankeating.net/pileup-buster')
             
-            # Capture screenshot
-            screenshot_b64 = await capture_screenshot(frontend_url)
+            # Get system status from database
+            system_status = queue_db.get_system_status()
             
-            if not screenshot_b64:
-                raise HTTPException(
-                    status_code=500, 
-                    detail='Failed to capture screenshot'
-                )
+            # Capture screenshot (optional)
+            screenshot_b64 = await capture_screenshot(frontend_url)
             
             # Generate timestamp
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
             
-            # Generate HTML page
-            html_content = generate_status_html(screenshot_b64, frontend_url, timestamp)
+            # Generate HTML page with system status
+            html_content = generate_status_html(screenshot_b64, frontend_url, timestamp, system_status)
             
             return HTMLResponse(content=html_content, status_code=200)
             

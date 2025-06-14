@@ -7,17 +7,9 @@ import logging
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
-
-
-def create_mock_screenshot() -> str:
-    """Create a mock screenshot as base64 encoded image"""
-    # Create a simple 1x1 pixel PNG image in base64
-    # This is a placeholder until actual screenshot implementation is ready
-    mock_png = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x12IDATx\x9cc```bPPP\x00\x02\xac\x01\x00\x05\x1c\x00\x1a\x1e\x1d\x1d\x9b\x00\x00\x00\x00IEND\xaeB`\x82'
-    return base64.b64encode(mock_png).decode('utf-8')
 
 
 async def capture_screenshot_with_playwright(url: str) -> Optional[str]:
@@ -136,27 +128,48 @@ async def capture_screenshot(url: str) -> Optional[str]:
             logger.info("Screenshot captured with selenium")
             return screenshot_b64
         
-        # Fall back to mock screenshot
-        logger.info("Using mock screenshot as fallback")
-        return create_mock_screenshot()
+        # No screenshot available
+        logger.warning("No screenshot libraries available")
+        return None
         
     except Exception as e:
         logger.error(f"Failed to capture screenshot: {e}")
-        return create_mock_screenshot()
+        return None
 
 
-def generate_status_html(screenshot_b64: str, frontend_url: str, timestamp: str) -> str:
+def generate_status_html(screenshot_b64: Optional[str], frontend_url: str, timestamp: str, system_status: Dict[str, Any]) -> str:
     """
-    Generate HTML status page with screenshot
+    Generate HTML status page with optional screenshot and system status
     
     Args:
-        screenshot_b64: Base64 encoded screenshot
+        screenshot_b64: Base64 encoded screenshot (optional)
         frontend_url: URL to link back to frontend
         timestamp: Timestamp of screenshot
+        system_status: System status information from database
         
     Returns:
         HTML content as string
     """
+    is_active = system_status.get('active', False)
+    status_class = 'active' if is_active else 'inactive'
+    status_text = 'ACTIVE' if is_active else 'INACTIVE'
+    status_color = '#28a745' if is_active else '#dc3545'
+    
+    screenshot_section = ""
+    if screenshot_b64:
+        screenshot_section = f"""
+        <div class="screenshot-container">
+            <img src="data:image/png;base64,{screenshot_b64}" 
+                 alt="Frontend Screenshot" 
+                 class="screenshot">
+        </div>"""
+    else:
+        screenshot_section = """
+        <div class="no-screenshot">
+            <p>Screenshot not available. To enable screenshots, install playwright or selenium:</p>
+            <code>pip install playwright && playwright install chromium</code>
+        </div>"""
+
     html_template = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -191,6 +204,16 @@ def generate_status_html(screenshot_b64: str, frontend_url: str, timestamp: str)
             color: #666;
             font-size: 14px;
         }}
+        .status-banner {{
+            background-color: {status_color};
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }}
         .screenshot-container {{
             text-align: center;
             margin: 30px 0;
@@ -202,13 +225,28 @@ def generate_status_html(screenshot_b64: str, frontend_url: str, timestamp: str)
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }}
+        .no-screenshot {{
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            color: #666;
+        }}
+        .no-screenshot code {{
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }}
         .link-container {{
             text-align: center;
             margin-top: 30px;
         }}
         .frontend-link {{
             display: inline-block;
-            background-color: #007bff;
+            background-color: {status_color};
             color: white;
             text-decoration: none;
             padding: 12px 24px;
@@ -217,22 +255,21 @@ def generate_status_html(screenshot_b64: str, frontend_url: str, timestamp: str)
             transition: background-color 0.2s;
         }}
         .frontend-link:hover {{
-            background-color: #0056b3;
+            opacity: 0.8;
         }}
         .note {{
             margin-top: 20px;
             padding: 15px;
             background-color: #f8f9fa;
-            border-left: 4px solid #007bff;
+            border-left: 4px solid {status_color};
             color: #666;
             font-size: 14px;
         }}
-        .mock-notice {{
+        .status-details {{
             margin-top: 20px;
             padding: 15px;
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            color: #856404;
+            background-color: #f8f9fa;
+            border-radius: 6px;
             font-size: 14px;
         }}
     </style>
@@ -241,30 +278,30 @@ def generate_status_html(screenshot_b64: str, frontend_url: str, timestamp: str)
     <div class="container">
         <div class="header">
             <h1>Pileup Buster Status</h1>
-            <div class="timestamp">Screenshot taken: {timestamp}</div>
+            <div class="timestamp">Last updated: {timestamp}</div>
         </div>
         
-        <div class="screenshot-container">
-            <img src="data:image/png;base64,{screenshot_b64}" 
-                 alt="Frontend Screenshot" 
-                 class="screenshot">
+        <div class="status-banner {status_class}">
+            System Status: {status_text}
         </div>
+        
+        {screenshot_section}
         
         <div class="link-container">
             <a href="{frontend_url}" class="frontend-link" target="_blank">
-                ← Go to Pileup Buster Frontend
+                ← Go to Pileup Buster Frontend ({status_text})
             </a>
         </div>
         
         <div class="note">
-            This page shows a screenshot of the Pileup Buster frontend application. 
+            This page shows the current status of the Pileup Buster system. 
             Click the link above to access the live application.
         </div>
         
-        <div class="mock-notice">
-            <strong>Note:</strong> Currently using a mock screenshot. 
-            To enable real screenshots, install playwright (<code>pip install playwright && playwright install chromium</code>) 
-            or selenium with chrome driver.
+        <div class="status-details">
+            <strong>System Status:</strong> {status_text}<br>
+            <strong>Last Status Update:</strong> {system_status.get('last_updated', 'Unknown')}<br>
+            <strong>Page Generated:</strong> {timestamp}
         </div>
     </div>
 </body>

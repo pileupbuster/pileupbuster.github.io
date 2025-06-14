@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 from app.database import queue_db
-from app.services.screenshot import capture_screenshot, generate_status_html
 import os
 import logging
 from datetime import datetime

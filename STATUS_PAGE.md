@@ -1,8 +1,12 @@
-# Status Page with Screenshot Functionality
+# Status Page with System Status and Screenshot Functionality
 
 ## Overview
 
-The Pileup Buster API now includes a `/status` endpoint that generates a static HTML page displaying a screenshot of the frontend application along with a clickable link back to the frontend.
+The Pileup Buster API includes a `/status` endpoint that generates a static HTML page displaying:
+- Current system status (ACTIVE/INACTIVE) with clear visual indicators
+- Optional screenshot of the frontend application 
+- Clickable link back to the frontend with status indication
+- Timestamp information
 
 ## Usage
 
@@ -20,11 +24,12 @@ Add this to your `.env` file or export it in your environment.
 
 ## Screenshot Implementation
 
-The status page attempts to capture screenshots using multiple approaches:
+The status page attempts to capture screenshots using these approaches:
 
 1. **Playwright** (preferred) - Headless browser automation
 2. **Selenium** (fallback) - WebDriver-based screenshots
-3. **Mock Screenshot** (default) - Placeholder image when neither is available
+
+If neither screenshot library is available, the status page will display without a screenshot but still show the system status information.
 
 ### Installing Screenshot Dependencies
 
@@ -80,7 +85,7 @@ python -m pytest tests/test_status_page.py -v
 
 The status page includes robust error handling:
 
-- Screenshot capture failures fall back to mock image
+- Screenshot capture failures display status page without image
 - Network timeouts are handled gracefully
 - Invalid URLs return error page with details
 - Service unavailability shows appropriate messages
@@ -90,8 +95,9 @@ The status page includes robust error handling:
 The generated status page includes:
 
 - Clean, responsive design
-- Frontend screenshot display
-- Timestamp of screenshot capture
-- Prominent link back to frontend
-- Instructions for enabling real screenshots
+- System status indicator (ACTIVE/INACTIVE) with color coding
+- Optional frontend screenshot display when available
+- Timestamp of page generation
+- Prominent link back to frontend showing current system status
+- Instructions for enabling screenshots when not available
 - Professional styling with hover effects
