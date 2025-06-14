@@ -25,7 +25,7 @@ function App() {
   const convertQueueEntryToItemData = (entry: QueueEntry): QueueItemData => {
     return {
       callsign: entry.callsign,
-      location: entry.qrz?.address || 'Location not available',
+      location: entry.qrz?.dxcc_name || entry.qrz?.address || 'Location not available',
       qrz: entry.qrz
     }
   }
@@ -35,7 +35,7 @@ function App() {
     return {
       callsign: qso.callsign,
       name: qso.qrz?.name || 'Name not available',
-      location: qso.qrz?.address || 'Location not available'
+      location: qso.qrz?.dxcc_name || qso.qrz?.address || 'Location not available'
     }
   }
 
