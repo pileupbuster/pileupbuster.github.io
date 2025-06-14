@@ -48,10 +48,10 @@ def create_app():
         
         try:
             # Get frontend URL from environment variable
-            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+            frontend_url = os.getenv('FRONTEND_URL', 'https://briankeating.net/pileup-buster')
             
             # Capture screenshot
-            screenshot_b64 = capture_screenshot(frontend_url)
+            screenshot_b64 = await capture_screenshot(frontend_url)
             
             if not screenshot_b64:
                 raise HTTPException(

@@ -4,6 +4,8 @@ Screenshot service for capturing frontend screenshots
 import os
 import base64
 import logging
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Optional
 
@@ -18,7 +20,7 @@ def create_mock_screenshot() -> str:
     return base64.b64encode(mock_png).decode('utf-8')
 
 
-def capture_screenshot_with_playwright(url: str) -> Optional[str]:
+async def capture_screenshot_with_playwright(url: str) -> Optional[str]:
     """
     Capture screenshot using playwright (if available)
     
@@ -29,14 +31,14 @@ def capture_screenshot_with_playwright(url: str) -> Optional[str]:
         Base64 encoded screenshot image, or None if capture fails
     """
     try:
-        from playwright.sync_api import sync_playwright
+        from playwright.async_api import async_playwright
         
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            page.goto(url, timeout=30000)
-            screenshot_bytes = page.screenshot(type='png', full_page=True)
-            browser.close()
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            await page.goto(url, timeout=30000)
+            screenshot_bytes = await page.screenshot(type='png', full_page=True)
+            await browser.close()
             
             return base64.b64encode(screenshot_bytes).decode('utf-8')
             
@@ -48,15 +50,9 @@ def capture_screenshot_with_playwright(url: str) -> Optional[str]:
         return None
 
 
-def capture_screenshot_with_selenium(url: str) -> Optional[str]:
+def _capture_screenshot_with_selenium_sync(url: str) -> Optional[str]:
     """
-    Capture screenshot using selenium (if available)
-    
-    Args:
-        url: The URL to capture
-        
-    Returns:
-        Base64 encoded screenshot image, or None if capture fails
+    Synchronous selenium screenshot function to be run in thread pool
     """
     try:
         from selenium import webdriver
@@ -82,14 +78,40 @@ def capture_screenshot_with_selenium(url: str) -> Optional[str]:
         return screenshot_b64
         
     except ImportError:
-        logger.warning("Selenium not available, falling back to mock screenshot")
+        logger.warning("Selenium not available")
         return None
     except Exception as e:
         logger.error(f"Selenium screenshot failed: {e}")
         return None
 
 
-def capture_screenshot(url: str) -> Optional[str]:
+async def capture_screenshot_with_selenium(url: str) -> Optional[str]:
+    """
+    Capture screenshot using selenium (if available) - async wrapper
+    
+    Args:
+        url: The URL to capture
+        
+    Returns:
+        Base64 encoded screenshot image, or None if capture fails
+    """
+    try:
+        # Run selenium in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        with ThreadPoolExecutor() as executor:
+            result = await loop.run_in_executor(
+                executor, 
+                _capture_screenshot_with_selenium_sync, 
+                url
+            )
+            return result
+            
+    except Exception as e:
+        logger.error(f"Selenium screenshot failed: {e}")
+        return None
+
+
+async def capture_screenshot(url: str) -> Optional[str]:
     """
     Capture a screenshot of the given URL
     
@@ -103,13 +125,13 @@ def capture_screenshot(url: str) -> Optional[str]:
         logger.info(f"Capturing screenshot of {url}")
         
         # Try playwright first
-        screenshot_b64 = capture_screenshot_with_playwright(url)
+        screenshot_b64 = await capture_screenshot_with_playwright(url)
         if screenshot_b64:
             logger.info("Screenshot captured with playwright")
             return screenshot_b64
         
         # Try selenium as fallback
-        screenshot_b64 = capture_screenshot_with_selenium(url)
+        screenshot_b64 = await capture_screenshot_with_selenium(url)
         if screenshot_b64:
             logger.info("Screenshot captured with selenium")
             return screenshot_b64
