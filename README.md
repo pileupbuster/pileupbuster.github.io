@@ -17,7 +17,7 @@ This idea is not unique - we first noticed it being used by the Australian DX he
 - **Universal Deployment**: Support deployment on cloud platforms, any server, or local environments
 - **Containerization**: Full Docker support for easy deployment and development
 - **Modern Frontend**: Single-page React application hosted on GitHub Pages
-- **Embedded Integration**: Backend status page designed for iframe integration (e.g., QRZ.com profiles - see qrz.com/ei6lf)
+- **Embedded Integration**: Backend status page designed for iframe integration (e.g., QRZ.com profiles - see https://www.qrz.com/db/EI6LF)
 - **Scalable Architecture**: Clean separation between frontend and backend services
 - **Developer Experience**: Streamlined development workflow with hot-reload and modern tooling
 
@@ -120,7 +120,6 @@ The API will be available at http://localhost:5000
 | QRZ_USERNAME     | QRZ.com integration username         | No       | myqrzlogin                         |
 | QRZ_PASSWORD     | QRZ.com integration password         | No       | myqrzpassword                      |
 | MAX_QUEUE_SIZE   | Maximum number of entries in queue  | No       | 4                                  |
-| FRONTEND_URL     | Frontend URL for status page         | No       | https://example.com/pileup-buster  |
 
 **Required Variables:**
 - `MONGO_URI`: MongoDB Atlas connection string or local MongoDB URI
@@ -130,7 +129,6 @@ The API will be available at http://localhost:5000
 **Optional Variables:**
 - `QRZ_USERNAME` & `QRZ_PASSWORD`: If not configured, QRZ.com lookups will return "not configured" message
 - `MAX_QUEUE_SIZE`: Defaults to a reasonable limit if not specified
-- `FRONTEND_URL`: Used for status page generation; defaults if not provided
 
 3. Ensure MongoDB Atlas cluster is accessible or set up local MongoDB
 
