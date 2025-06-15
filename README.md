@@ -2,6 +2,33 @@
 
 A web application for ham radio operators to register their callsign on a callback queue.
 
+## Acknowledgments
+
+This idea is not unique - we first noticed it being used by the Australian DX helper website developed by Greg and Grant. Kudos to them for the innovative approach! Check out their excellent work in the amateur radio community.
+
+## Project Goals
+
+### Core Objectives
+- **Interactive Experience**: Real-time updates without manual page refreshing
+- **100% AI-Driven Development**: All design elements (sketches, logos, website, features, issue design, and implementation) powered by AI
+- **Single-User Focus**: Designed as a personal tool rather than multi-tenant platform (while multi-tenancy could be easily implemented, maintaining a platform for third parties is not the current goal)
+
+### Technical Goals
+- **Universal Deployment**: Support deployment on cloud platforms, any server, or local environments
+- **Containerization**: Full Docker support for easy deployment and development
+- **Modern Frontend**: Single-page React application hosted on GitHub Pages
+- **Embedded Integration**: Backend status page designed for iframe integration (e.g., QRZ.com profiles - see qrz.com/ei6lf)
+- **Scalable Architecture**: Clean separation between frontend and backend services
+- **Developer Experience**: Streamlined development workflow with hot-reload and modern tooling
+
+### Software Quality Goals
+- **Comprehensive Testing**: Unit, integration, and end-to-end test coverage
+- **Documentation**: Clear setup guides, API documentation, and contributor guidelines
+- **Code Quality**: Consistent coding standards and automated linting
+- **Security**: Secure authentication and data protection
+- **Performance**: Optimized for fast load times and responsive user experience
+- **Maintainability**: Clean, modular code architecture for long-term sustainability
+
 ## Project Structure
 
 ```
