@@ -83,6 +83,21 @@
   margin-bottom: 0.5rem;
 }
 
+.active-callsign-link {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.active-callsign-link:hover {
+  color: #646cff;
+  text-decoration: underline;
+}
+
+.active-callsign-link:visited {
+  color: inherit;
+}
+
 .active-name {
   font-size: 1.3rem;
   color: #666;
