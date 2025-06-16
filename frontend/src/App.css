@@ -86,17 +86,21 @@
 
 .active-callsign-link {
   text-decoration: none;
-  color: inherit;
+  color: #000000;
   transition: color 0.2s ease;
+  border-bottom: 1px dotted #646cff;
+  cursor: pointer;
 }
 
 .active-callsign-link:hover {
   color: #646cff;
   text-decoration: underline;
+  border-bottom: none;
 }
 
 .active-callsign-link:visited {
-  color: inherit;
+  color: #000000;
+  border-bottom: 1px dotted #646cff;
 }
 
 .active-name {
