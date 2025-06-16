@@ -288,6 +288,20 @@ function App() {
           systemStatus={systemStatus}
         />
       </main>
+
+      {/* Footer */}
+      <footer className="footer">
+        <div className="footer-content">
+          <a 
+            href="https://github.com/brianbruff/pileup-buster" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="github-link"
+          >
+            View on GitHub
+          </a>
+        </div>
+      </footer>
     </div>
   )
 }

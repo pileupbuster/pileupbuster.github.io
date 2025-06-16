@@ -701,4 +701,35 @@
   .admin-section {
     padding: 1rem;
   }
+
+  .footer {
+    padding: 1rem;
+  }
+}
+
+/* Footer Styles */
+.footer {
+  background-color: #fff;
+  border-top: 2px solid #ddd;
+  padding: 1rem 2rem;
+  margin-top: auto;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.github-link {
+  color: #6c757d;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.github-link:hover {
+  color: #333;
+  text-decoration: underline;
 }
