@@ -169,3 +169,7 @@ The API will be available at http://localhost:5000
 ## GitHub Codespaces
 
 This repository includes dev container configurations for GitHub Codespaces. Simply open the repository in Codespaces and the development environment will be automatically configured.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. This means you are free to use, modify, and distribute this code without restrictions.
