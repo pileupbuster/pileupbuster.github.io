@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import './App.css'
 import pileupBusterLogo from './assets/logo.png'
 import CurrentActiveCallsign, { type CurrentActiveUser } from './components/CurrentActiveCallsign'
@@ -20,6 +20,41 @@ function App() {
   // Admin state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
   const [systemStatus, setSystemStatus] = useState<boolean | null>(null)
+
+  // Ref to track previous callsign for clipboard functionality
+  const previousCallsignRef = useRef<string | null>(null)
+
+  // Utility function to copy text to clipboard
+  const copyToClipboard = async (text: string): Promise<void> => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        // Use modern Clipboard API if available
+        await navigator.clipboard.writeText(text)
+        console.log(`Copied callsign to clipboard: ${text}`)
+      } else {
+        // Fallback for older browsers or insecure contexts
+        const textArea = document.createElement('textarea')
+        textArea.value = text
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-999999px'
+        textArea.style.top = '-999999px'
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        
+        try {
+          document.execCommand('copy')
+          console.log(`Copied callsign to clipboard (fallback): ${text}`)
+        } catch (err) {
+          console.warn('Failed to copy callsign to clipboard:', err)
+        } finally {
+          document.body.removeChild(textArea)
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to copy callsign to clipboard:', err)
+    }
+  }
 
   // Convert QueueEntry to QueueItemData format
   const convertQueueEntryToItemData = (entry: QueueEntry): QueueItemData => {
@@ -44,6 +79,8 @@ function App() {
     try {
       const data = await apiService.getCurrentQso()
       setCurrentQso(data)
+      // Update ref for initial load (don't copy to clipboard on initial load)
+      previousCallsignRef.current = data?.callsign || null
     } catch (err) {
       if (err instanceof ApiError) {
         console.error('Failed to fetch current QSO:', err.detail || err.message)
@@ -115,7 +152,19 @@ function App() {
     // Event handlers for different types of state changes
     const handleCurrentQsoEvent = (event: StateChangeEvent) => {
       console.log('Received current_qso event:', event)
-      setCurrentQso(event.data)
+      const newQso = event.data
+      const previousCallsign = previousCallsignRef.current
+      const newCallsign = newQso?.callsign
+      
+      // Copy callsign to clipboard when a new callsign becomes active
+      if (newCallsign && newCallsign !== previousCallsign) {
+        copyToClipboard(newCallsign)
+      }
+      
+      // Update the ref with the new callsign
+      previousCallsignRef.current = newCallsign || null
+      
+      setCurrentQso(newQso)
     }
 
     const handleQueueUpdateEvent = (event: StateChangeEvent) => {
