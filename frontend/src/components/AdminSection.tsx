@@ -62,28 +62,28 @@ export default function AdminSection({
     <section className="admin-section">
       <h2 className="admin-title">Admin Controls</h2>
       <div className="admin-controls">
-        
-        
-        <div className="queue-control">
-          <button
-            className="work-next-button"
-            onClick={handleWorkNext}
-            disabled={isWorkingNext || !systemStatus}
-            type="button"
-          >
-            {isWorkingNext ? 'Working...' : 'Work Next User in Queue'}
-          </button>
-        </div>
+        <div className="button-group">
+          <div className="queue-control">
+            <button
+              className="work-next-button"
+              onClick={handleWorkNext}
+              disabled={isWorkingNext || !systemStatus}
+              type="button"
+            >
+              {isWorkingNext ? 'Working...' : 'Work Next User in Queue'}
+            </button>
+          </div>
 
-        <div className="queue-control">
-          <button
-            className="complete-qso-button"
-            onClick={handleCompleteQso}
-            disabled={isCompletingQso || !systemStatus}
-            type="button"
-          >
-            {isCompletingQso ? 'Completing...' : 'Complete Current QSO'}
-          </button>
+          <div className="queue-control complete-control">
+            <button
+              className="complete-qso-button"
+              onClick={handleCompleteQso}
+              disabled={isCompletingQso || !systemStatus}
+              type="button"
+            >
+              {isCompletingQso ? 'Completing...' : 'Complete Current QSO'}
+            </button>
+          </div>
         </div>
 
 
