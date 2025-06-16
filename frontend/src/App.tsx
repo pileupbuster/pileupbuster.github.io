@@ -288,6 +288,11 @@ function App() {
     // No need to manually refresh - SSE will broadcast the updates
   }
 
+  const handleCompleteCurrentQso = async (): Promise<void> => {
+    await adminApiService.completeCurrentQso()
+    // No need to manually refresh - SSE will broadcast the updates
+  }
+
   return (
     <div className="pileup-buster-app">
       {/* Header */}
@@ -346,6 +351,7 @@ function App() {
           isLoggedIn={isAdminLoggedIn}
           onToggleSystemStatus={handleToggleSystemStatus}
           onWorkNextUser={handleWorkNextUser}
+          onCompleteCurrentQso={handleCompleteCurrentQso}
           systemStatus={systemStatus}
         />
       </main>
