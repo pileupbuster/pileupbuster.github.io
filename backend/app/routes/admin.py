@@ -106,6 +106,35 @@ async def next_callsign(username: str = Depends(verify_admin_credentials)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
 
+@admin_router.post('/qso/complete')
+async def complete_current_qso(username: str = Depends(verify_admin_credentials)):
+    """Complete the current QSO without advancing to the next station"""
+    try:
+        # Clear the current QSO
+        cleared_qso = queue_db.clear_current_qso()
+        
+        if not cleared_qso:
+            return {
+                'message': 'No active QSO to complete',
+                'cleared_qso': None
+            }
+        
+        # Broadcast that current QSO is now None
+        try:
+            await event_broadcaster.broadcast_current_qso(None)
+        except Exception as e:
+            logger.warning(f"Failed to broadcast current QSO clear event: {e}")
+        
+        return {
+            'message': f'QSO with {cleared_qso["callsign"]} completed successfully',
+            'cleared_qso': cleared_qso
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
 @admin_router.post('/status')
 async def set_system_status(
     request: SystemStatusRequest, 
