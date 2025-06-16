@@ -14,6 +14,8 @@ function App() {
   // Real data state
   const [currentQso, setCurrentQso] = useState<CurrentQsoData | null>(null)
   const [queueData, setQueueData] = useState<QueueItemData[]>([])
+  const [queueTotal, setQueueTotal] = useState(0)
+  const [queueMaxSize, setQueueMaxSize] = useState(4)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -61,6 +63,8 @@ function App() {
       const response = await apiService.getQueueList()
       const queueItems = response.queue.map(convertQueueEntryToItemData)
       setQueueData(queueItems)
+      setQueueTotal(response.total)
+      setQueueMaxSize(response.max_size)
     } catch (err) {
       if (err instanceof ApiError) {
         console.error('Failed to fetch queue list:', err.detail || err.message)
@@ -123,6 +127,12 @@ function App() {
       if (event.data?.queue) {
         const queueItems = event.data.queue.map(convertQueueEntryToItemData)
         setQueueData(queueItems)
+        if (event.data.total !== undefined) {
+          setQueueTotal(event.data.total)
+        }
+        if (event.data.max_size !== undefined) {
+          setQueueMaxSize(event.data.max_size)
+        }
       }
     }
 
@@ -276,6 +286,8 @@ function App() {
         {/* Waiting Queue Container (Red Border) */}
         <WaitingQueue 
           queueData={queueData} 
+          queueTotal={queueTotal}
+          queueMaxSize={queueMaxSize}
           onAddCallsign={handleCallsignRegistration}
           systemActive={systemStatus === true}
         />
