@@ -5,6 +5,7 @@ import CurrentActiveCallsign, { type CurrentActiveUser } from './components/Curr
 import WaitingQueue from './components/WaitingQueue'
 import AdminLogin from './components/AdminLogin'
 import AdminSection from './components/AdminSection'
+import ThemeToggle from './components/ThemeToggle'
 import { type QueueItemData } from './components/QueueItem'
 import { apiService, type CurrentQsoData, type QueueEntry, ApiError } from './services/api'
 import { adminApiService } from './services/adminApi'
@@ -302,11 +303,14 @@ function App() {
           alt="Pileup Buster Logo" 
           className="logo"
         />
-        <AdminLogin 
-          onLogin={handleAdminLogin}
-          isLoggedIn={isAdminLoggedIn}
-          onLogout={handleAdminLogout}
-        />
+        <div className="header-controls">
+          <ThemeToggle />
+          <AdminLogin 
+            onLogin={handleAdminLogin}
+            isLoggedIn={isAdminLoggedIn}
+            onLogout={handleAdminLogout}
+          />
+        </div>
       </header>
 
       <main className="main-content">
