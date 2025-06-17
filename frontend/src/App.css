@@ -50,6 +50,11 @@
   border-color: var(--color-link);
 }
 
+.theme-toggle:focus {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+
 .theme-icon {
   font-size: 1.1rem;
 }
@@ -874,4 +879,56 @@
 .github-link:hover {
   color: var(--color-text);
   text-decoration: underline;
+}
+
+/* Alert and Status Message Styles */
+.alert-warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 10px 0;
+  text-align: center;
+}
+
+[data-theme="dark"] .alert-warning {
+  background-color: #332b00;
+  border-color: #665500;
+  color: #ffcc00;
+}
+
+.alert-error {
+  color: #dc3545;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+[data-theme="dark"] .alert-error {
+  color: #ff6b6b;
+}
+
+.system-inactive-alert {
+  color: #ff6600;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+[data-theme="dark"] .system-inactive-alert {
+  color: #ffaa44;
+  background-color: #332200;
+  border-color: #664400;
+}
+
+/* Accessibility: Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

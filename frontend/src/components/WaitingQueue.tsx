@@ -38,15 +38,7 @@ export default function WaitingQueue({
       
       {/* Queue status messaging */}
       {isQueueFull && systemActive && (
-        <div style={{
-          backgroundColor: '#fff3cd',
-          border: '1px solid #ffeaa7',
-          borderRadius: '4px',
-          padding: '10px',
-          margin: '10px 0',
-          color: '#856404',
-          textAlign: 'center'
-        }}>
+        <div className="alert-warning">
           ⚠️ Queue is currently full ({queueTotal}/{queueMaxSize}). Please wait for a spot to open up and try again.
         </div>
       )}

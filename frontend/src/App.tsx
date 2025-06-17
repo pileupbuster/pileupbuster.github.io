@@ -318,21 +318,14 @@ function App() {
         
         {/* Show system status info instead of red error when system is inactive */}
         {systemStatus === false && (
-          <div style={{ 
-            color: '#ff6600', 
-            backgroundColor: '#fff3cd', 
-            border: '1px solid #ffeaa7',
-            padding: '10px',
-            borderRadius: '4px',
-            margin: '10px 0'
-          }}>
+          <div className="system-inactive-alert">
             ⚠️ System is currently inactive. Registration and queue access are disabled.
           </div>
         )}
         
         {/* Show errors only if they're not system inactive related */}
         {error && systemStatus !== false && (
-          <div style={{ color: 'red' }}>Error: {error}</div>
+          <div className="alert-error">Error: {error}</div>
         )}
         
         {/* Current Active Callsign (Green Border) */}
