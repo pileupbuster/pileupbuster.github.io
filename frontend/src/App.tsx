@@ -1,17 +1,22 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import './App.css'
 import pileupBusterLogo from './assets/logo.png'
+import pileupBusterLogoDark from './assets/logo-dark.png'
 import CurrentActiveCallsign, { type CurrentActiveUser } from './components/CurrentActiveCallsign'
 import WaitingQueue from './components/WaitingQueue'
 import AdminLogin from './components/AdminLogin'
 import AdminSection from './components/AdminSection'
 import ThemeToggle from './components/ThemeToggle'
+import { useTheme } from './contexts/ThemeContext'
 import { type QueueItemData } from './components/QueueItem'
 import { apiService, type CurrentQsoData, type QueueEntry, ApiError } from './services/api'
 import { adminApiService } from './services/adminApi'
 import { sseService, type StateChangeEvent } from './services/sse'
 
 function App() {
+  // Theme
+  const { resolvedTheme } = useTheme()
+  
   // Real data state
   const [currentQso, setCurrentQso] = useState<CurrentQsoData | null>(null)
   const [queueData, setQueueData] = useState<QueueItemData[]>([])
@@ -299,7 +304,7 @@ function App() {
       {/* Header */}
       <header className="header">
         <img 
-          src={pileupBusterLogo} 
+          src={resolvedTheme === 'dark' ? pileupBusterLogoDark : pileupBusterLogo} 
           alt="Pileup Buster Logo" 
           className="logo"
         />
