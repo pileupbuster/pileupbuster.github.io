@@ -96,7 +96,7 @@ export const apiService = {
 
   // Get current frequency (public endpoint)
   async getCurrentFrequency(): Promise<{ frequency: string | null; last_updated: string | null }> {
-    const response = await fetch(`${API_BASE_URL}/frequency`)
+    const response = await fetch(`${API_BASE_URL}/public/frequency`)
     return handleResponse<{ frequency: string | null; last_updated: string | null }>(response)
   },
 }
