@@ -120,7 +120,7 @@ class AdminApiService {
     }
   }
 
-  async workNextUser(): Promise<void> {
+  async workNextUser(): Promise<CurrentQsoData | null> {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/queue/next`, {
         method: 'POST',
@@ -130,6 +130,8 @@ class AdminApiService {
       if (!response.ok) {
         throw new Error('Failed to work next user')
       }
+
+      return await response.json()
     } catch (error) {
       console.error('Failed to work next user:', error)
       throw error

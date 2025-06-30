@@ -163,13 +163,7 @@ function App() {
     const handleCurrentQsoEvent = (event: StateChangeEvent) => {
       console.log('Received current_qso event:', event)
       const newQso = event.data
-      const previousCallsign = previousCallsignRef.current
       const newCallsign = newQso?.callsign
-      
-      // Copy callsign to clipboard when a new callsign becomes active
-      if (newCallsign && newCallsign !== previousCallsign) {
-        copyToClipboard(newCallsign)
-      }
       
       // Update the ref with the new callsign
       previousCallsignRef.current = newCallsign || null
@@ -290,7 +284,11 @@ function App() {
   }
 
   const handleWorkNextUser = async (): Promise<void> => {
-    await adminApiService.workNextUser()
+    const newQso = await adminApiService.workNextUser()
+    // Copy callsign to clipboard only for the user who clicked "work next"
+    if (newQso?.callsign) {
+      copyToClipboard(newQso.callsign)
+    }
     // No need to manually refresh - SSE will broadcast the updates
   }
 
