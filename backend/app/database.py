@@ -372,6 +372,21 @@ class QueueDatabase:
             "updated_by": updated_by
         }
     
+    def clear_frequency(self, updated_by: str = "admin") -> Dict[str, Any]:
+        """Clear the current transmission frequency"""
+        if self.status_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Remove frequency document
+        result = self.status_collection.delete_one({"_id": "frequency"})
+        
+        return {
+            "frequency": None,
+            "last_updated": datetime.utcnow().isoformat(),
+            "updated_by": updated_by,
+            "cleared": result.deleted_count > 0
+        }
+    
     def is_system_active(self) -> bool:
         """Check if the system is currently active"""
         try:

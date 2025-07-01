@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
 import { apiService } from '../services/api'
-import { adminApiService } from '../services/adminApi'
 import { sseService } from '../services/sse'
 
 export interface FrequencySignalPaneProps {
   className?: string
-  isAdminLoggedIn?: boolean
 }
 
 interface SignalMeterProps {
@@ -68,14 +66,12 @@ function SignalMeter({ level }: SignalMeterProps) {
   )
 }
 
-export default function FrequencySignalPane({ className = '', isAdminLoggedIn = false }: FrequencySignalPaneProps) {
+export default function FrequencySignalPane({ className = '' }: FrequencySignalPaneProps) {
   const [frequency, setFrequency] = useState<string | null>(null)
   const [split, setSplit] = useState('')
-  const [splitInput, setSplitInput] = useState('')
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [signalLevel, setSignalLevel] = useState(7)
-  const [isSettingSplit, setIsSettingSplit] = useState(false)
 
   // Animation for signal level fluctuation between 7 and 20
   useEffect(() => {
@@ -132,37 +128,27 @@ export default function FrequencySignalPane({ className = '', isAdminLoggedIn = 
     }
   }, [])
 
-  // Parse frequency string to display as MHz double
+  // Parse frequency string to display as KHz with thousand separators
   const formatFrequency = (freq: string | null): string => {
-    if (!freq) return '0.000.00'
+    if (!freq) return '0,000.00'
     
-    // Try to parse frequency and format as MHz
+    // Try to parse frequency and format as KHz
     try {
-      // Remove "MHz" suffix if present and extract numeric value
-      const numericValue = freq.replace(/\s*MHz\s*$/i, '').trim()
-      const parsed = parseFloat(numericValue)
+      // Remove "MHz" or "KHz" suffix if present and extract numeric value
+      const numericValue = freq.replace(/\s*(MHz|KHz)\s*$/i, '').trim()
+      let parsed = parseFloat(numericValue)
       
       if (isNaN(parsed)) return freq // Return original if can't parse
       
-      // Format as XX.XXX.XX (like 14.200.00)
-      return parsed.toFixed(2).replace(/(\d+)\.(\d{3})(\d{2})/, '$1.$2.$3')
+      // If the input was in MHz, convert to KHz
+      if (freq.toLowerCase().includes('mhz') || parsed < 1000) {
+        parsed = parsed * 1000 // Convert MHz to KHz
+      }
+      
+      // Format as XX,XXX.XX (like 14,315.00)
+      return parsed.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
     } catch {
       return freq // Return original on error
-    }
-  }
-
-  const handleSetSplit = async () => {
-    if (!splitInput.trim() || !isAdminLoggedIn) return
-    
-    setIsSettingSplit(true)
-    try {
-      await adminApiService.setSplit(splitInput.trim())
-      setSplitInput('')
-      console.log('Split set to:', splitInput.trim())
-    } catch (error) {
-      console.error('Failed to set split:', error)
-    } finally {
-      setIsSettingSplit(false)
     }
   }
 
@@ -177,37 +163,14 @@ export default function FrequencySignalPane({ className = '', isAdminLoggedIn = 
   return (
     <div className={`frequency-signal-pane ${className}`}>
       <div className="frequency-display-large">
-        {formatFrequency(frequency)}
+        {formatFrequency(frequency)} KHz
       </div>
       
-      {/* Split Display and Input */}
+      {/* Split Display only - no input controls */}
       <div className="split-section">
         {split && (
           <div className="split-display">
             SPLIT {split}
-          </div>
-        )}
-        
-        {isAdminLoggedIn && (
-          <div className="split-control">
-            <div className="split-input-group">
-              <input
-                type="text"
-                value={splitInput}
-                onChange={(e) => setSplitInput(e.target.value)}
-                placeholder="e.g., +3, +5, +5-10"
-                className="split-input"
-                disabled={isSettingSplit}
-              />
-              <button
-                className="split-button"
-                onClick={handleSetSplit}
-                disabled={isSettingSplit || !splitInput.trim()}
-                type="button"
-              >
-                {isSettingSplit ? 'Setting...' : 'Set Split'}
-              </button>
-            </div>
           </div>
         )}
       </div>

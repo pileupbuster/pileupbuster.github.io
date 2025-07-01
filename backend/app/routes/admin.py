@@ -223,6 +223,31 @@ async def set_frequency(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
 
+@admin_router.delete('/frequency')
+async def clear_frequency(
+    username: str = Depends(verify_admin_credentials)
+):
+    """Clear the current transmission frequency (admin only)"""
+    try:
+        frequency_data = queue_db.clear_frequency(username)
+        
+        # Broadcast frequency update (with None frequency)
+        try:
+            await event_broadcaster.broadcast_frequency_update({
+                'frequency': None,
+                'last_updated': frequency_data['last_updated'],
+                'updated_by': frequency_data['updated_by']
+            })
+        except Exception as e:
+            logger.warning(f"Failed to broadcast frequency clear event: {e}")
+        
+        return {
+            'message': 'Frequency cleared successfully',
+            'frequency_data': frequency_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
 @admin_router.post('/split')
 async def set_split(
     request: SplitRequest, 

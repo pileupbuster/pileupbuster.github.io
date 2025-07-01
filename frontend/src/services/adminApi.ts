@@ -193,6 +193,24 @@ class AdminApiService {
       throw error
     }
   }
+
+  async clearFrequency(): Promise<{ message: string; frequency_data: any }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/frequency`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to clear frequency')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to clear frequency:', error)
+      throw error
+    }
+  }
 }
 
 export const adminApiService = new AdminApiService()

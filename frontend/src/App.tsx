@@ -29,6 +29,7 @@ function App() {
   // Admin state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
   const [systemStatus, setSystemStatus] = useState<boolean | null>(null)
+  const [currentFrequency, setCurrentFrequency] = useState<string | null>(null)
 
   // Ref to track previous callsign for clipboard functionality
   const previousCallsignRef = useRef<string | null>(null)
@@ -132,6 +133,17 @@ function App() {
     }
   }
 
+  // Load current frequency
+  const loadCurrentFrequency = async () => {
+    try {
+      const frequencyData = await apiService.getCurrentFrequency()
+      setCurrentFrequency(frequencyData.frequency)
+    } catch (error) {
+      console.error('Failed to load current frequency:', error)
+      setCurrentFrequency(null)
+    }
+  }
+
   // Initial data load
   useEffect(() => {
     const loadData = async () => {
@@ -154,8 +166,9 @@ function App() {
     // Check if admin is already logged in
     setIsAdminLoggedIn(adminApiService.isLoggedIn())
     
-    // Load initial system status
+    // Load initial system status and frequency
     loadSystemStatus()
+    loadCurrentFrequency()
   }, [])
 
   // Real-time updates via Server-Sent Events (SSE)
@@ -203,10 +216,18 @@ function App() {
       // When SSE connects, fetch initial data
       Promise.all([
         fetchCurrentQso(),
-        fetchQueueList()
+        fetchQueueList(),
+        loadCurrentFrequency()
       ]).catch(err => {
         console.error('Failed to fetch initial data after SSE connection:', err)
       })
+    }
+
+    const handleFrequencyUpdateEvent = (event: StateChangeEvent) => {
+      console.log('Received frequency_update event:', event)
+      if (event.data?.frequency !== undefined) {
+        setCurrentFrequency(event.data.frequency)
+      }
     }
 
     // Register event listeners
@@ -214,6 +235,7 @@ function App() {
     sseService.addEventListener('queue_update', handleQueueUpdateEvent)
     sseService.addEventListener('system_status', handleSystemStatusEvent)
     sseService.addEventListener('connected', handleConnectedEvent)
+    sseService.addEventListener('frequency_update', handleFrequencyUpdateEvent)
 
     // Start SSE connection
     sseService.connect()
@@ -233,6 +255,7 @@ function App() {
       sseService.removeEventListener('queue_update', handleQueueUpdateEvent)
       sseService.removeEventListener('system_status', handleSystemStatusEvent)
       sseService.removeEventListener('connected', handleConnectedEvent)
+      sseService.removeEventListener('frequency_update', handleFrequencyUpdateEvent)
       sseService.disconnect()
       clearInterval(fallbackInterval)
     }
@@ -301,6 +324,19 @@ function App() {
   const handleSetFrequency = async (frequency: string): Promise<void> => {
     await adminApiService.setFrequency(frequency)
     // No need to manually refresh - SSE will broadcast the frequency update
+    // But also update local state for immediate feedback
+    setCurrentFrequency(frequency)
+  }
+
+  const handleClearFrequency = async (): Promise<void> => {
+    await adminApiService.clearFrequency()
+    // Update local state immediately
+    setCurrentFrequency(null)
+  }
+
+  const handleSetSplit = async (split: string): Promise<void> => {
+    await adminApiService.setSplit(split)
+    // No need to manually refresh - SSE will broadcast the split update
   }
 
   return (
@@ -344,11 +380,10 @@ function App() {
             qrzData={currentQso?.qrz}
           />
 
-          {/* Frequency and Signal Display - Positioned near current QSO */}
-          <FrequencySignalPane 
-            className="frequency-signal-display" 
-            isAdminLoggedIn={isAdminLoggedIn}
-          />
+          {/* Frequency and Signal Display - Only show if frequency is set */}
+          {currentFrequency && (
+            <FrequencySignalPane className="frequency-signal-display" />
+          )}
         </div>
 
         {/* Waiting Queue Container (Red Border) */}
@@ -367,7 +402,10 @@ function App() {
           onWorkNextUser={handleWorkNextUser}
           onCompleteCurrentQso={handleCompleteCurrentQso}
           onSetFrequency={handleSetFrequency}
+          onClearFrequency={handleClearFrequency}
+          onSetSplit={handleSetSplit}
           systemStatus={systemStatus}
+          currentFrequency={currentFrequency}
         />
       </main>
 
