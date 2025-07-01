@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiService } from '../services/api'
+import { adminApiService } from '../services/adminApi'
 import { sseService } from '../services/sse'
 
 export interface FrequencySignalPaneProps {
@@ -91,15 +92,16 @@ export default function FrequencySignalPane({ className = '', isAdminLoggedIn = 
     // Load initial frequency and split
     const loadFrequencyData = async () => {
       try {
-        const data = await apiService.getCurrentFrequency()
-        setFrequency(data.frequency)
-        setLastUpdated(data.last_updated)
+        const [frequencyData, splitData] = await Promise.all([
+          apiService.getCurrentFrequency(),
+          apiService.getCurrentSplit()
+        ])
         
-        // TODO: Load split value from API if implemented
-        // For now, using placeholder
-        setSplit('')
+        setFrequency(frequencyData.frequency)
+        setLastUpdated(frequencyData.last_updated)
+        setSplit(splitData.split || '')
       } catch (error) {
-        console.error('Failed to load frequency:', error)
+        console.error('Failed to load frequency/split:', error)
       } finally {
         setIsLoading(false)
       }
@@ -114,7 +116,14 @@ export default function FrequencySignalPane({ className = '', isAdminLoggedIn = 
       setLastUpdated(frequencyData.last_updated)
     }
 
+    // Listen for split updates via SSE
+    const handleSplitUpdate = (event: { data: any }) => {
+      const splitData = event.data
+      setSplit(splitData.split || '')
+    }
+
     sseService.addEventListener('frequency_update', handleFrequencyUpdate)
+    sseService.addEventListener('split_update', handleSplitUpdate)
 
     // Cleanup
     return () => {
@@ -147,9 +156,7 @@ export default function FrequencySignalPane({ className = '', isAdminLoggedIn = 
     
     setIsSettingSplit(true)
     try {
-      // TODO: Implement split API endpoint
-      // For now, just store locally
-      setSplit(splitInput.trim())
+      await adminApiService.setSplit(splitInput.trim())
       setSplitInput('')
       console.log('Split set to:', splitInput.trim())
     } catch (error) {

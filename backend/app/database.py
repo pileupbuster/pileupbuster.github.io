@@ -381,6 +381,49 @@ class QueueDatabase:
             # If we can't check status, default to inactive for safety
             return False
 
+    def get_split(self) -> Optional[Dict[str, Any]]:
+        """Get the current split value"""
+        if self.status_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Find the split document
+        split_doc = self.status_collection.find_one({"_id": "split"})
+        
+        if not split_doc:
+            return None
+        
+        return {
+            "split": split_doc.get("split"),
+            "last_updated": split_doc.get("last_updated"),
+            "updated_by": split_doc.get("updated_by")
+        }
+    
+    def set_split(self, split: str, updated_by: str = "admin") -> Dict[str, Any]:
+        """Set the current split value"""
+        if self.status_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Create split document
+        split_update = {
+            "_id": "split",
+            "split": split,
+            "last_updated": datetime.utcnow().isoformat(),
+            "updated_by": updated_by
+        }
+        
+        # Update or create split document
+        self.status_collection.replace_one(
+            {"_id": "split"},
+            split_update,
+            upsert=True
+        )
+        
+        return {
+            "split": split,
+            "last_updated": split_update["last_updated"],
+            "updated_by": updated_by
+        }
+
 
 # Global database instance
 queue_db = QueueDatabase()

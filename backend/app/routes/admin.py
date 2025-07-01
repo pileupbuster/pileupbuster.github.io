@@ -17,6 +17,9 @@ class SystemStatusRequest(BaseModel):
 class FrequencyRequest(BaseModel):
     frequency: str
 
+class SplitRequest(BaseModel):
+    split: str
+
 @admin_router.get('/queue')
 def admin_queue(username: str = Depends(verify_admin_credentials)):
     """Admin view of the queue"""
@@ -216,6 +219,28 @@ async def set_frequency(
         return {
             'message': f'Frequency set to {request.frequency}',
             'frequency_data': frequency_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.post('/split')
+async def set_split(
+    request: SplitRequest, 
+    username: str = Depends(verify_admin_credentials)
+):
+    """Set the current split value (admin only)"""
+    try:
+        split_data = queue_db.set_split(request.split, username)
+        
+        # Broadcast split update
+        try:
+            await event_broadcaster.broadcast_split_update(split_data)
+        except Exception as e:
+            logger.warning(f"Failed to broadcast split update event: {e}")
+        
+        return {
+            'message': f'Split set to {request.split}',
+            'split_data': split_data
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
