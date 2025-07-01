@@ -932,3 +932,215 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Top Section Layout */
+.top-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .top-section {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Frequency Signal Pane */
+.frequency-signal-pane {
+  border: 3px solid var(--color-info);
+  border-radius: 8px;
+  padding: 1.5rem;
+  background-color: var(--color-surface);
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.frequency-display-large {
+  font-size: 3rem;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: 1rem;
+  letter-spacing: 0.1em;
+}
+
+.split-section {
+  margin-bottom: 1.5rem;
+}
+
+.split-display {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.split-control {
+  display: flex;
+  justify-content: center;
+}
+
+.split-input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.split-input {
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  width: 120px;
+}
+
+.split-button {
+  background-color: var(--color-info);
+  color: var(--color-surface);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.split-button:hover:not(:disabled) {
+  background-color: var(--color-info-hover);
+}
+
+.split-button:disabled {
+  background-color: var(--color-secondary);
+  cursor: not-allowed;
+}
+
+/* Signal Meter */
+.signal-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.signal-scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 40px;
+  margin-bottom: 0.5rem;
+}
+
+.scale-tick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.tick-mark {
+  width: 2px;
+  height: 25px;
+  background-color: var(--color-text);
+  margin-bottom: 0.25rem;
+}
+
+.scale-tick:nth-child(1) .tick-mark,
+.scale-tick:nth-child(10) .tick-mark,
+.scale-tick:nth-child(11) .tick-mark,
+.scale-tick:nth-child(12) .tick-mark,
+.scale-tick:nth-child(13) .tick-mark {
+  height: 30px;
+  background-color: var(--color-danger);
+}
+
+.tick-label {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  font-weight: bold;
+}
+
+.signal-bar-container {
+  height: 20px;
+  background-color: var(--color-surface-tertiary);
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(90deg, 
+    #333 0%, 
+    #444 20%, 
+    #333 40%, 
+    #444 60%, 
+    #333 80%, 
+    #444 100%
+  );
+}
+
+.signal-bar {
+  height: 100%;
+  transition: all 0.8s ease-in-out;
+  border-radius: 2px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.signal-level-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.level-label {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--color-text-secondary);
+}
+
+.level-value {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--color-text);
+  font-family: 'Courier New', monospace;
+}
+
+.frequency-updated {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .frequency-display-large {
+    font-size: 2rem;
+  }
+  
+  .split-display {
+    font-size: 1.2rem;
+  }
+  
+  .signal-scale {
+    height: 30px;
+  }
+  
+  .tick-label {
+    font-size: 0.6rem;
+  }
+  
+  .signal-bar-container {
+    height: 15px;
+  }
+  
+  .level-value {
+    font-size: 1rem;
+  }
+}

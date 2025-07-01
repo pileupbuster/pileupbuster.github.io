@@ -6,7 +6,7 @@ import CurrentActiveCallsign, { type CurrentActiveUser } from './components/Curr
 import WaitingQueue from './components/WaitingQueue'
 import AdminLogin from './components/AdminLogin'
 import AdminSection from './components/AdminSection'
-import FrequencyDisplay from './components/FrequencyDisplay'
+import FrequencySignalPane from './components/FrequencySignalPane'
 import ThemeToggle from './components/ThemeToggle'
 import { useTheme } from './contexts/ThemeContext'
 import { type QueueItemData } from './components/QueueItem'
@@ -337,11 +337,19 @@ function App() {
           <div className="alert-error">Error: {error}</div>
         )}
         
-        {/* Current Active Callsign (Green Border) */}
-        <CurrentActiveCallsign 
-          activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
-          qrzData={currentQso?.qrz}
-        />
+        <div className="top-section">
+          {/* Current Active Callsign (Green Border) */}
+          <CurrentActiveCallsign 
+            activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
+            qrzData={currentQso?.qrz}
+          />
+
+          {/* Frequency and Signal Display - Positioned near current QSO */}
+          <FrequencySignalPane 
+            className="frequency-signal-display" 
+            isAdminLoggedIn={isAdminLoggedIn}
+          />
+        </div>
 
         {/* Waiting Queue Container (Red Border) */}
         <WaitingQueue 
@@ -351,9 +359,6 @@ function App() {
           onAddCallsign={handleCallsignRegistration}
           systemActive={systemStatus === true}
         />
-
-        {/* Frequency Display - Visible to all users */}
-        <FrequencyDisplay className="public-frequency-display" />
 
         {/* Admin Section - Only visible when logged in */}
         <AdminSection 

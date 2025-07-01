@@ -1,0 +1,218 @@
+import { useState, useEffect } from 'react'
+import { apiService } from '../services/api'
+import { sseService } from '../services/sse'
+
+export interface FrequencySignalPaneProps {
+  className?: string
+  isAdminLoggedIn?: boolean
+}
+
+interface SignalMeterProps {
+  level: number
+}
+
+function SignalMeter({ level }: SignalMeterProps) {
+  // Scale: 1,2,3,4,5,6,7,8,9,+10,+20,+30,+100
+  const scaleLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '+10', '+20', '+30', '+100']
+  
+  // Convert level to scale position (0-12)
+  const getScalePosition = (signalLevel: number): number => {
+    if (signalLevel <= 9) return signalLevel - 1
+    if (signalLevel <= 10) return 9
+    if (signalLevel <= 20) return 10
+    if (signalLevel <= 30) return 11
+    return 12
+  }
+  
+  // Get color based on signal level
+  const getSignalColor = (signalLevel: number): string => {
+    if (signalLevel <= 7) return '#00ff40' // bright green
+    if (signalLevel <= 9) return '#ffff00' // yellow near +8
+    return '#ff0000' // red for +10 and above
+  }
+  
+  // Format signal level for display
+  const formatSignalLevel = (signalLevel: number): string => {
+    if (signalLevel <= 9) return `S${signalLevel}`
+    return `S9 +${signalLevel - 9}`
+  }
+  
+  const position = getScalePosition(level)
+  const fillPercentage = ((position + 1) / scaleLabels.length) * 100
+  
+  return (
+    <div className="signal-meter">
+      <div className="signal-scale">
+        {scaleLabels.map((label) => (
+          <div key={label} className="scale-tick">
+            <div className="tick-mark"></div>
+            <div className="tick-label">{label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="signal-bar-container">
+        <div 
+          className="signal-bar" 
+          style={{ 
+            width: `${fillPercentage}%`,
+            backgroundColor: getSignalColor(level)
+          }}
+        ></div>
+      </div>
+      <div className="signal-level-display">
+        <span className="level-label">LEVEL</span>
+        <span className="level-value">{formatSignalLevel(level)}</span>
+      </div>
+    </div>
+  )
+}
+
+export default function FrequencySignalPane({ className = '', isAdminLoggedIn = false }: FrequencySignalPaneProps) {
+  const [frequency, setFrequency] = useState<string | null>(null)
+  const [split, setSplit] = useState('')
+  const [splitInput, setSplitInput] = useState('')
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [signalLevel, setSignalLevel] = useState(7)
+  const [isSettingSplit, setIsSettingSplit] = useState(false)
+
+  // Animation for signal level fluctuation between 7 and 20
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Random fluctuation between 7 and 20
+      const newLevel = Math.floor(Math.random() * 14) + 7 // 7-20
+      setSignalLevel(newLevel)
+    }, 1000) // Update every second
+
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    // Load initial frequency and split
+    const loadFrequencyData = async () => {
+      try {
+        const data = await apiService.getCurrentFrequency()
+        setFrequency(data.frequency)
+        setLastUpdated(data.last_updated)
+        
+        // TODO: Load split value from API if implemented
+        // For now, using placeholder
+        setSplit('')
+      } catch (error) {
+        console.error('Failed to load frequency:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadFrequencyData()
+
+    // Listen for frequency updates via SSE
+    const handleFrequencyUpdate = (event: { data: any }) => {
+      const frequencyData = event.data
+      setFrequency(frequencyData.frequency)
+      setLastUpdated(frequencyData.last_updated)
+    }
+
+    sseService.addEventListener('frequency_update', handleFrequencyUpdate)
+
+    // Cleanup
+    return () => {
+      // Note: SSE service doesn't provide removeEventListener in current implementation
+      // This would need to be added if we want proper cleanup
+    }
+  }, [])
+
+  // Parse frequency string to display as MHz double
+  const formatFrequency = (freq: string | null): string => {
+    if (!freq) return '0.000.00'
+    
+    // Try to parse frequency and format as MHz
+    try {
+      // Remove "MHz" suffix if present and extract numeric value
+      const numericValue = freq.replace(/\s*MHz\s*$/i, '').trim()
+      const parsed = parseFloat(numericValue)
+      
+      if (isNaN(parsed)) return freq // Return original if can't parse
+      
+      // Format as XX.XXX.XX (like 14.200.00)
+      return parsed.toFixed(2).replace(/(\d+)\.(\d{3})(\d{2})/, '$1.$2.$3')
+    } catch {
+      return freq // Return original on error
+    }
+  }
+
+  const handleSetSplit = async () => {
+    if (!splitInput.trim() || !isAdminLoggedIn) return
+    
+    setIsSettingSplit(true)
+    try {
+      // TODO: Implement split API endpoint
+      // For now, just store locally
+      setSplit(splitInput.trim())
+      setSplitInput('')
+      console.log('Split set to:', splitInput.trim())
+    } catch (error) {
+      console.error('Failed to set split:', error)
+    } finally {
+      setIsSettingSplit(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className={`frequency-signal-pane loading ${className}`}>
+        <div className="frequency-display-large">Loading...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`frequency-signal-pane ${className}`}>
+      <div className="frequency-display-large">
+        {formatFrequency(frequency)}
+      </div>
+      
+      {/* Split Display and Input */}
+      <div className="split-section">
+        {split && (
+          <div className="split-display">
+            SPLIT {split}
+          </div>
+        )}
+        
+        {isAdminLoggedIn && (
+          <div className="split-control">
+            <div className="split-input-group">
+              <input
+                type="text"
+                value={splitInput}
+                onChange={(e) => setSplitInput(e.target.value)}
+                placeholder="e.g., +3, +5, +5-10"
+                className="split-input"
+                disabled={isSettingSplit}
+              />
+              <button
+                className="split-button"
+                onClick={handleSetSplit}
+                disabled={isSettingSplit || !splitInput.trim()}
+                type="button"
+              >
+                {isSettingSplit ? 'Setting...' : 'Set Split'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Signal Meter */}
+      <SignalMeter level={signalLevel} />
+      
+      {lastUpdated && (
+        <div className="frequency-updated">
+          Updated: {new Date(lastUpdated).toLocaleTimeString()}
+        </div>
+      )}
+    </div>
+  )
+}
