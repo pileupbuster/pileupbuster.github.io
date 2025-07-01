@@ -44,36 +44,59 @@ export default function AddQueueItem({ onAddCallsign }: AddQueueItemProps) {
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      e.preventDefault() // Prevent form submission behavior
       await handleSubmit()
     } else if (e.key === 'Escape') {
       setCallsign('')
       setIsEditing(false)
+    } else if (e.key === 'Tab') {
+      // Prevent tab navigation on mobile to avoid jumping to other inputs
+      e.preventDefault()
     }
   }
 
   const handleBlur = () => {
     if (!isSubmitting) {
-      setCallsign('')
-      setIsEditing(false)
+      // Small delay to allow click events to process before hiding
+      setTimeout(() => {
+        setCallsign('')
+        setIsEditing(false)
+      }, 150)
     }
   }
 
   return (
     <div className="callsign-card add-queue-item" onClick={handleClick}>
       {isEditing ? (
-        <input
-          type="text"
-          value={callsign}
-          onChange={(e) => setCallsign(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          onFocus={handleInputFocus}
-          placeholder={isSubmitting ? "SUBMITTING..." : "CALLSIGN"}
-          className="callsign-input"
-          autoFocus
-          maxLength={10}
-          disabled={isSubmitting}
-        />
+        <div className="callsign-input-container">
+          <input
+            type="text"
+            value={callsign}
+            onChange={(e) => setCallsign(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
+            onFocus={handleInputFocus}
+            placeholder={isSubmitting ? "SUBMITTING..." : "CALLSIGN"}
+            className="callsign-input"
+            autoFocus
+            maxLength={10}
+            disabled={isSubmitting}
+            enterKeyHint="done"
+            inputMode="text"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="characters"
+            spellCheck="false"
+          />
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!callsign.trim() || isSubmitting}
+            className="callsign-submit-button"
+          >
+            ✓
+          </button>
+        </div>
       ) : (
         <div className="add-icon">➕</div>
       )}

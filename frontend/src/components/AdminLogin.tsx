@@ -91,6 +91,7 @@ export default function AdminLogin({ onLogin, isLoggedIn, onLogout }: AdminLogin
               required
               disabled={isLoggingIn}
               className="login-input"
+              tabIndex={-1}
             />
             <input
               type="password"
@@ -100,6 +101,7 @@ export default function AdminLogin({ onLogin, isLoggedIn, onLogout }: AdminLogin
               required
               disabled={isLoggingIn}
               className="login-input"
+              tabIndex={-1}
             />
           </div>
           <div className="login-actions">

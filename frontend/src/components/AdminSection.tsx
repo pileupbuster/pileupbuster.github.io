@@ -127,6 +127,7 @@ export default function AdminSection({
                   placeholder="e.g., 14.315 or 14315.00 KHz"
                   className="frequency-input"
                   disabled={isSettingFrequency || isClearingFrequency}
+                  tabIndex={-1}
                 />
                 <button
                   className="frequency-button"
@@ -160,6 +161,7 @@ export default function AdminSection({
                   placeholder="e.g., +3, +5, +5-10"
                   className="split-input"
                   disabled={isSettingSplit || isClearingSplit}
+                  tabIndex={-1}
                 />
                 <button
                   className="split-button"

@@ -337,6 +337,40 @@
   font-weight: normal;
 }
 
+.callsign-input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.callsign-submit-button {
+  background-color: var(--color-success);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.callsign-submit-button:hover:not(:disabled) {
+  background-color: var(--color-success-hover);
+}
+
+.callsign-submit-button:disabled {
+  background-color: var(--color-secondary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .button-group {
   display: flex;
   gap: 1rem;
