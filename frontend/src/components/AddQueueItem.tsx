@@ -15,6 +15,17 @@ export default function AddQueueItem({ onAddCallsign }: AddQueueItemProps) {
     }
   }
 
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Prevent mobile viewport jumping by ensuring the input stays in view
+    setTimeout(() => {
+      e.target.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center',
+        inline: 'nearest'
+      })
+    }, 100)
+  }
+
   const handleSubmit = async () => {
     if (callsign.trim() && !isSubmitting) {
       setIsSubmitting(true)
@@ -56,6 +67,7 @@ export default function AddQueueItem({ onAddCallsign }: AddQueueItemProps) {
           onChange={(e) => setCallsign(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
+          onFocus={handleInputFocus}
           placeholder={isSubmitting ? "SUBMITTING..." : "CALLSIGN"}
           className="callsign-input"
           autoFocus

@@ -647,6 +647,7 @@
   padding: 1.5rem;
   background-color: var(--color-surface);
   margin-top: 2rem;
+  overflow-x: hidden; /* Prevent horizontal overflow */
 }
 
 .admin-title {
@@ -670,6 +671,7 @@
   gap: 1rem;
   flex: 1;
   min-width: 0; /* Allow shrinking */
+  overflow: hidden; /* Prevent overflow */
 }
 
 .system-status-control {
@@ -838,6 +840,8 @@
   gap: 0.5rem;
   align-items: center;
   flex: 1;
+  flex-wrap: wrap;
+  min-width: 0; /* Allow shrinking */
 }
 
 .frequency-input {
@@ -848,7 +852,8 @@
   color: var(--color-text);
   font-size: 0.9rem;
   flex: 1;
-  min-width: 180px;
+  min-width: 120px;
+  max-width: 100%; /* Prevent overflow */
 }
 
 .frequency-button {
@@ -861,6 +866,8 @@
   cursor: pointer;
   transition: background-color 0.2s;
   white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 60px;
 }
 
 .frequency-button:hover:not(:disabled) {
@@ -882,6 +889,8 @@
   cursor: pointer;
   transition: background-color 0.2s;
   white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 60px;
 }
 
 .frequency-clear-button:hover:not(:disabled) {
@@ -917,6 +926,8 @@
   gap: 0.5rem;
   align-items: center;
   flex: 1;
+  flex-wrap: wrap;
+  min-width: 0; /* Allow shrinking */
 }
 
 .split-input {
@@ -927,7 +938,8 @@
   color: var(--color-text);
   font-size: 0.9rem;
   flex: 1;
-  min-width: 140px;
+  min-width: 120px;
+  max-width: 100%; /* Prevent overflow */
 }
 
 .split-button {
@@ -940,6 +952,8 @@
   cursor: pointer;
   transition: background-color 0.2s;
   white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 80px;
 }
 
 .split-button:hover:not(:disabled) {
@@ -961,6 +975,9 @@
   transition: background-color 0.2s ease;
   font-size: 0.9rem;
   margin-left: 0.5rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 90px;
 }
 
 .split-clear-button:hover:not(:disabled) {
@@ -1016,6 +1033,26 @@
   .frequency-label-text,
   .split-label-text {
     min-width: auto;
+  }
+  
+  .frequency-input-group,
+  .split-input-group {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .frequency-input,
+  .split-input {
+    min-width: 120px;
+    flex: 1 1 auto;
+  }
+  
+  .frequency-button,
+  .frequency-clear-button,
+  .split-button,
+  .split-clear-button {
+    flex: 0 0 auto;
+    min-width: 80px;
   }
   
   .status-toggle-label {
@@ -1083,6 +1120,31 @@
 
   .footer {
     padding: 1rem;
+  }
+  
+  /* Improve button spacing on very small screens */
+  .frequency-input-group,
+  .split-input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .frequency-button,
+  .frequency-clear-button,
+  .split-button,
+  .split-clear-button {
+    width: 100%;
+    margin: 0;
+  }
+  
+  /* Prevent input zoom on iOS */
+  .callsign-input,
+  .frequency-input,
+  .split-input,
+  .login-input {
+    font-size: 16px !important;
+    transform-origin: left top;
+    transform: scale(1);
   }
 }
 

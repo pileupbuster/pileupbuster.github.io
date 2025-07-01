@@ -29,13 +29,16 @@ export default function AdminSection({
   const [isSettingSplit, setIsSettingSplit] = useState(false)
   const [isClearingSplit, setIsClearingSplit] = useState(false)
 
-  // Initialize frequency input with current frequency when it changes
+  // Initialize frequency input with current frequency only on component mount or when cleared
   useEffect(() => {
-    if (currentFrequency && !frequency) {
-      // Only set if our local input is empty to avoid overwriting user input
+    // Only sync when frequency is cleared (null) or on initial load when input is empty
+    if (currentFrequency === null) {
+      setFrequency('')
+    } else if (currentFrequency && frequency === '') {
+      // Only set if our local input is completely empty (initial state)
       setFrequency(currentFrequency)
     }
-  }, [currentFrequency, frequency])
+  }, [currentFrequency]) // Remove frequency from dependencies to prevent constant resets
 
   if (!isLoggedIn) {
     return null
