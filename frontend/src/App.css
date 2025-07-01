@@ -81,6 +81,8 @@
   background-color: var(--color-surface);
   height: 400px;
   overflow: hidden;
+  width: 100%;
+  min-width: 0; /* Allow shrinking */
 }
 
 .current-active-card {
@@ -1120,16 +1122,19 @@
 /* Top Section Layout */
 .top-section {
   display: grid;
-  grid-template-columns: 1fr auto;
   gap: 2rem;
   margin-bottom: 2rem;
   align-items: start;
 }
 
-/* When only one item is shown, center it */
-.top-section:has(> :only-child) {
+/* Two columns when frequency is present */
+.top-section.has-frequency {
+  grid-template-columns: 1fr auto;
+}
+
+/* Single column when frequency is hidden */
+.top-section.frequency-hidden {
   grid-template-columns: 1fr;
-  justify-items: start;
 }
 
 @media (max-width: 1024px) {

@@ -386,7 +386,7 @@ function App() {
           <div className="alert-error">Error: {error}</div>
         )}
         
-        <div className="top-section">
+        <div className={`top-section ${currentFrequency ? 'has-frequency' : 'frequency-hidden'}`}>
           {/* Current Active Callsign (Green Border) */}
           <CurrentActiveCallsign 
             activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
