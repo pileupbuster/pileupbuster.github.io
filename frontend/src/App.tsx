@@ -407,13 +407,6 @@ function App() {
           )}
         </div>
 
-        {/* Mobile Frequency Display - Separate row for mobile */}
-        {currentFrequency && (
-          <div className="mobile-frequency-row">
-            <FrequencySignalPane className="frequency-signal-display-mobile" />
-          </div>
-        )}
-
         {/* Waiting Queue Container (Red Border) */}
         <WaitingQueue 
           queueData={queueData} 
@@ -424,6 +417,13 @@ function App() {
           isAdminLoggedIn={isAdminLoggedIn}
           systemActive={systemStatus === true}
         />
+
+        {/* Mobile Frequency Display - Below queue for mobile priority */}
+        {currentFrequency && (
+          <div className="mobile-frequency-row">
+            <FrequencySignalPane className="frequency-signal-display-mobile" />
+          </div>
+        )}
 
         {/* Admin Section - Only visible when logged in */}
         <AdminSection 

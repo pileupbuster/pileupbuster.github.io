@@ -1314,10 +1314,10 @@
     display: none;
   }
   
-  /* Show mobile frequency row */
+  /* Show mobile frequency row below waiting queue */
   .mobile-frequency-row {
     display: block;
-    margin-bottom: 2rem;
+    margin: 2rem 0;
   }
   
   .frequency-signal-display-mobile {
