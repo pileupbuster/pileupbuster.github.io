@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react'
 export interface AdminSectionProps {
   isLoggedIn: boolean
   onToggleSystemStatus: (active: boolean) => Promise<boolean>
-  onWorkNextUser: () => Promise<void>
-  onCompleteCurrentQso: () => Promise<void>
   onSetFrequency: (frequency: string) => Promise<void>
   onClearFrequency: () => Promise<void>
   onSetSplit: (split: string) => Promise<void>
@@ -16,8 +14,6 @@ export interface AdminSectionProps {
 export default function AdminSection({ 
   isLoggedIn, 
   onToggleSystemStatus, 
-  onWorkNextUser,
-  onCompleteCurrentQso,
   onSetFrequency,
   onClearFrequency,
   onSetSplit,
@@ -26,8 +22,6 @@ export default function AdminSection({
   currentFrequency
 }: AdminSectionProps) {
   const [isTogglingStatus, setIsTogglingStatus] = useState(false)
-  const [isWorkingNext, setIsWorkingNext] = useState(false)
-  const [isCompletingQso, setIsCompletingQso] = useState(false)
   const [frequency, setFrequency] = useState('')
   const [isSettingFrequency, setIsSettingFrequency] = useState(false)
   const [isClearingFrequency, setIsClearingFrequency] = useState(false)
@@ -57,28 +51,6 @@ export default function AdminSection({
       console.error('Failed to toggle system status:', error)
     } finally {
       setIsTogglingStatus(false)
-    }
-  }
-
-  const handleWorkNext = async () => {
-    setIsWorkingNext(true)
-    try {
-      await onWorkNextUser()
-    } catch (error) {
-      console.error('Failed to work next user:', error)
-    } finally {
-      setIsWorkingNext(false)
-    }
-  }
-
-  const handleCompleteQso = async () => {
-    setIsCompletingQso(true)
-    try {
-      await onCompleteCurrentQso()
-    } catch (error) {
-      console.error('Failed to complete current QSO:', error)
-    } finally {
-      setIsCompletingQso(false)
     }
   }
 
@@ -139,28 +111,6 @@ export default function AdminSection({
       <h2 className="admin-title">Admin Controls</h2>
       <div className="admin-controls">
         <div className="admin-actions-group">
-          {/* Queue Controls */}
-          <div className="queue-control">
-            <button
-              className="work-next-button"
-              onClick={handleWorkNext}
-              disabled={isWorkingNext || !systemStatus}
-              type="button"
-            >
-              {isWorkingNext ? 'Working...' : 'Work Next User in Queue'}
-            </button>
-          </div>
-
-          <div className="queue-control complete-control">
-            <button
-              className="complete-qso-button"
-              onClick={handleCompleteQso}
-              disabled={isCompletingQso || !systemStatus}
-              type="button"
-            >
-              {isCompletingQso ? 'Completing...' : 'Complete Current QSO'}
-            </button>
-          </div>
 
           {/* Frequency Controls */}
           <div className="frequency-control">

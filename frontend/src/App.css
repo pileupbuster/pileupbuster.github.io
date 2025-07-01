@@ -343,6 +343,52 @@
   flex: 1;
 }
 
+/* Admin clickable avatar/image styles */
+.admin-clickable {
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+  position: relative;
+}
+
+.admin-clickable:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.admin-clickable:active {
+  transform: scale(0.98);
+}
+
+/* Add a subtle border highlight for clickable avatars */
+.admin-clickable::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid transparent;
+  border-radius: inherit;
+  transition: border-color 0.2s ease;
+  pointer-events: none;
+}
+
+.admin-clickable:hover::after {
+  border-color: var(--color-primary);
+}
+
+.operator-image-large .placeholder-image {
+  width: 80px;
+  height: 80px;
+  background-color: var(--color-surface-tertiary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: var(--color-text-secondary);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .header {

@@ -7,6 +7,8 @@ export interface WaitingQueueProps {
   queueTotal: number
   queueMaxSize: number
   onAddCallsign: (callsign: string) => Promise<void>
+  onWorkNext?: (callsign: string) => Promise<void>
+  isAdminLoggedIn?: boolean
   systemActive?: boolean
 }
 
@@ -15,6 +17,8 @@ export default function WaitingQueue({
   queueTotal, 
   queueMaxSize, 
   onAddCallsign, 
+  onWorkNext,
+  isAdminLoggedIn,
   systemActive = true 
 }: WaitingQueueProps) {
   const handleAddCallsign = async (callsign: string) => {
@@ -45,7 +49,13 @@ export default function WaitingQueue({
       
       <div className="queue-container">
         {queueData.map((item, index) => (
-          <QueueItem key={`${item.callsign}-${index}`} item={item} index={index} />
+          <QueueItem 
+            key={`${item.callsign}-${index}`} 
+            item={item} 
+            index={index} 
+            onWorkNext={onWorkNext}
+            isAdminLoggedIn={isAdminLoggedIn}
+          />
         ))}
         {showAddButton && (
           <AddQueueItem onAddCallsign={handleAddCallsign} />

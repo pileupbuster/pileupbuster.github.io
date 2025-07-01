@@ -16,12 +16,26 @@ interface QrzData {
 interface CurrentActiveCallsignProps {
   activeUser: CurrentActiveUser | null;
   qrzData?: QrzData;
+  onCompleteQso?: () => Promise<void>;
+  isAdminLoggedIn?: boolean;
 }
 
-function CurrentActiveCallsign({ activeUser, qrzData }: CurrentActiveCallsignProps) {
+function CurrentActiveCallsign({ activeUser, qrzData, onCompleteQso, isAdminLoggedIn }: CurrentActiveCallsignProps) {
   // Helper function to generate QRZ lookup URL for a callsign
   const getQrzUrl = (callsign: string): string => {
     return QRZ_LOOKUP_URL_TEMPLATE.replace('{CALLSIGN}', callsign);
+  };
+
+  // Handle avatar/image click for admin complete QSO action
+  const handleAvatarClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAdminLoggedIn && onCompleteQso && activeUser) {
+      try {
+        await onCompleteQso();
+      } catch (error) {
+        console.error('Failed to complete QSO:', error);
+      }
+    }
   };
 
   // If no active user, show placeholder
@@ -48,7 +62,11 @@ function CurrentActiveCallsign({ activeUser, qrzData }: CurrentActiveCallsignPro
   return (
     <section className="current-active-section">
       <div className="current-active-card">
-        <div className="operator-image-large">
+        <div 
+          className={`operator-image-large ${isAdminLoggedIn && activeUser ? 'admin-clickable' : ''}`}
+          onClick={handleAvatarClick}
+          title={isAdminLoggedIn && activeUser ? 'Click to complete current QSO' : undefined}
+        >
           {hasQrzImage ? (
             <img src={qrzData.image} alt="Operator" className="operator-image" />
           ) : (

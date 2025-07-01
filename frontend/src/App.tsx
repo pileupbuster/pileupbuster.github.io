@@ -315,7 +315,13 @@ function App() {
     }
   }
 
-  const handleWorkNextUser = async (): Promise<void> => {
+  const handleWorkNextUser = async (targetCallsign?: string): Promise<void> => {
+    // For now, we'll keep the existing API that just works the next user in queue
+    // The targetCallsign parameter is for future enhancement if we want to support
+    // working specific users from the queue
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    targetCallsign; // Suppress unused parameter warning
+    
     const newQso = await adminApiService.workNextUser()
     // Copy callsign to clipboard only for the user who clicked "work next"
     if (newQso?.callsign) {
@@ -391,6 +397,8 @@ function App() {
           <CurrentActiveCallsign 
             activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
             qrzData={currentQso?.qrz}
+            onCompleteQso={handleCompleteCurrentQso}
+            isAdminLoggedIn={isAdminLoggedIn}
           />
 
           {/* Frequency and Signal Display - Only show if frequency is set */}
@@ -405,6 +413,8 @@ function App() {
           queueTotal={queueTotal}
           queueMaxSize={queueMaxSize}
           onAddCallsign={handleCallsignRegistration}
+          onWorkNext={handleWorkNextUser}
+          isAdminLoggedIn={isAdminLoggedIn}
           systemActive={systemStatus === true}
         />
 
@@ -412,8 +422,6 @@ function App() {
         <AdminSection 
           isLoggedIn={isAdminLoggedIn}
           onToggleSystemStatus={handleToggleSystemStatus}
-          onWorkNextUser={handleWorkNextUser}
-          onCompleteCurrentQso={handleCompleteCurrentQso}
           onSetFrequency={handleSetFrequency}
           onClearFrequency={handleClearFrequency}
           onSetSplit={handleSetSplit}
