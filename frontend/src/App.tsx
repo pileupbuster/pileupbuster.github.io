@@ -230,12 +230,19 @@ function App() {
       }
     }
 
+    const handleSplitUpdateEvent = (event: StateChangeEvent) => {
+      console.log('Received split_update event:', event)
+      // Split updates are handled by the FrequencySignalPane component via SSE
+      // No additional state management needed at App level
+    }
+
     // Register event listeners
     sseService.addEventListener('current_qso', handleCurrentQsoEvent)
     sseService.addEventListener('queue_update', handleQueueUpdateEvent)
     sseService.addEventListener('system_status', handleSystemStatusEvent)
     sseService.addEventListener('connected', handleConnectedEvent)
     sseService.addEventListener('frequency_update', handleFrequencyUpdateEvent)
+    sseService.addEventListener('split_update', handleSplitUpdateEvent)
 
     // Start SSE connection
     sseService.connect()
@@ -256,6 +263,7 @@ function App() {
       sseService.removeEventListener('system_status', handleSystemStatusEvent)
       sseService.removeEventListener('connected', handleConnectedEvent)
       sseService.removeEventListener('frequency_update', handleFrequencyUpdateEvent)
+      sseService.removeEventListener('split_update', handleSplitUpdateEvent)
       sseService.disconnect()
       clearInterval(fallbackInterval)
     }
@@ -339,6 +347,11 @@ function App() {
     // No need to manually refresh - SSE will broadcast the split update
   }
 
+  const handleClearSplit = async (): Promise<void> => {
+    await adminApiService.clearSplit()
+    // No need to manually refresh - SSE will broadcast the split update
+  }
+
   return (
     <div className="pileup-buster-app">
       {/* Header */}
@@ -404,6 +417,7 @@ function App() {
           onSetFrequency={handleSetFrequency}
           onClearFrequency={handleClearFrequency}
           onSetSplit={handleSetSplit}
+          onClearSplit={handleClearSplit}
           systemStatus={systemStatus}
           currentFrequency={currentFrequency}
         />

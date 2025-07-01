@@ -211,6 +211,24 @@ class AdminApiService {
       throw error
     }
   }
+
+  async clearSplit(): Promise<{ message: string; split_data: any }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/split`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to clear split')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to clear split:', error)
+      throw error
+    }
+  }
 }
 
 export const adminApiService = new AdminApiService()

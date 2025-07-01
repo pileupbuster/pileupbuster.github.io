@@ -439,6 +439,20 @@ class QueueDatabase:
             "updated_by": updated_by
         }
 
+    def clear_split(self, updated_by: str = "admin") -> Dict[str, Any]:
+        """Clear the current split value"""
+        if self.status_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Delete the split document
+        self.status_collection.delete_one({"_id": "split"})
+        
+        return {
+            "split": None,
+            "last_updated": datetime.utcnow().isoformat(),
+            "updated_by": updated_by
+        }
+
 
 # Global database instance
 queue_db = QueueDatabase()

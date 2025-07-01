@@ -8,6 +8,7 @@ export interface AdminSectionProps {
   onSetFrequency: (frequency: string) => Promise<void>
   onClearFrequency: () => Promise<void>
   onSetSplit: (split: string) => Promise<void>
+  onClearSplit: () => Promise<void>
   systemStatus: boolean | null
   currentFrequency: string | null
 }
@@ -20,6 +21,7 @@ export default function AdminSection({
   onSetFrequency,
   onClearFrequency,
   onSetSplit,
+  onClearSplit,
   systemStatus,
   currentFrequency
 }: AdminSectionProps) {
@@ -31,6 +33,7 @@ export default function AdminSection({
   const [isClearingFrequency, setIsClearingFrequency] = useState(false)
   const [split, setSplit] = useState('')
   const [isSettingSplit, setIsSettingSplit] = useState(false)
+  const [isClearingSplit, setIsClearingSplit] = useState(false)
 
   // Initialize frequency input with current frequency when it changes
   useEffect(() => {
@@ -119,6 +122,18 @@ export default function AdminSection({
     }
   }
 
+  const handleClearSplit = async () => {
+    setIsClearingSplit(true)
+    try {
+      await onClearSplit()
+      setSplit('') // Clear input when split is cleared
+    } catch (error) {
+      console.error('Failed to clear split:', error)
+    } finally {
+      setIsClearingSplit(false)
+    }
+  }
+
   return (
     <section className="admin-section">
       <h2 className="admin-title">Admin Controls</h2>
@@ -191,15 +206,23 @@ export default function AdminSection({
                   onChange={(e) => setSplit(e.target.value)}
                   placeholder="e.g., +3, +5, +5-10"
                   className="split-input"
-                  disabled={isSettingSplit}
+                  disabled={isSettingSplit || isClearingSplit}
                 />
                 <button
                   className="split-button"
                   onClick={handleSetSplit}
-                  disabled={isSettingSplit || !split.trim()}
+                  disabled={isSettingSplit || isClearingSplit || !split.trim()}
                   type="button"
                 >
                   {isSettingSplit ? 'Setting...' : 'Set Split'}
+                </button>
+                <button
+                  className="split-clear-button"
+                  onClick={handleClearSplit}
+                  disabled={isSettingSplit || isClearingSplit}
+                  type="button"
+                >
+                  {isClearingSplit ? 'Clearing...' : 'Clear Split'}
                 </button>
               </div>
             </label>

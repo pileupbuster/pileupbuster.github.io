@@ -179,6 +179,13 @@ async def set_system_status(
                     'max_size': max_queue_size,
                     'system_active': False
                 })
+                
+                # Clear split when system goes offline
+                try:
+                    split_data = queue_db.clear_split(username)
+                    await event_broadcaster.broadcast_split_update(split_data)
+                except Exception as e:
+                    logger.warning(f"Failed to clear split when going offline: {e}")
         except Exception as e:
             logger.warning(f"Failed to broadcast system status events: {e}")
         
@@ -265,6 +272,27 @@ async def set_split(
         
         return {
             'message': f'Split set to {request.split}',
+            'split_data': split_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.delete('/split')
+async def clear_split(
+    username: str = Depends(verify_admin_credentials)
+):
+    """Clear the current split value (admin only)"""
+    try:
+        split_data = queue_db.clear_split(username)
+        
+        # Broadcast split update
+        try:
+            await event_broadcaster.broadcast_split_update(split_data)
+        except Exception as e:
+            logger.warning(f"Failed to broadcast split clear event: {e}")
+        
+        return {
+            'message': 'Split cleared',
             'split_data': split_data
         }
     except Exception as e:

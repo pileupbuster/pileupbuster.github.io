@@ -903,6 +903,27 @@
   cursor: not-allowed;
 }
 
+.split-clear-button {
+  background-color: var(--color-danger);
+  color: var(--color-surface);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+
+.split-clear-button:hover:not(:disabled) {
+  background-color: var(--color-danger-hover);
+}
+
+.split-clear-button:disabled {
+  background-color: var(--color-secondary);
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .admin-login-form {
     position: fixed;
@@ -1153,6 +1174,30 @@
   color: var(--color-text);
   text-align: center;
   margin-bottom: 0.5rem;
+}
+
+.split-display.no-split {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}
+
+/* Offline state styles */
+.frequency-signal-pane.offline {
+  border-color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+.frequency-signal-pane.offline .frequency-display-large {
+  color: var(--color-text-secondary);
+  position: relative;
+}
+
+.offline-indicator {
+  display: block;
+  font-size: 1rem;
+  color: var(--color-danger);
+  font-weight: normal;
+  margin-top: 0.5rem;
 }
 
 .split-control {

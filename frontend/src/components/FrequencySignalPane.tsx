@@ -72,32 +72,45 @@ export default function FrequencySignalPane({ className = '' }: FrequencySignalP
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [signalLevel, setSignalLevel] = useState(7)
+  const [systemStatus, setSystemStatus] = useState<boolean | null>(null)
 
   // Animation for signal level fluctuation between 7 and 20
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Random fluctuation between 7 and 20
-      const newLevel = Math.floor(Math.random() * 14) + 7 // 7-20
-      setSignalLevel(newLevel)
-    }, 1000) // Update every second
+    let interval: number | undefined
+    
+    // Only animate if system is online
+    if (systemStatus === true) {
+      interval = setInterval(() => {
+        // Random fluctuation between 7 and 20
+        const newLevel = Math.floor(Math.random() * 14) + 7 // 7-20
+        setSignalLevel(newLevel)
+      }, 1000) // Update every second
+    } else {
+      // When offline, set signal to 0
+      setSignalLevel(0)
+    }
 
-    return () => clearInterval(interval)
-  }, [])
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [systemStatus])  // Depend on systemStatus
 
   useEffect(() => {
     // Load initial frequency and split
     const loadFrequencyData = async () => {
       try {
-        const [frequencyData, splitData] = await Promise.all([
+        const [frequencyData, splitData, statusData] = await Promise.all([
           apiService.getCurrentFrequency(),
-          apiService.getCurrentSplit()
+          apiService.getCurrentSplit(),
+          fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/public/status`).then(r => r.json())
         ])
         
         setFrequency(frequencyData.frequency)
         setLastUpdated(frequencyData.last_updated)
         setSplit(splitData.split || '')
+        setSystemStatus(statusData.active)
       } catch (error) {
-        console.error('Failed to load frequency/split:', error)
+        console.error('Failed to load frequency/split/status:', error)
       } finally {
         setIsLoading(false)
       }
@@ -118,8 +131,20 @@ export default function FrequencySignalPane({ className = '' }: FrequencySignalP
       setSplit(splitData.split || '')
     }
 
+    // Listen for system status updates via SSE
+    const handleSystemStatusUpdate = (event: { data: any }) => {
+      const statusData = event.data
+      setSystemStatus(statusData.active)
+      
+      // When system goes offline, clear split to 0
+      if (!statusData.active) {
+        setSplit('')
+      }
+    }
+
     sseService.addEventListener('frequency_update', handleFrequencyUpdate)
     sseService.addEventListener('split_update', handleSplitUpdate)
+    sseService.addEventListener('system_status', handleSystemStatusUpdate)
 
     // Cleanup
     return () => {
@@ -161,16 +186,21 @@ export default function FrequencySignalPane({ className = '' }: FrequencySignalP
   }
 
   return (
-    <div className={`frequency-signal-pane ${className}`}>
+    <div className={`frequency-signal-pane ${className} ${systemStatus === false ? 'offline' : ''}`}>
       <div className="frequency-display-large">
         {formatFrequency(frequency)} KHz
+        {systemStatus === false && <span className="offline-indicator">OFFLINE</span>}
       </div>
       
       {/* Split Display only - no input controls */}
       <div className="split-section">
-        {split && (
+        {split ? (
           <div className="split-display">
             SPLIT {split}
+          </div>
+        ) : (
+          <div className="split-display no-split">
+            SPLIT 0
           </div>
         )}
       </div>
