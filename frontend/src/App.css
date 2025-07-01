@@ -973,7 +973,7 @@
   font-size: 0.9rem;
   flex: 1;
   min-width: 120px;
-  max-width: 100%; /* Prevent overflow */
+  max-width: 100%;
 }
 
 .split-button {
@@ -1057,10 +1057,11 @@
     justify-content: center;
   }
   
+  /* Mobile-specific frequency and split layout */
   .frequency-label,
   .split-label {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 0.5rem;
   }
   
@@ -1071,22 +1072,33 @@
   
   .frequency-input-group,
   .split-input-group {
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.5rem;
+    align-items: stretch;
   }
   
   .frequency-input,
   .split-input {
-    min-width: 120px;
-    flex: 1 1 auto;
+    width: 100% !important;
+    min-width: auto;
+    flex: none;
+    max-width: 100%;
   }
   
-  .frequency-button,
-  .frequency-clear-button,
-  .split-button,
-  .split-clear-button {
-    flex: 0 0 auto;
-    min-width: 80px;
+  /* Mobile button row - 50% width each */
+  .mobile-button-row {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .mobile-button-row .frequency-button,
+  .mobile-button-row .frequency-clear-button,
+  .mobile-button-row .split-button,
+  .mobile-button-row .split-clear-button {
+    flex: 1;
+    min-width: 0;
+    width: 50%;
   }
   
   .status-toggle-label {
@@ -1097,6 +1109,13 @@
   
   .status-label {
     min-width: auto;
+  }
+}
+
+/* Desktop layout - hide mobile button row wrapper */
+@media (min-width: 769px) {
+  .mobile-button-row {
+    display: contents;
   }
 }
 
@@ -1279,10 +1298,31 @@
   grid-template-columns: 1fr;
 }
 
+/* Mobile Frequency Row - hidden on desktop */
+.mobile-frequency-row {
+  display: none;
+}
+
 @media (max-width: 1024px) {
   .top-section {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+  
+  /* Hide desktop frequency display on mobile */
+  .top-section .frequency-signal-display {
+    display: none;
+  }
+  
+  /* Show mobile frequency row */
+  .mobile-frequency-row {
+    display: block;
+    margin-bottom: 2rem;
+  }
+  
+  .frequency-signal-display-mobile {
+    width: 100%;
+    max-width: none;
   }
 }
 
@@ -1365,7 +1405,9 @@
   background-color: var(--color-surface);
   color: var(--color-text);
   font-size: 0.9rem;
-  width: 120px;
+  flex: 1;
+  min-width: 120px;
+  max-width: 100%;
 }
 
 .split-button {
@@ -1491,18 +1533,42 @@
     width: 100%;
     height: 300px;
     max-width: none;
+    padding: 1rem;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+  
+  .frequency-signal-display-mobile {
+    width: 100%;
+    height: 250px;
+    max-width: none;
+    padding: 1rem;
+    justify-content: flex-start;
+    overflow: hidden;
   }
   
   .frequency-display-large {
-    font-size: 2rem;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
   }
   
   .split-display {
-    font-size: 1.2rem;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .split-section {
+    margin-bottom: 1rem;
+  }
+  
+  .signal-meter {
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
   }
   
   .signal-scale {
-    height: 30px;
+    height: 25px;
+    margin-bottom: 0.25rem;
   }
   
   .tick-label {
@@ -1510,10 +1576,18 @@
   }
   
   .signal-bar-container {
-    height: 15px;
+    height: 12px;
+  }
+  
+  .signal-level-display {
+    margin-top: 0.25rem;
   }
   
   .level-value {
-    font-size: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .level-label {
+    font-size: 0.8rem;
   }
 }

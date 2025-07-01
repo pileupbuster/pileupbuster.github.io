@@ -129,22 +129,24 @@ export default function AdminSection({
                   disabled={isSettingFrequency || isClearingFrequency}
                   tabIndex={-1}
                 />
-                <button
-                  className="frequency-button"
-                  onClick={handleSetFrequency}
-                  disabled={isSettingFrequency || isClearingFrequency || !frequency.trim()}
-                  type="button"
-                >
-                  {isSettingFrequency ? 'Setting...' : 'Set'}
-                </button>
-                <button
-                  className="frequency-clear-button"
-                  onClick={handleClearFrequency}
-                  disabled={isSettingFrequency || isClearingFrequency}
-                  type="button"
-                >
-                  {isClearingFrequency ? 'Clearing...' : 'Clear'}
-                </button>
+                <div className="mobile-button-row">
+                  <button
+                    className="frequency-button"
+                    onClick={handleSetFrequency}
+                    disabled={isSettingFrequency || isClearingFrequency || !frequency.trim()}
+                    type="button"
+                  >
+                    {isSettingFrequency ? 'Setting...' : 'Set'}
+                  </button>
+                  <button
+                    className="frequency-clear-button"
+                    onClick={handleClearFrequency}
+                    disabled={isSettingFrequency || isClearingFrequency}
+                    type="button"
+                  >
+                    {isClearingFrequency ? 'Clearing...' : 'Clear'}
+                  </button>
+                </div>
               </div>
             </label>
           </div>
@@ -163,22 +165,24 @@ export default function AdminSection({
                   disabled={isSettingSplit || isClearingSplit}
                   tabIndex={-1}
                 />
-                <button
-                  className="split-button"
-                  onClick={handleSetSplit}
-                  disabled={isSettingSplit || isClearingSplit || !split.trim()}
-                  type="button"
-                >
-                  {isSettingSplit ? 'Setting...' : 'Set Split'}
-                </button>
-                <button
-                  className="split-clear-button"
-                  onClick={handleClearSplit}
-                  disabled={isSettingSplit || isClearingSplit}
-                  type="button"
-                >
-                  {isClearingSplit ? 'Clearing...' : 'Clear Split'}
-                </button>
+                <div className="mobile-button-row">
+                  <button
+                    className="split-button"
+                    onClick={handleSetSplit}
+                    disabled={isSettingSplit || isClearingSplit || !split.trim()}
+                    type="button"
+                  >
+                    {isSettingSplit ? 'Setting...' : 'Set Split'}
+                  </button>
+                  <button
+                    className="split-clear-button"
+                    onClick={handleClearSplit}
+                    disabled={isSettingSplit || isClearingSplit}
+                    type="button"
+                  >
+                    {isClearingSplit ? 'Clearing...' : 'Clear Split'}
+                  </button>
+                </div>
               </div>
             </label>
           </div>

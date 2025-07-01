@@ -407,6 +407,13 @@ function App() {
           )}
         </div>
 
+        {/* Mobile Frequency Display - Separate row for mobile */}
+        {currentFrequency && (
+          <div className="mobile-frequency-row">
+            <FrequencySignalPane className="frequency-signal-display-mobile" />
+          </div>
+        )}
+
         {/* Waiting Queue Container (Red Border) */}
         <WaitingQueue 
           queueData={queueData} 
