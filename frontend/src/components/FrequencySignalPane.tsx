@@ -6,94 +6,15 @@ export interface FrequencySignalPaneProps {
   className?: string
 }
 
-interface SignalMeterProps {
-  level: number
-}
-
-function SignalMeter({ level }: SignalMeterProps) {
-  // Scale: 1,2,3,4,5,6,7,8,9,+10,+20,+30,+100
-  const scaleLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '+10', '+20', '+30', '+100']
-  
-  // Convert level to scale position (0-12)
-  const getScalePosition = (signalLevel: number): number => {
-    if (signalLevel <= 9) return signalLevel - 1
-    if (signalLevel <= 10) return 9
-    if (signalLevel <= 20) return 10
-    if (signalLevel <= 30) return 11
-    return 12
-  }
-  
-  // Get color based on signal level
-  const getSignalColor = (signalLevel: number): string => {
-    if (signalLevel <= 7) return '#00ff40' // bright green
-    if (signalLevel <= 9) return '#ffff00' // yellow near +8
-    return '#ff0000' // red for +10 and above
-  }
-  
-  // Format signal level for display
-  const formatSignalLevel = (signalLevel: number): string => {
-    if (signalLevel <= 9) return `S${signalLevel}`
-    return `S9 +${signalLevel - 9}`
-  }
-  
-  const position = getScalePosition(level)
-  const fillPercentage = ((position + 1) / scaleLabels.length) * 100
-  
-  return (
-    <div className="signal-meter">
-      <div className="signal-scale">
-        {scaleLabels.map((label) => (
-          <div key={label} className="scale-tick">
-            <div className="tick-mark"></div>
-            <div className="tick-label">{label}</div>
-          </div>
-        ))}
-      </div>
-      <div className="signal-bar-container">
-        <div 
-          className="signal-bar" 
-          style={{ 
-            width: `${fillPercentage}%`,
-            backgroundColor: getSignalColor(level)
-          }}
-        ></div>
-      </div>
-      <div className="signal-level-display">
-        <span className="level-label">LEVEL</span>
-        <span className="level-value">{formatSignalLevel(level)}</span>
-      </div>
-    </div>
-  )
-}
+// NOTE: Signal meter component was removed in July 2025.
+// If you need to restore it, check git history before this date.
 
 export default function FrequencySignalPane({ className = '' }: FrequencySignalPaneProps) {
   const [frequency, setFrequency] = useState<string | null>(null)
   const [split, setSplit] = useState('')
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [signalLevel, setSignalLevel] = useState(7)
   const [systemStatus, setSystemStatus] = useState<boolean | null>(null)
-
-  // Animation for signal level fluctuation between 7 and 20
-  useEffect(() => {
-    let interval: number | undefined
-    
-    // Only animate if system is online
-    if (systemStatus === true) {
-      interval = setInterval(() => {
-        // Random fluctuation between 7 and 20
-        const newLevel = Math.floor(Math.random() * 14) + 7 // 7-20
-        setSignalLevel(newLevel)
-      }, 1000) // Update every second
-    } else {
-      // When offline, set signal to 0
-      setSignalLevel(0)
-    }
-
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [systemStatus])  // Depend on systemStatus
 
   useEffect(() => {
     // Load initial frequency and split
@@ -189,7 +110,9 @@ export default function FrequencySignalPane({ className = '' }: FrequencySignalP
     <div className={`frequency-signal-pane ${className} ${systemStatus === false ? 'offline' : ''}`}>
       <div className="frequency-display-large">
         {formatFrequency(frequency)} KHz
-        {systemStatus === false && <span className="offline-indicator">OFFLINE</span>}
+        <span className={systemStatus ? 'online-indicator' : 'offline-indicator'}>
+          {systemStatus ? 'ONLINE' : 'OFFLINE'}
+        </span>
       </div>
       
       {/* Split Display only - no input controls */}
@@ -205,9 +128,7 @@ export default function FrequencySignalPane({ className = '' }: FrequencySignalP
         )}
       </div>
 
-      {/* Signal Meter */}
-      <SignalMeter level={signalLevel} />
-      
+      {/* NOTE: Signal meter was removed in July 2025 */}
       {lastUpdated && (
         <div className="frequency-updated">
           Updated: {new Date(lastUpdated).toLocaleTimeString()}
