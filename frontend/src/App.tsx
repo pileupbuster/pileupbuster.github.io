@@ -380,7 +380,7 @@ function App() {
             isLoggedIn={isAdminLoggedIn}
             onLogout={handleAdminLogout}
           />
-          <ScaleControl onScaleChange={handleScaleChange} />
+          {isAdminLoggedIn && <ScaleControl onScaleChange={handleScaleChange} />}
         </div>
       </header>
 
