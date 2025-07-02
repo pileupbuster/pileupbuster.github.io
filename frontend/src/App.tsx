@@ -20,10 +20,7 @@ function App() {
   const { resolvedTheme } = useTheme()
   
   // UI Scale state
-  const [uiScale, setUiScale] = useState(1)
-  
   const handleScaleChange = (scale: number) => {
-    setUiScale(scale)
     document.documentElement.style.setProperty('--ui-scale', scale.toString())
   }
   
