@@ -91,7 +91,8 @@ export default function AdminLogin({ onLogin, isLoggedIn, onLogout }: AdminLogin
               required
               disabled={isLoggingIn}
               className="login-input"
-              tabIndex={-1}
+              tabIndex={1}
+              autoFocus
             />
             <input
               type="password"
@@ -101,24 +102,26 @@ export default function AdminLogin({ onLogin, isLoggedIn, onLogout }: AdminLogin
               required
               disabled={isLoggingIn}
               className="login-input"
-              tabIndex={-1}
+              tabIndex={2}
             />
           </div>
           <div className="login-actions">
+            <button 
+              type="submit"
+              disabled={isLoggingIn}
+              className="login-submit-button"
+              tabIndex={3}
+            >
+              {isLoggingIn ? 'Logging in...' : 'Login'}
+            </button>
             <button 
               type="button" 
               onClick={() => setShowLoginForm(false)}
               disabled={isLoggingIn}
               className="cancel-button"
+              tabIndex={4}
             >
               Cancel
-            </button>
-            <button 
-              type="submit"
-              disabled={isLoggingIn}
-              className="login-submit-button"
-            >
-              {isLoggingIn ? 'Logging in...' : 'Login'}
             </button>
           </div>
         </form>

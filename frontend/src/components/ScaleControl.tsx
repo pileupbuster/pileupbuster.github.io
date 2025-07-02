@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 export interface ScaleControlProps {
   onScaleChange: (scale: number) => void;
@@ -20,9 +20,9 @@ const ScaleControl: React.FC<ScaleControlProps> = ({ onScaleChange, defaultScale
       <input
         id="scale-slider"
         type="range"
-        min="0.75"
-        max="1.25"
-        step="0.05"
+        min="0.5"
+        max="1.5"
+        step="0.1"
         value={scale}
         onChange={handleScaleChange}
         className="scale-slider"
