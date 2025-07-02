@@ -1333,12 +1333,12 @@
   padding: 1.5rem;
   background-color: var(--color-surface);
   position: relative;
-  height: 400px;
+  min-height: 200px;
   width: 400px;
   max-width: 400px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 1.5rem;
 }
 
 .frequency-display-large {
@@ -1347,12 +1347,14 @@
   font-family: 'Courier New', monospace;
   color: var(--color-text);
   text-align: center;
-  margin-bottom: 1rem;
   letter-spacing: 0.1em;
 }
 
 .split-section {
-  margin-bottom: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .split-display {
@@ -1360,12 +1362,35 @@
   font-weight: bold;
   color: var(--color-text);
   text-align: center;
-  margin-bottom: 0.5rem;
 }
 
 .split-display.no-split {
   color: var(--color-text-secondary);
   opacity: 0.6;
+}
+
+.offline-indicator,
+.online-indicator {
+  display: block;
+  font-size: 1.2rem;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-weight: bold;
+}
+
+.offline-indicator {
+  color: var(--color-danger);
+}
+
+.online-indicator {
+  color: var(--color-success);
+}
+
+.frequency-updated {
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  margin-top: auto;
 }
 
 /* Offline state styles */
@@ -1430,94 +1455,8 @@
   cursor: not-allowed;
 }
 
-/* Signal Meter */
-.signal-meter {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.signal-scale {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  height: 40px;
-  margin-bottom: 0.5rem;
-}
-
-.scale-tick {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-
-.tick-mark {
-  width: 2px;
-  height: 25px;
-  background-color: var(--color-text);
-  margin-bottom: 0.25rem;
-}
-
-.scale-tick:nth-child(1) .tick-mark,
-.scale-tick:nth-child(10) .tick-mark,
-.scale-tick:nth-child(11) .tick-mark,
-.scale-tick:nth-child(12) .tick-mark,
-.scale-tick:nth-child(13) .tick-mark {
-  height: 30px;
-  background-color: var(--color-danger);
-}
-
-.tick-label {
-  font-size: 0.7rem;
-  color: var(--color-text-secondary);
-  font-weight: bold;
-}
-
-.signal-bar-container {
-  height: 20px;
-  background-color: var(--color-surface-tertiary);
-  border: 2px solid var(--color-border);
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-  background: linear-gradient(90deg, 
-    #333 0%, 
-    #444 20%, 
-    #333 40%, 
-    #444 60%, 
-    #333 80%, 
-    #444 100%
-  );
-}
-
-.signal-bar {
-  height: 100%;
-  transition: all 0.8s ease-in-out;
-  border-radius: 2px;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-}
-
-.signal-level-display {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.5rem;
-}
-
-.level-label {
-  font-size: 0.9rem;
-  font-weight: bold;
-  color: var(--color-text-secondary);
-}
-
-.level-value {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: var(--color-text);
-  font-family: 'Courier New', monospace;
-}
+/* NOTE: Signal meter styles were removed in July 2025.
+   If you need to restore them, check git history before this date */
 
 .frequency-updated {
   position: absolute;
