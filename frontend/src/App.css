@@ -1,6 +1,13 @@
 /* Pileup Buster App Styles */
 
+:root {
+  --ui-scale: 1;
+}
+
+/* Base container that applies vertical scaling only */
 .pileup-buster-app {
+  --scaled-height: calc(var(--ui-scale) * 1em);
+  min-height: 100vh;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -23,6 +30,69 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+/* Scale Control Styles */
+.scale-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-surface-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.scale-label {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.scale-slider {
+  width: 100px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--color-border);
+  border-radius: 2px;
+  outline: none;
+}
+
+.scale-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.scale-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.scale-slider::-webkit-slider-thumb:hover {
+  background: var(--color-primary-hover);
+}
+
+.scale-slider::-moz-range-thumb:hover {
+  background: var(--color-primary-hover);
+}
+
+.scale-value {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  min-width: 3.5em;
+  text-align: right;
 }
 
 .logo {
@@ -79,10 +149,13 @@
   border-radius: 8px;
   padding: 1.5rem;
   background-color: var(--color-surface);
-  height: 400px;
+  min-height: calc(400px * var(--ui-scale));
+  height: calc(400px * var(--ui-scale));
   overflow: hidden;
   width: 100%;
   min-width: 0; /* Allow shrinking */
+  display: flex;
+  flex-direction: column;
 }
 
 .current-active-card {
@@ -1333,7 +1406,8 @@
   padding: 1.5rem;
   background-color: var(--color-surface);
   position: relative;
-  min-height: 200px;
+  height: calc(400px * var(--ui-scale));
+  min-height: calc(400px * var(--ui-scale));
   width: 400px;
   max-width: 400px;
   display: flex;
@@ -1342,7 +1416,7 @@
 }
 
 .frequency-display-large {
-  font-size: 3rem;
+  font-size: calc(3rem * var(--ui-scale));
   font-weight: bold;
   font-family: 'Courier New', monospace;
   color: var(--color-text);

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import './App.css'
 import pileupBusterLogo from './assets/logo.png'
 import pileupBusterLogoDark from './assets/logo-dark.png'
+import ScaleControl from './components/ScaleControl'
 import CurrentActiveCallsign, { type CurrentActiveUser } from './components/CurrentActiveCallsign'
 import WaitingQueue from './components/WaitingQueue'
 import AdminLogin from './components/AdminLogin'
@@ -17,6 +18,14 @@ import { sseService, type StateChangeEvent } from './services/sse'
 function App() {
   // Theme
   const { resolvedTheme } = useTheme()
+  
+  // UI Scale state
+  const [uiScale, setUiScale] = useState(1)
+  
+  const handleScaleChange = (scale: number) => {
+    setUiScale(scale)
+    document.documentElement.style.setProperty('--ui-scale', scale.toString())
+  }
   
   // Real data state
   const [currentQso, setCurrentQso] = useState<CurrentQsoData | null>(null)
@@ -374,6 +383,7 @@ function App() {
             isLoggedIn={isAdminLoggedIn}
             onLogout={handleAdminLogout}
           />
+          <ScaleControl onScaleChange={handleScaleChange} />
         </div>
       </header>
 
