@@ -2,6 +2,12 @@
 
 A web application for ham radio operators to register their callsign on a callback queue.
 
+
+> [!IMPORTANT]  
+> Pileupbuster is now sold and no longer mainted by this account please see
+> [https://github.com/pileupbuster](https://github.com/pileupbuster)
+
+
 ## 🚀 Live Application
 
 **Try it now:** [https://pileupbuster.com](https://pileupbuster.com)
