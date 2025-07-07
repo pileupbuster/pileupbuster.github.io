@@ -450,12 +450,12 @@ function App() {
       <footer className="footer">
         <div className="footer-content">
           <a 
-            href="https://github.com/brianbruff/pileup-buster" 
+            href="https://ei6jgb.com" 
             target="_blank" 
             rel="noopener noreferrer"
             className="github-link"
           >
-            View on GitHub
+          Maintained by EI6JGB. Original by BrianBruff (Ei6LF)
           </a>
         </div>
       </footer>
