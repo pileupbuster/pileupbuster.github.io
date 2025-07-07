@@ -77,6 +77,7 @@ function App() {
     return {
       callsign: entry.callsign,
       location: entry.qrz?.dxcc_name || entry.qrz?.address || 'Location not available',
+      timestamp: entry.timestamp,
       qrz: entry.qrz
     }
   }

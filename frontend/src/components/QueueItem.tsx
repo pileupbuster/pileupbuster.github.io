@@ -1,8 +1,10 @@
 import React from 'react';
+import Timer from './Timer';
 
 export interface QueueItemData {
   callsign: string
   location: string
+  timestamp: string
   qrz?: {
     callsign?: string
     name?: string
@@ -64,6 +66,7 @@ export default function QueueItem({ item, index, onWorkNext, isAdminLoggedIn }: 
       <div className="card-info">
         <div className="card-callsign">{item.callsign}</div>
         <div className="card-location">{item.location}</div>
+        <Timer timestamp={item.timestamp} />
       </div>
     </div>
   )

@@ -1604,3 +1604,35 @@
     font-size: 0.8rem;
   }
 }
+
+/* Queue Timer Styles */
+.queue-timer {
+  font-family: 'Courier New', 'Monaco', 'Lucida Console', monospace;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--color-text);
+  text-align: center;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.1em;
+  min-width: 50px;
+}
+
+/* Dark theme specific styling for timer */
+[data-theme="dark"] .queue-timer {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.1);
+}
+
+/* Light theme specific styling for timer */
+[data-theme="light"] .queue-timer {
+  color: #213547;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.1);
+}
