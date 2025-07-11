@@ -923,6 +923,26 @@
   cursor: not-allowed;
 }
 
+/* Admin QSO Control Buttons */
+.admin-qso-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--color-surface-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.admin-qso-controls .clear-qso-button,
+.admin-qso-controls .work-next-button {
+  flex: 1;
+  max-width: 200px;
+  white-space: nowrap;
+}
+
 /* Frequency Controls */
 .frequency-control {
   display: flex;

@@ -409,6 +409,28 @@ function App() {
             isAdminLoggedIn={isAdminLoggedIn}
           />
 
+          {/* Admin QSO Control Buttons - Only visible when admin is logged in */}
+          {isAdminLoggedIn && (
+            <div className="admin-qso-controls">
+              <button 
+                className="clear-qso-button"
+                onClick={handleCompleteCurrentQso}
+                disabled={!currentQso}
+                title="Clear the current QSO without advancing the queue"
+              >
+                Clear Current QSO
+              </button>
+              <button 
+                className="work-next-button"
+                onClick={() => handleWorkNextUser()}
+                disabled={queueTotal === 0}
+                title="Work the next person in the queue (FIFO order)"
+              >
+                Work Next ({queueTotal} waiting)
+              </button>
+            </div>
+          )}
+
           {/* Frequency and Signal Display - Only show if frequency is set */}
           {currentFrequency && (
             <FrequencySignalPane className="frequency-signal-display" />
@@ -421,7 +443,6 @@ function App() {
           queueTotal={queueTotal}
           queueMaxSize={queueMaxSize}
           onAddCallsign={handleCallsignRegistration}
-          onWorkNext={handleWorkNextUser}
           isAdminLoggedIn={isAdminLoggedIn}
           systemActive={systemStatus === true}
         />

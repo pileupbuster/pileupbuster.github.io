@@ -7,7 +7,6 @@ export interface WaitingQueueProps {
   queueTotal: number
   queueMaxSize: number
   onAddCallsign: (callsign: string) => Promise<void>
-  onWorkNext?: (callsign: string) => Promise<void>
   isAdminLoggedIn?: boolean
   systemActive?: boolean
 }
@@ -17,7 +16,6 @@ export default function WaitingQueue({
   queueTotal, 
   queueMaxSize, 
   onAddCallsign, 
-  onWorkNext,
   isAdminLoggedIn,
   systemActive = true 
 }: WaitingQueueProps) {
@@ -53,7 +51,6 @@ export default function WaitingQueue({
             key={`${item.callsign}-${index}`} 
             item={item} 
             index={index} 
-            onWorkNext={onWorkNext}
             isAdminLoggedIn={isAdminLoggedIn}
           />
         ))}
