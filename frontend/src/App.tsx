@@ -401,24 +401,16 @@ function App() {
         )}
         
         <div className={`top-section ${currentFrequency ? 'has-frequency' : 'frequency-hidden'}`}>
-          {/* Current Active Callsign (Green Border) */}
-          <CurrentActiveCallsign 
-            activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
-            qrzData={currentQso?.qrz}
-            onCompleteQso={handleCompleteCurrentQso}
-            isAdminLoggedIn={isAdminLoggedIn}
-          />
-
           {/* Admin QSO Control Buttons - Only visible when admin is logged in */}
           {isAdminLoggedIn && (
             <div className="admin-qso-controls">
               <button 
-                className="clear-qso-button"
+                className="complete-qso-button"
                 onClick={handleCompleteCurrentQso}
                 disabled={!currentQso}
-                title="Clear the current QSO without advancing the queue"
+                title="Complete the current QSO without advancing the queue"
               >
-                Clear Current QSO
+                Complete Current QSO
               </button>
               <button 
                 className="work-next-button"
@@ -430,6 +422,14 @@ function App() {
               </button>
             </div>
           )}
+
+          {/* Current Active Callsign (Green Border) */}
+          <CurrentActiveCallsign 
+            activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
+            qrzData={currentQso?.qrz}
+            onCompleteQso={handleCompleteCurrentQso}
+            isAdminLoggedIn={isAdminLoggedIn}
+          />
 
           {/* Frequency and Signal Display - Only show if frequency is set */}
           {currentFrequency && (
