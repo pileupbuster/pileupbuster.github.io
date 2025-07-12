@@ -24,6 +24,14 @@ export interface CurrentQsoData {
     image?: string
     url?: string
   }
+  metadata?: {
+    source?: 'queue' | 'direct'
+    bridge_initiated?: boolean
+    frequency_mhz?: number
+    mode?: string
+    started_via?: string
+    bridge_timestamp?: string
+  }
 }
 
 export interface QueueListResponse {

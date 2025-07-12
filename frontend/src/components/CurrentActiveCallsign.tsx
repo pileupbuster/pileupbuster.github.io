@@ -13,17 +13,54 @@ interface QrzData {
   url?: string;
 }
 
+interface QsoMetadata {
+  source?: 'queue' | 'direct';
+  bridge_initiated?: boolean;
+  frequency_mhz?: number;
+  mode?: string;
+  started_via?: string;
+}
+
 interface CurrentActiveCallsignProps {
   activeUser: CurrentActiveUser | null;
   qrzData?: QrzData;
+  metadata?: QsoMetadata;
   onCompleteQso?: () => Promise<void>;
   isAdminLoggedIn?: boolean;
 }
 
-function CurrentActiveCallsign({ activeUser, qrzData, onCompleteQso, isAdminLoggedIn }: CurrentActiveCallsignProps) {
+function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, isAdminLoggedIn }: CurrentActiveCallsignProps) {
   // Helper function to generate QRZ lookup URL for a callsign
   const getQrzUrl = (callsign: string): string => {
     return QRZ_LOOKUP_URL_TEMPLATE.replace('{CALLSIGN}', callsign);
+  };
+
+  // Get QSO source display information
+  const getQSOSourceDisplay = (metadata?: QsoMetadata) => {
+    if (!metadata) return null;
+    
+    if (metadata.bridge_initiated) {
+      return metadata.source === 'queue' 
+        ? { text: '📻 Worked from Queue (via QLog)', className: 'qso-source bridge-queue' }
+        : { text: '🔗 Worked Direct (via QLog)', className: 'qso-source bridge-direct' };
+    }
+    
+    return { text: '🎯 Worked from Queue', className: 'qso-source manual-queue' };
+  };
+
+  // Get bridge QSO details
+  const getBridgeQSODetails = (metadata?: QsoMetadata) => {
+    if (!metadata?.bridge_initiated) return null;
+    
+    const details = [];
+    if (metadata.frequency_mhz) {
+      details.push(`📡 ${metadata.frequency_mhz} MHz`);
+    }
+    if (metadata.mode) {
+      details.push(`📻 ${metadata.mode}`);
+    }
+    
+    return details.length > 0 ? details.join(' • ') : null;
   };
 
   // Handle avatar/image click for admin complete QSO action
@@ -58,6 +95,8 @@ function CurrentActiveCallsign({ activeUser, qrzData, onCompleteQso, isAdminLogg
 
   // Determine which image to show
   const hasQrzImage = qrzData?.image;
+  const sourceDisplay = getQSOSourceDisplay(metadata);
+  const bridgeDetails = getBridgeQSODetails(metadata);
   
   return (
     <section className="current-active-section">
@@ -84,6 +123,21 @@ function CurrentActiveCallsign({ activeUser, qrzData, onCompleteQso, isAdminLogg
           </a>
           <div className="active-name">{activeUser.name}</div>
           <div className="active-location">{activeUser.location}</div>
+          
+          {/* QSO Source Indicator */}
+          {sourceDisplay && (
+            <div className={sourceDisplay.className}>
+              {sourceDisplay.text}
+            </div>
+          )}
+          
+          {/* Bridge QSO Details (frequency/mode) */}
+          {bridgeDetails && (
+            <div className="bridge-qso-details">
+              {bridgeDetails}
+            </div>
+          )}
+          
           {qrzData?.url && (
             <button 
               className="qrz-button"

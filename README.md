@@ -1,8 +1,8 @@
-# Pileup Buster Original by BrianBruff
+# EI6JGB Pileup Buster. 
 
-A web application for ham radio operators to register their callsign on a callback queue.
+A web modern responsive web application for ham radio operators to register their callsign on a callback queue.
 
-## 🚀 Live Application test
+## 🚀 Live deployment
 
 **Try it now:** [https://pileupbuster.com](https://pileupbuster.com)
 
@@ -12,7 +12,7 @@ A web application for ham radio operators to register their callsign on a callba
 
 ## Acknowledgments
 
-This idea is not unique - we first noticed it being used by the Australian DX helper website developed by Greg and Grant. Kudos to them for the innovative approach! Check out their excellent work in the amateur radio community.
+This idea is not unique - we first noticed it being used by the Australian DX helper website developed by Greg and Grant. Kudos to them for the innovative approach! Check out their excellent work in the amateur radio community. The first working versions of Pileupbuster were designed and built by BrianBruff and all credit goes to him for that. I (Ei6JGB, Daithi) have since taken over the project and will be developing it further.
 
 ## Project Goals
 
@@ -25,7 +25,7 @@ This idea is not unique - we first noticed it being used by the Australian DX he
 - **Universal Deployment**: Support deployment on cloud platforms, any server, or local environments
 - **Containerization**: Full Docker support for easy deployment and development
 - **Modern Frontend**: Single-page React application hosted on GitHub Pages
-- **Embedded Integration**: Backend status page designed for iframe integration (e.g., QRZ.com profiles - see https://www.qrz.com/db/EI6LF)
+- **Embedded Integration**: Backend status page designed for iframe integration (e.g., QRZ.com profiles - see https://www.qrz.com/db/EI6JGB)
 - **Scalable Architecture**: Clean separation between frontend and backend services
 - **Developer Experience**: Streamlined development workflow with hot-reload and modern tooling
 
@@ -172,4 +172,4 @@ This repository includes dev container configurations for GitHub Codespaces. Sim
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. This means you are free to use, modify, and distribute this code without restrictions.
+This project is currently private. I am unsure yet the direction this is going in.

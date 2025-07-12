@@ -245,6 +245,67 @@
   background-color: var(--color-primary-hover);
 }
 
+/* QSO Source Indicators */
+.qso-source {
+  margin: 0.5rem 0;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.qso-source.bridge-queue {
+  background-color: #e8f5e8;
+  color: #2d5016;
+  border: 1px solid #4caf50;
+}
+
+.qso-source.bridge-direct {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #2196f3;
+}
+
+.qso-source.manual-queue {
+  background-color: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ff9800;
+}
+
+/* Bridge QSO Details */
+.bridge-qso-details {
+  margin: 0.5rem 0;
+  padding: 0.3rem 0.6rem;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .qso-source.bridge-queue {
+    background-color: #1b2f1b;
+    color: #81c784;
+    border-color: #388e3c;
+  }
+
+  .qso-source.bridge-direct {
+    background-color: #0d1b2a;
+    color: #64b5f6;
+    border-color: #1976d2;
+  }
+
+  .qso-source.manual-queue {
+    background-color: #2d1b0d;
+    color: #ffb74d;
+    border-color: #f57c00;
+  }
+}
+
 /* Waiting Queue Section (Red Border) */
 .queue-section {
   border: 3px solid var(--color-danger);

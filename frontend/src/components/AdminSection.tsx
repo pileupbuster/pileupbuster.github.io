@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import BridgeStatusIndicator from './BridgeStatusIndicator'
 
 export interface AdminSectionProps {
   isLoggedIn: boolean
@@ -9,17 +10,21 @@ export interface AdminSectionProps {
   onClearSplit: () => Promise<void>
   systemStatus: boolean | null
   currentFrequency: string | null
+  loggerIntegrationEnabled: boolean
+  onToggleLoggerIntegration: (enabled: boolean) => Promise<void>
 }
 
-export default function AdminSection({ 
-  isLoggedIn, 
-  onToggleSystemStatus, 
+export default function AdminSection({
+  isLoggedIn,
+  onToggleSystemStatus,
   onSetFrequency,
   onClearFrequency,
   onSetSplit,
   onClearSplit,
   systemStatus,
-  currentFrequency
+  currentFrequency,
+  loggerIntegrationEnabled,
+  onToggleLoggerIntegration
 }: AdminSectionProps) {
   const [isTogglingStatus, setIsTogglingStatus] = useState(false)
   const [frequency, setFrequency] = useState('')
@@ -28,6 +33,7 @@ export default function AdminSection({
   const [split, setSplit] = useState('')
   const [isSettingSplit, setIsSettingSplit] = useState(false)
   const [isClearingSplit, setIsClearingSplit] = useState(false)
+  const [isTogglingLogger, setIsTogglingLogger] = useState(false)
 
   // Initialize frequency input with current frequency only on component mount or when cleared
   useEffect(() => {
@@ -106,6 +112,17 @@ export default function AdminSection({
       console.error('Failed to clear split:', error)
     } finally {
       setIsClearingSplit(false)
+    }
+  }
+
+  const handleToggleLogger = async () => {
+    setIsTogglingLogger(true)
+    try {
+      await onToggleLoggerIntegration(!loggerIntegrationEnabled)
+    } catch (error) {
+      console.error('Failed to toggle logger integration:', error)
+    } finally {
+      setIsTogglingLogger(false)
     }
   }
 
@@ -188,7 +205,7 @@ export default function AdminSection({
           </div>
         </div>
 
-        {/* System Status - Far Right */}
+        {/* System Status and Logger Integration - Far Right */}
         <div className="system-status-control">
           <label className="status-toggle-label">
             <span className="status-label">System Status:</span>
@@ -208,6 +225,31 @@ export default function AdminSection({
               </button>
             </div>
           </label>
+
+          <label className="status-toggle-label">
+            <span className="status-label">Logger Integration:</span>
+            <div className="toggle-container">
+              <button
+                className={`toggle-button ${loggerIntegrationEnabled ? 'active' : 'inactive'}`}
+                onClick={handleToggleLogger}
+                disabled={isTogglingLogger}
+                type="button"
+              >
+                <div className="toggle-slider">
+                  <div className="toggle-knob"></div>
+                </div>
+                <span className="toggle-text">
+                  {loggerIntegrationEnabled ? 'ENABLED' : 'DISABLED'}
+                </span>
+              </button>
+            </div>
+          </label>
+
+          {/* QLog Bridge Status */}
+          <div className="bridge-status-section">
+            <span className="status-label">QLog Bridge:</span>
+            <BridgeStatusIndicator />
+          </div>
         </div>
       </div>
     </section>

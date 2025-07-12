@@ -229,6 +229,44 @@ class AdminApiService {
       throw error
     }
   }
+
+  async getLoggerIntegration(): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/logger-integration`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get logger integration status')
+      }
+
+      const data = await response.json()
+      return data.enabled
+    } catch (error) {
+      console.error('Failed to get logger integration status:', error)
+      throw error
+    }
+  }
+
+  async setLoggerIntegration(enabled: boolean): Promise<{ message: string; enabled: boolean }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/logger-integration`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ enabled })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to set logger integration')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to set logger integration:', error)
+      throw error
+    }
+  }
 }
 
 export const adminApiService = new AdminApiService()

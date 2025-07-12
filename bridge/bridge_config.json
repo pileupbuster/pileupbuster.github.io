@@ -1,0 +1,9 @@
+{
+    "udp_port": 2238,
+    "websocket_port": 8765,
+    "log_level": "INFO",
+    "auto_start": true,
+    "buffer_size": 1024,
+    "reconnect_delay": 5.0,
+    "max_clients": 10
+}

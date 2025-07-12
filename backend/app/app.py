@@ -322,6 +322,20 @@ def create_app():
     app.include_router(public_router, prefix="/api/public", tags=["public"])
     app.include_router(events_router, prefix="/api/events", tags=["events"])
     
+    # Initialize logger integration service based on database settings
+    from app.services.logger_integration import logger_service
+    from app.database import queue_db
+    
+    try:
+        logger_settings = queue_db.get_logger_integration()
+        if logger_settings.get('enabled', False):
+            logger_service.enable()
+            logging.info("Logger integration initialized and enabled")
+        else:
+            logging.info("Logger integration initialized but disabled")
+    except Exception as e:
+        logging.warning(f"Failed to initialize logger integration: {e}")
+    
     return app
 
 app = create_app()

@@ -9,7 +9,9 @@ import AdminLogin from './components/AdminLogin'
 import AdminSection from './components/AdminSection'
 import FrequencySignalPane from './components/FrequencySignalPane'
 import ThemeToggle from './components/ThemeToggle'
+import DebugBridgeAutoEnable from './components/DebugBridgeAutoEnable'
 import { useTheme } from './contexts/ThemeContext'
+import { BridgeProvider } from './contexts/BridgeContext'
 import { type QueueItemData } from './components/QueueItem'
 import { apiService, type CurrentQsoData, type QueueEntry, ApiError } from './services/api'
 import { adminApiService } from './services/adminApi'
@@ -36,6 +38,7 @@ function App() {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
   const [systemStatus, setSystemStatus] = useState<boolean | null>(null)
   const [currentFrequency, setCurrentFrequency] = useState<string | null>(null)
+  const [loggerIntegrationEnabled, setLoggerIntegrationEnabled] = useState(false)
 
   // Ref to track previous callsign for clipboard functionality
   const previousCallsignRef = useRef<string | null>(null)
@@ -140,6 +143,19 @@ function App() {
     }
   }
 
+  // Load logger integration status
+  const loadLoggerIntegrationStatus = async () => {
+    try {
+      if (adminApiService.isLoggedIn()) {
+        const enabled = await adminApiService.getLoggerIntegration()
+        setLoggerIntegrationEnabled(enabled)
+      }
+    } catch (error) {
+      console.error('Failed to load logger integration status:', error)
+      setLoggerIntegrationEnabled(false) // Default to disabled on error
+    }
+  }
+
   // Load current frequency
   const loadCurrentFrequency = async () => {
     try {
@@ -176,6 +192,10 @@ function App() {
     // Load initial system status and frequency
     loadSystemStatus()
     loadCurrentFrequency()
+    // Load logger integration status if admin is logged in
+    if (adminApiService.isLoggedIn()) {
+      loadLoggerIntegrationStatus()
+    }
   }, [])
 
   // Real-time updates via Server-Sent Events (SSE)
@@ -300,6 +320,8 @@ function App() {
       setIsAdminLoggedIn(true)
       // Reload system status after login
       await loadSystemStatus()
+      // Load logger integration status after login
+      await loadLoggerIntegrationStatus()
     }
     return success
   }
@@ -365,122 +387,140 @@ function App() {
     // No need to manually refresh - SSE will broadcast the split update
   }
 
-  return (
-    <div className="pileup-buster-app">
-      {/* Header */}
-      <header className="header">
-        <img 
-          src={resolvedTheme === 'dark' ? pileupBusterLogoDark : pileupBusterLogo} 
-          alt="Pileup Buster Logo" 
-          className="logo"
-        />
-        <div className="header-controls">
-          <ThemeToggle />
-          <AdminLogin 
-            onLogin={handleAdminLogin}
-            isLoggedIn={isAdminLoggedIn}
-            onLogout={handleAdminLogout}
-          />
-          {isAdminLoggedIn && <ScaleControl onScaleChange={handleScaleChange} />}
-        </div>
-      </header>
+  const handleToggleLoggerIntegration = async (enabled: boolean): Promise<void> => {
+    try {
+      await adminApiService.setLoggerIntegration(enabled)
+      setLoggerIntegrationEnabled(enabled)
+    } catch (error) {
+      console.error('Failed to toggle logger integration:', error)
+      throw error // Re-throw to let AdminSection handle the error
+    }
+  }
 
-      <main className="main-content">
-        {loading && <div>Loading...</div>}
-        
-        {/* Show system status info instead of red error when system is inactive */}
-        {systemStatus === false && (
-          <div className="system-inactive-alert">
-            ⚠️ System is currently inactive. Registration and queue access are disabled.
+  return (
+    <BridgeProvider>
+      <div className="pileup-buster-app">
+        {/* Header */}
+        <header className="header">
+          <img 
+            src={resolvedTheme === 'dark' ? pileupBusterLogoDark : pileupBusterLogo} 
+            alt="Pileup Buster Logo" 
+            className="logo"
+          />
+          <div className="header-controls">
+            <ThemeToggle />
+            <AdminLogin 
+              onLogin={handleAdminLogin}
+              isLoggedIn={isAdminLoggedIn}
+              onLogout={handleAdminLogout}
+            />
+            {isAdminLoggedIn && <ScaleControl onScaleChange={handleScaleChange} />}
           </div>
-        )}
-        
-        {/* Show errors only if they're not system inactive related */}
-        {error && systemStatus !== false && (
-          <div className="alert-error">Error: {error}</div>
-        )}
-        
-        <div className={`top-section ${currentFrequency ? 'has-frequency' : 'frequency-hidden'}`}>
-          {/* Admin QSO Control Buttons - Only visible when admin is logged in */}
-          {isAdminLoggedIn && (
-            <div className="admin-qso-controls">
-              <button 
-                className="complete-qso-button"
-                onClick={handleCompleteCurrentQso}
-                disabled={!currentQso}
-                title="Complete the current QSO without advancing the queue"
-              >
-                Complete Current QSO
-              </button>
-              <button 
-                className="work-next-button"
-                onClick={() => handleWorkNextUser()}
-                disabled={queueTotal === 0}
-                title="Work the next person in the queue (FIFO order)"
-              >
-                Work Next ({queueTotal} waiting)
-              </button>
+        </header>
+
+        <main className="main-content">
+          {loading && <div>Loading...</div>}
+          
+          {/* Show system status info instead of red error when system is inactive */}
+          {systemStatus === false && (
+            <div className="system-inactive-alert">
+              ⚠️ System is currently inactive. Registration and queue access are disabled.
+            </div>
+          )}
+          
+          {/* Show errors only if they're not system inactive related */}
+          {error && systemStatus !== false && (
+            <div className="alert-error">Error: {error}</div>
+          )}
+          
+          <div className={`top-section ${currentFrequency ? 'has-frequency' : 'frequency-hidden'}`}>
+            {/* Admin QSO Control Buttons - Only visible when admin is logged in */}
+            {isAdminLoggedIn && (
+              <div className="admin-qso-controls">
+                <button 
+                  className="complete-qso-button"
+                  onClick={handleCompleteCurrentQso}
+                  disabled={!currentQso}
+                  title="Complete the current QSO without advancing the queue"
+                >
+                  Complete Current QSO
+                </button>
+                <button 
+                  className="work-next-button"
+                  onClick={() => handleWorkNextUser()}
+                  disabled={queueTotal === 0}
+                  title="Work the next person in the queue (FIFO order)"
+                >
+                  Work Next ({queueTotal} waiting)
+                </button>
+              </div>
+            )}
+
+            {/* Current Active Callsign (Green Border) */}
+            <CurrentActiveCallsign 
+              activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
+              qrzData={currentQso?.qrz}
+              metadata={currentQso?.metadata}
+              onCompleteQso={handleCompleteCurrentQso}
+              isAdminLoggedIn={isAdminLoggedIn}
+            />
+
+            {/* Frequency and Signal Display - Only show if frequency is set */}
+            {currentFrequency && (
+              <FrequencySignalPane className="frequency-signal-display" />
+            )}
+          </div>
+
+          {/* Waiting Queue Container (Red Border) */}
+          <WaitingQueue 
+            queueData={queueData} 
+            queueTotal={queueTotal}
+            queueMaxSize={queueMaxSize}
+            onAddCallsign={handleCallsignRegistration}
+            isAdminLoggedIn={isAdminLoggedIn}
+            systemActive={systemStatus === true}
+          />
+
+          {/* Mobile Frequency Display - Below queue for mobile priority */}
+          {currentFrequency && (
+            <div className="mobile-frequency-row">
+              <FrequencySignalPane className="frequency-signal-display-mobile" />
             </div>
           )}
 
-          {/* Current Active Callsign (Green Border) */}
-          <CurrentActiveCallsign 
-            activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
-            qrzData={currentQso?.qrz}
-            onCompleteQso={handleCompleteCurrentQso}
-            isAdminLoggedIn={isAdminLoggedIn}
+          {/* Admin Section - Only visible when logged in */}
+          <AdminSection 
+            isLoggedIn={isAdminLoggedIn}
+            onToggleSystemStatus={handleToggleSystemStatus}
+            onSetFrequency={handleSetFrequency}
+            onClearFrequency={handleClearFrequency}
+            onSetSplit={handleSetSplit}
+            onClearSplit={handleClearSplit}
+            systemStatus={systemStatus}
+            currentFrequency={currentFrequency}
+            loggerIntegrationEnabled={loggerIntegrationEnabled}
+            onToggleLoggerIntegration={handleToggleLoggerIntegration}
           />
+        </main>
 
-          {/* Frequency and Signal Display - Only show if frequency is set */}
-          {currentFrequency && (
-            <FrequencySignalPane className="frequency-signal-display" />
-          )}
-        </div>
-
-        {/* Waiting Queue Container (Red Border) */}
-        <WaitingQueue 
-          queueData={queueData} 
-          queueTotal={queueTotal}
-          queueMaxSize={queueMaxSize}
-          onAddCallsign={handleCallsignRegistration}
-          isAdminLoggedIn={isAdminLoggedIn}
-          systemActive={systemStatus === true}
-        />
-
-        {/* Mobile Frequency Display - Below queue for mobile priority */}
-        {currentFrequency && (
-          <div className="mobile-frequency-row">
-            <FrequencySignalPane className="frequency-signal-display-mobile" />
+        {/* Footer */}
+        <footer className="footer">
+          <div className="footer-content">
+            <a 
+              href="https://ei6jgb.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="github-link"
+            >
+            Maintained by EI6JGB. Original by BrianBruff (Ei6LF)
+            </a>
           </div>
-        )}
+        </footer>
 
-        {/* Admin Section - Only visible when logged in */}
-        <AdminSection 
-          isLoggedIn={isAdminLoggedIn}
-          onToggleSystemStatus={handleToggleSystemStatus}
-          onSetFrequency={handleSetFrequency}
-          onClearFrequency={handleClearFrequency}
-          onSetSplit={handleSetSplit}
-          onClearSplit={handleClearSplit}
-          systemStatus={systemStatus}
-          currentFrequency={currentFrequency}
-        />
-      </main>
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-content">
-          <a 
-            href="https://ei6jgb.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="github-link"
-          >
-          Maintained by EI6JGB. Original by BrianBruff (Ei6LF)
-          </a>
-        </div>
-      </footer>
-    </div>
+        {/* Debug component for testing */}
+        <DebugBridgeAutoEnable />
+      </div>
+    </BridgeProvider>
   )
 }
 

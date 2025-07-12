@@ -306,6 +306,41 @@ class QueueDatabase:
             "qrz": qso_entry["qrz"]
         }
     
+    def set_current_qso_with_metadata(self, callsign: str, qrz_info: Dict[str, Any] = None, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Set the current callsign in QSO with QRZ information and bridge metadata"""
+        if self.currentqso_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Create enhanced QSO entry with metadata
+        qso_entry = {
+            "_id": "current_qso",
+            "callsign": callsign,
+            "timestamp": datetime.utcnow().isoformat(),
+            "qrz": qrz_info or {
+                'callsign': callsign,
+                'name': None,
+                'address': None,
+                'dxcc_name': None,
+                'image': None,
+                'error': 'QRZ information not available'
+            },
+            "metadata": metadata or {}
+        }
+        
+        # Use replace_one with upsert to ensure only one QSO entry exists
+        self.currentqso_collection.replace_one(
+            {"_id": "current_qso"},
+            qso_entry,
+            upsert=True
+        )
+        
+        return {
+            "callsign": callsign,
+            "timestamp": qso_entry["timestamp"],
+            "qrz": qso_entry["qrz"],
+            "metadata": qso_entry["metadata"]
+        }
+    
     def clear_current_qso(self) -> Optional[Dict[str, Any]]:
         """Clear the current QSO"""
         if self.currentqso_collection is None:
@@ -450,6 +485,53 @@ class QueueDatabase:
         return {
             "split": None,
             "last_updated": datetime.utcnow().isoformat(),
+            "updated_by": updated_by
+        }
+
+    def get_logger_integration(self) -> Dict[str, Any]:
+        """Get the logger integration settings"""
+        if self.status_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Find the logger integration document
+        logger_doc = self.status_collection.find_one({"_id": "logger_integration"})
+        
+        if not logger_doc:
+            return {
+                "enabled": False,
+                "last_updated": None,
+                "updated_by": None
+            }
+        
+        return {
+            "enabled": logger_doc.get("enabled", False),
+            "last_updated": logger_doc.get("last_updated"),
+            "updated_by": logger_doc.get("updated_by")
+        }
+
+    def set_logger_integration(self, enabled: bool, updated_by: str = "admin") -> Dict[str, Any]:
+        """Set the logger integration status"""
+        if self.status_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Create logger integration document
+        logger_update = {
+            "_id": "logger_integration",
+            "enabled": enabled,
+            "last_updated": datetime.utcnow().isoformat(),
+            "updated_by": updated_by
+        }
+        
+        # Update or create logger integration document
+        self.status_collection.replace_one(
+            {"_id": "logger_integration"},
+            logger_update,
+            upsert=True
+        )
+        
+        return {
+            "enabled": enabled,
+            "last_updated": logger_update["last_updated"],
             "updated_by": updated_by
         }
 
