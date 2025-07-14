@@ -30,6 +30,11 @@ class BridgeQSORequest(BaseModel):
     mode: str = None
     source: str = "bridge"
 
+class LoggingSoftwareQSORequest(BaseModel):
+    """Request format matching your logging software's WebSocket message"""
+    type: str
+    data: dict
+
 @admin_router.get('/queue')
 def admin_queue(username: str = Depends(verify_admin_credentials)):
     """Admin view of the queue"""
@@ -484,3 +489,135 @@ async def set_logger_integration(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.post('/qso/logging-direct')
+async def receive_logging_qso(request: LoggingSoftwareQSORequest):
+    """
+    Receive QSO data directly from logging software via HTTP POST
+    No authentication required - this replaces the WebSocket bridge
+    Expected format: {"type": "qso_start", "data": {...}}
+    """
+    try:
+        # Validate the message type
+        if request.type != "qso_start":
+            raise HTTPException(status_code=400, detail=f"Unsupported message type: {request.type}")
+        
+        # Extract QSO data
+        qso_data = request.data
+        callsign = qso_data.get('callsign')
+        frequency_mhz = qso_data.get('frequency_mhz')
+        mode = qso_data.get('mode')
+        source = qso_data.get('source', 'pblog_native')
+        triggered_by = qso_data.get('triggered_by')
+        
+        if not callsign:
+            raise HTTPException(status_code=400, detail="Callsign is required")
+        
+        logger.info(f"📻 LOGGING SOFTWARE: QSO start received for {callsign}")
+        logger.info(f"   Frequency: {frequency_mhz} MHz")
+        logger.info(f"   Mode: {mode}")
+        logger.info(f"   Source: {source}")
+        logger.info(f"   Triggered by: {triggered_by}")
+        
+        # 1. Clear any existing current QSO
+        cleared_qso = queue_db.clear_current_qso()
+        if cleared_qso:
+            logger.info(f"📻 LOGGING: Cleared existing QSO with {cleared_qso['callsign']}")
+        
+        # 2. Check if callsign is in queue
+        queue_entry = None
+        qso_source = "direct"
+        
+        try:
+            queue_list = queue_db.get_queue_list()
+            for entry in queue_list:
+                if entry.get('callsign', '').upper() == callsign.upper():
+                    queue_entry = entry
+                    qso_source = "queue"
+                    break
+            
+            # Remove from queue if found
+            if queue_entry:
+                queue_db.remove_callsign(callsign)
+                logger.info(f"📻 LOGGING: Removed {callsign} from queue")
+            else:
+                logger.info(f"📻 LOGGING: {callsign} not in queue - direct QSO")
+                
+        except Exception as e:
+            logger.warning(f"Error checking queue for {callsign}: {e}")
+        
+        # 3. Get QRZ information
+        qrz_info = None
+        if queue_entry and queue_entry.get('qrz'):
+            qrz_info = queue_entry['qrz']
+        else:
+            try:
+                from app.services.qrz import qrz_service
+                qrz_info = qrz_service.lookup_callsign(callsign)
+            except Exception as e:
+                logger.warning(f"QRZ lookup failed for {callsign}: {e}")
+                qrz_info = {
+                    'callsign': callsign,
+                    'name': None,
+                    'address': None,
+                    'dxcc_name': None,
+                    'image': None,
+                    'error': 'QRZ lookup failed'
+                }
+        
+        # 4. Create QSO with metadata
+        enhanced_qso = queue_db.set_current_qso_with_metadata(
+            callsign=callsign,
+            qrz_info=qrz_info,
+            metadata={
+                'source': qso_source,
+                'logging_initiated': True,
+                'frequency_mhz': frequency_mhz,
+                'mode': mode,
+                'started_via': 'logging_software',
+                'triggered_by': triggered_by,
+                'logging_source': source
+            }
+        )
+        
+        # 5. Broadcast events
+        try:
+            await event_broadcaster.broadcast_current_qso(enhanced_qso)
+            logger.info(f"📻 LOGGING: Broadcasted current QSO for {callsign}")
+            
+            if queue_entry:
+                queue_list = queue_db.get_queue_list()
+                max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
+                await event_broadcaster.broadcast_queue_update({
+                    'queue': queue_list,
+                    'total': len(queue_list),
+                    'max_size': max_queue_size,
+                    'system_active': True
+                })
+                logger.info(f"📻 LOGGING: Broadcasted queue update")
+                
+        except Exception as e:
+            logger.warning(f"Failed to broadcast logging QSO events: {e}")
+        
+        # 6. Return acknowledgment in expected format
+        return {
+            'type': 'ack',
+            'timestamp': enhanced_qso.get('metadata', {}).get('timestamp', 'unknown'),
+            'received': {
+                'data': qso_data,
+                'type': request.type
+            },
+            'qso_started': {
+                'callsign': callsign,
+                'source': qso_source,
+                'was_in_queue': queue_entry is not None,
+                'frequency_mhz': frequency_mhz,
+                'mode': mode
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to process logging QSO: {str(e)}")
+        raise HTTPException(status_code=500, detail=f'Failed to process QSO: {str(e)}')

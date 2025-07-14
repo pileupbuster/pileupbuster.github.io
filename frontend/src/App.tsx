@@ -9,7 +9,6 @@ import AdminLogin from './components/AdminLogin'
 import AdminSection from './components/AdminSection'
 import FrequencySignalPane from './components/FrequencySignalPane'
 import ThemeToggle from './components/ThemeToggle'
-import DebugBridgeAutoEnable from './components/DebugBridgeAutoEnable'
 import { useTheme } from './contexts/ThemeContext'
 import { BridgeProvider } from './contexts/BridgeContext'
 import { type QueueItemData } from './components/QueueItem'
@@ -516,9 +515,6 @@ function App() {
             </a>
           </div>
         </footer>
-
-        {/* Debug component for testing */}
-        <DebugBridgeAutoEnable />
       </div>
     </BridgeProvider>
   )

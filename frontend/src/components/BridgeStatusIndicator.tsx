@@ -1,6 +1,6 @@
 /**
  * Bridge Status Indicator Component
- * Shows current bridge connection status and allows enabling/disabling
+ * Shows HTTP POST integration status for direct logging software integration
  */
 
 import { useBridge } from '../contexts/BridgeContext'
@@ -11,30 +11,21 @@ interface BridgeStatusIndicatorProps {
 
 export default function BridgeStatusIndicator({ className = '' }: BridgeStatusIndicatorProps) {
   const { 
-    bridgeStatus, 
-    isConnected, 
     bridgeEnabled, 
     setBridgeEnabled,
     lastQSOEvent 
   } = useBridge()
 
   const handleToggleBridge = () => {
-    console.log('🔧 Toggling bridge enabled:', !bridgeEnabled)
     setBridgeEnabled(!bridgeEnabled)
   }
 
   const getStatusColor = () => {
-    if (!bridgeEnabled) return '#6b7280' // gray
-    if (isConnected) return '#10b981' // green
-    if (bridgeStatus.reconnecting) return '#f59e0b' // yellow
-    return '#ef4444' // red
+    return bridgeEnabled ? '#10b981' : '#6b7280' // green if enabled, gray if disabled
   }
 
   const getStatusText = () => {
-    if (!bridgeEnabled) return 'Bridge Disabled'
-    if (isConnected) return 'Bridge Connected'
-    if (bridgeStatus.reconnecting) return 'Bridge Reconnecting...'
-    return 'Bridge Disconnected'
+    return bridgeEnabled ? 'HTTP POST Integration Enabled' : 'HTTP POST Integration Disabled'
   }
 
   const indicatorStyle = {
@@ -84,11 +75,21 @@ export default function BridgeStatusIndicator({ className = '' }: BridgeStatusIn
   }
 
   const infoStyle = {
-    display: 'flex',
-    gap: '16px',
     fontSize: '0.875rem',
     color: '#6b7280',
-    marginBottom: '4px'
+    marginBottom: '8px',
+    lineHeight: '1.4'
+  }
+
+  const endpointStyle = {
+    fontSize: '0.75rem',
+    color: '#059669',
+    background: '#ecfdf5',
+    padding: '6px 8px',
+    borderRadius: '4px',
+    fontFamily: 'monospace',
+    border: '1px solid #a7f3d0',
+    marginBottom: '8px'
   }
 
   const qsoEventStyle = {
@@ -110,7 +111,7 @@ export default function BridgeStatusIndicator({ className = '' }: BridgeStatusIn
             className={`bridge-toggle-btn ${bridgeEnabled ? 'enabled' : 'disabled'}`}
             style={buttonStyle}
             onClick={handleToggleBridge}
-            title={bridgeEnabled ? 'Disable QLog Bridge' : 'Enable QLog Bridge'}
+            title={bridgeEnabled ? 'Disable Logging Integration' : 'Enable Logging Integration'}
           >
             {bridgeEnabled ? 'ON' : 'OFF'}
           </button>
@@ -118,11 +119,16 @@ export default function BridgeStatusIndicator({ className = '' }: BridgeStatusIn
         
         {bridgeEnabled && (
           <div className="bridge-status-details" style={detailsStyle}>
-            <div className="bridge-status-info" style={infoStyle}>
-              <span>Attempts: {bridgeStatus.connectionAttempts}</span>
-              {bridgeStatus.lastEventTime && (
-                <span>Last Event: {new Date(bridgeStatus.lastEventTime).toLocaleTimeString()}</span>
-              )}
+            <div className="bridge-connection-info" style={infoStyle}>
+              Configure your logging software to POST QSO data to:
+            </div>
+            
+            <div className="endpoint-info" style={endpointStyle}>
+              POST http://localhost:8000/api/admin/qso/logging-direct
+            </div>
+            
+            <div className="format-info" style={infoStyle}>
+              Expected format: {`{"type": "qso_start", "data": {...}}`}
             </div>
             
             {lastQSOEvent && (
