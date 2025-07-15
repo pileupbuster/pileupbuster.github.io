@@ -7,6 +7,7 @@ from app.services.logger_integration import logger_service
 import asyncio
 import logging
 import os
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +24,6 @@ class SplitRequest(BaseModel):
 
 class LoggerIntegrationRequest(BaseModel):
     enabled: bool
-
-class BridgeQSORequest(BaseModel):
-    callsign: str
-    frequency: float = None
-    mode: str = None
-    source: str = "bridge"
 
 class LoggingSoftwareQSORequest(BaseModel):
     """Request format matching your logging software's WebSocket message"""
@@ -107,31 +102,40 @@ async def next_callsign(username: str = Depends(verify_admin_credentials)):
         })
         new_qso = queue_db.set_current_qso(next_entry["callsign"], qrz_info)
         
-        # Send to logger integration if enabled
+        # Send to logger integration if enabled (but prevent feedback loops)
         try:
             logger_settings = queue_db.get_logger_integration()
             if logger_settings.get('enabled', False):
-                # Get current frequency for UDP packet
-                frequency_hz = None
-                try:
-                    freq_data = queue_db.get_frequency()
-                    if freq_data and freq_data.get('frequency'):
-                        # Convert frequency to Hz for WSJT-X protocol
-                        freq_str = freq_data['frequency'].replace(' ', '').replace('KHz', '').replace('kHz', '').replace('MHz', '').replace('mHz', '')
-                        try:
-                            freq_float = float(freq_str)
-                            # Determine if it's in kHz or MHz based on magnitude
-                            if freq_float > 1000:
-                                frequency_hz = int(freq_float * 1000)  # kHz to Hz
-                            else:
-                                frequency_hz = int(freq_float * 1_000_000)  # MHz to Hz
-                        except ValueError:
-                            logger.warning(f"Could not parse frequency for logger: {freq_str}")
-                except Exception as e:
-                    logger.warning(f"Could not get frequency for logger integration: {e}")
+                # Check if the QSO we just cleared came from the logging software
+                # If so, don't send notification back to prevent feedback loop
+                should_notify_logger = True
+                if current_qso and current_qso.get('metadata', {}).get('started_via') == 'logging_software':
+                    logger.info(f"🔄 FEEDBACK PREVENTION: Not sending {next_entry['callsign']} back to logger (previous QSO {current_qso['callsign']} came from logging software)")
+                    should_notify_logger = False
                 
-                # Send QSO start notification to logger
-                logger_service.send_qso_started(next_entry["callsign"], frequency_hz)
+                if should_notify_logger:
+                    # Get current frequency for UDP packet
+                    frequency_hz = None
+                    try:
+                        freq_data = queue_db.get_frequency()
+                        if freq_data and freq_data.get('frequency'):
+                            # Convert frequency to Hz for WSJT-X protocol
+                            freq_str = freq_data['frequency'].replace(' ', '').replace('KHz', '').replace('kHz', '').replace('MHz', '').replace('mHz', '')
+                            try:
+                                freq_float = float(freq_str)
+                                # Determine if it's in kHz or MHz based on magnitude
+                                if freq_float > 1000:
+                                    frequency_hz = int(freq_float * 1000)  # kHz to Hz
+                                else:
+                                    frequency_hz = int(freq_float * 1_000_000)  # MHz to Hz
+                            except ValueError:
+                                logger.warning(f"Could not parse frequency for logger: {freq_str}")
+                    except Exception as e:
+                        logger.warning(f"Could not get frequency for logger integration: {e}")
+                    
+                    # Send QSO start notification to logger
+                    logger_service.send_qso_started(next_entry["callsign"], frequency_hz)
+                    logger.info(f"📤 LOGGER: Sent QSO start notification for {next_entry['callsign']}")
         except Exception as e:
             logger.warning(f"Failed to send logger integration notification: {e}")
         
@@ -186,112 +190,6 @@ async def complete_current_qso(username: str = Depends(verify_admin_credentials)
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
-
-@admin_router.post('/qso/bridge-start')
-async def start_bridge_qso(
-    request: BridgeQSORequest,
-    username: str = Depends(verify_admin_credentials)
-):
-    """Start QSO initiated from bridge (QLog) - automatically clear current and set new"""
-    try:
-        # 1. Clear any existing current QSO (reuse existing routine)
-        cleared_qso = queue_db.clear_current_qso()
-        
-        # 2. Check if callsign is in queue (for source determination)
-        queue_entry = None
-        qso_source = "direct"  # Default to direct
-        
-        try:
-            # Look for the callsign in the queue
-            queue_list = queue_db.get_queue_list()
-            for entry in queue_list:
-                if entry.get('callsign', '').upper() == request.callsign.upper():
-                    queue_entry = entry
-                    qso_source = "queue"
-                    break
-            
-            # If found in queue, remove it
-            if queue_entry:
-                queue_db.remove_callsign(request.callsign)
-                logger.info(f"Bridge QSO: Removed {request.callsign} from queue")
-            else:
-                logger.info(f"Bridge QSO: {request.callsign} not in queue - marked as direct")
-                
-        except Exception as e:
-            logger.warning(f"Error checking queue for {request.callsign}: {e}")
-            # Continue with direct QSO if queue check fails
-        
-        # 3. Get QRZ information (use existing from queue or lookup fresh)
-        qrz_info = None
-        if queue_entry and queue_entry.get('qrz'):
-            qrz_info = queue_entry['qrz']
-            logger.info(f"Bridge QSO: Using existing QRZ info for {request.callsign}")
-        else:
-            # Fresh QRZ lookup for direct QSOs
-            try:
-                from app.services.qrz import qrz_service
-                qrz_info = qrz_service.lookup_callsign(request.callsign)
-                logger.info(f"Bridge QSO: Fresh QRZ lookup for {request.callsign} - Result: {qrz_info}")
-            except Exception as e:
-                logger.warning(f"QRZ lookup failed for {request.callsign}: {e}")
-                qrz_info = {
-                    'callsign': request.callsign,
-                    'name': None,
-                    'address': None,
-                    'dxcc_name': None,
-                    'image': None,
-                    'error': 'QRZ lookup failed'
-                }
-        
-        # 4. Create enhanced QSO entry with bridge metadata
-        enhanced_qso = queue_db.set_current_qso_with_metadata(
-            callsign=request.callsign,
-            qrz_info=qrz_info,
-            metadata={
-                'source': qso_source,  # 'queue' or 'direct'
-                'bridge_initiated': True,
-                'frequency_mhz': request.frequency,
-                'mode': request.mode,
-                'started_via': 'bridge',
-                'bridge_timestamp': request.callsign  # For debugging
-            }
-        )
-        
-        # 5. Broadcast events (reuse existing SSE)
-        try:
-            await event_broadcaster.broadcast_current_qso(enhanced_qso)
-            logger.info(f"Bridge QSO: Broadcasted current QSO for {request.callsign}")
-            
-            # If someone was removed from queue, broadcast queue update
-            if queue_entry:
-                queue_list = queue_db.get_queue_list()
-                max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
-                await event_broadcaster.broadcast_queue_update({
-                    'queue': queue_list,
-                    'total': len(queue_list),
-                    'max_size': max_queue_size,
-                    'system_active': True
-                })
-                logger.info(f"Bridge QSO: Broadcasted queue update after removing {request.callsign}")
-                
-        except Exception as e:
-            logger.warning(f"Failed to broadcast bridge QSO events: {e}")
-        
-        return {
-            'message': f'Bridge QSO with {request.callsign} started successfully',
-            'new_qso': enhanced_qso,
-            'cleared_qso': cleared_qso,
-            'source': qso_source,
-            'was_in_queue': queue_entry is not None,
-            'frequency_mhz': request.frequency,
-            'mode': request.mode
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to start bridge QSO for {request.callsign}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f'Failed to start bridge QSO: {str(e)}')
 
 @admin_router.post('/status')
 async def set_system_status(
@@ -482,7 +380,7 @@ async def set_logger_integration(
         
         action = "enabled" if request.enabled else "disabled"
         return {
-            'message': f'Logger integration {action} successfully',
+            'message': f'Send to Logger {action} successfully',
             'enabled': settings['enabled'],
             'last_updated': settings['last_updated'],
             'updated_by': settings['updated_by']
@@ -498,6 +396,32 @@ async def receive_logging_qso(request: LoggingSoftwareQSORequest):
     Expected format: {"type": "qso_start", "data": {...}}
     """
     try:
+        # Enhanced debugging logging
+        logger.info("📡 QSO LOGGING REQUEST RECEIVED:")
+        logger.info(f"📋 Full Request: {request}")
+        logger.info(f"📋 Request Type: {request.type}")
+        logger.info(f"📋 Request Data: {request.data}")
+        
+        # Check if system is active
+        system_status = queue_db.get_system_status()
+        if not system_status.get('active', False):
+            logger.warning("❌ QSO REJECTED: System is currently inactive")
+            raise HTTPException(
+                status_code=503, 
+                detail='System is currently inactive. QSO logging is not available.'
+            )
+        
+        # Check if logger integration is enabled
+        logger_settings = queue_db.get_logger_integration()
+        if not logger_settings.get('enabled', False):
+            logger.warning("❌ QSO REJECTED: Send to Logger is disabled")
+            raise HTTPException(
+                status_code=503, 
+                detail='Send to Logger is currently disabled. QSO logging is not available.'
+            )
+        
+        logger.info("✅ SYSTEM CHECKS PASSED: System active and Send to Logger enabled")
+        
         # Validate the message type
         if request.type != "qso_start":
             raise HTTPException(status_code=400, detail=f"Unsupported message type: {request.type}")
@@ -509,6 +433,14 @@ async def receive_logging_qso(request: LoggingSoftwareQSORequest):
         mode = qso_data.get('mode')
         source = qso_data.get('source', 'pblog_native')
         triggered_by = qso_data.get('triggered_by')
+        
+        # Enhanced field extraction logging
+        logger.info("🔍 EXTRACTED FIELDS:")
+        logger.info(f"   📻 Callsign: '{callsign}' (type: {type(callsign)})")
+        logger.info(f"   📻 Frequency: {frequency_mhz} MHz (type: {type(frequency_mhz)})")
+        logger.info(f"   📻 Mode: '{mode}' (type: {type(mode)})")
+        logger.info(f"   📻 Source: '{source}' (type: {type(source)})")
+        logger.info(f"   📻 Triggered by: '{triggered_by}' (type: {type(triggered_by)})")
         
         if not callsign:
             raise HTTPException(status_code=400, detail="Callsign is required")
@@ -621,3 +553,30 @@ async def receive_logging_qso(request: LoggingSoftwareQSORequest):
     except Exception as e:
         logger.error(f"Failed to process logging QSO: {str(e)}")
         raise HTTPException(status_code=500, detail=f'Failed to process QSO: {str(e)}')
+
+@admin_router.post('/qso/debug-echo')
+async def debug_echo_qso(request: dict):
+    """
+    Debug endpoint that simply echoes back the raw request data
+    Useful for testing what your logging software is actually sending
+    """
+    logger.info("🐛 DEBUG ECHO ENDPOINT CALLED:")
+    logger.info(f"📋 Raw Request Type: {type(request)}")
+    logger.info(f"📋 Raw Request Content: {request}")
+    
+    # Try to parse as JSON if it's a string
+    if isinstance(request, str):
+        try:
+            import json
+            parsed = json.loads(request)
+            logger.info(f"📋 Parsed JSON: {parsed}")
+        except:
+            logger.info("📋 Could not parse as JSON")
+    
+    return {
+        'debug_echo': True,
+        'received_type': str(type(request)),
+        'received_data': request,
+        'message': 'This is what your logging software sent to Pileup Buster',
+        'timestamp': datetime.utcnow().isoformat()
+    }

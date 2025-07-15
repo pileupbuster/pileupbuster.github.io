@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import BridgeStatusIndicator from './BridgeStatusIndicator'
 
 export interface AdminSectionProps {
   isLoggedIn: boolean
@@ -205,7 +204,7 @@ export default function AdminSection({
           </div>
         </div>
 
-        {/* System Status and Logger Integration - Far Right */}
+        {/* System Status and Send to Logger - Far Right */}
         <div className="system-status-control">
           <label className="status-toggle-label">
             <span className="status-label">System Status:</span>
@@ -227,7 +226,7 @@ export default function AdminSection({
           </label>
 
           <label className="status-toggle-label">
-            <span className="status-label">Logger Integration:</span>
+            <span className="status-label">Send to Logger:</span>
             <div className="toggle-container">
               <button
                 className={`toggle-button ${loggerIntegrationEnabled ? 'active' : 'inactive'}`}
@@ -244,12 +243,6 @@ export default function AdminSection({
               </button>
             </div>
           </label>
-
-          {/* QLog Bridge Status */}
-          <div className="bridge-status-section">
-            <span className="status-label">QLog Bridge:</span>
-            <BridgeStatusIndicator />
-          </div>
         </div>
       </div>
     </section>

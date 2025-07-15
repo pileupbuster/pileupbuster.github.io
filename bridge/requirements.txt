@@ -1,3 +1,0 @@
-# QLog Bridge Requirements
-websockets>=12.0
-asyncio-mqtt>=0.16.0

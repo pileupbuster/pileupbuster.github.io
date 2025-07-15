@@ -10,7 +10,6 @@ import AdminSection from './components/AdminSection'
 import FrequencySignalPane from './components/FrequencySignalPane'
 import ThemeToggle from './components/ThemeToggle'
 import { useTheme } from './contexts/ThemeContext'
-import { BridgeProvider } from './contexts/BridgeContext'
 import { type QueueItemData } from './components/QueueItem'
 import { apiService, type CurrentQsoData, type QueueEntry, ApiError } from './services/api'
 import { adminApiService } from './services/adminApi'
@@ -397,8 +396,7 @@ function App() {
   }
 
   return (
-    <BridgeProvider>
-      <div className="pileup-buster-app">
+    <div className="pileup-buster-app">
         {/* Header */}
         <header className="header">
           <img 
@@ -516,7 +514,6 @@ function App() {
           </div>
         </footer>
       </div>
-    </BridgeProvider>
   )
 }
 

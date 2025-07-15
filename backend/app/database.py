@@ -257,6 +257,11 @@ class QueueDatabase:
         if not entry:
             return None
         
+        # Debug logging to see what's in the database
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"🔍 DATABASE DEBUG: Raw entry from DB: {entry}")
+        
         # Remove MongoDB ObjectId from response
         result = {
             "callsign": entry.get("callsign"),
@@ -268,8 +273,11 @@ class QueueDatabase:
                 'dxcc_name': None,
                 'image': None,
                 'error': 'QRZ information not available'
-            })
+            }),
+            "metadata": entry.get("metadata", {})
         }
+        
+        logger.info(f"🔍 DATABASE DEBUG: Returning result: {result}")
         
         return result
     
@@ -354,6 +362,7 @@ class QueueDatabase:
         return {
             "callsign": entry.get("callsign"),
             "timestamp": entry.get("timestamp"),
+            "metadata": entry.get("metadata", {}),  # Include metadata to check source
             "qrz": entry.get("qrz", {
                 'callsign': entry.get("callsign"),
                 'name': None,

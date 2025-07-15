@@ -45,22 +45,34 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
         : { text: '🔗 Worked Direct (via QLog)', className: 'qso-source bridge-direct' };
     }
     
+    // Handle logging software initiated QSOs
+    if (metadata.started_via === 'logging_software') {
+      return metadata.source === 'queue' 
+        ? { text: '🎯 Worked from Queue', className: 'qso-source manual-queue' }
+        : { text: '🎯 Worked Direct', className: 'qso-source manual-direct' };
+    }
+    
     return { text: '🎯 Worked from Queue', className: 'qso-source manual-queue' };
   };
 
-  // Get bridge QSO details
-  const getBridgeQSODetails = (metadata?: QsoMetadata) => {
-    if (!metadata?.bridge_initiated) return null;
+  // Get QSO details (frequency/mode) for bridge or logging software QSOs
+  const getQSODetails = (metadata?: QsoMetadata) => {
+    if (!metadata) return null;
     
-    const details = [];
-    if (metadata.frequency_mhz) {
-      details.push(`📡 ${metadata.frequency_mhz} MHz`);
-    }
-    if (metadata.mode) {
-      details.push(`📻 ${metadata.mode}`);
+    // Show details for bridge QSOs OR logging software QSOs
+    if (metadata.bridge_initiated || metadata.started_via === 'logging_software') {
+      const details = [];
+      if (metadata.frequency_mhz) {
+        details.push(`📡 ${metadata.frequency_mhz} MHz`);
+      }
+      if (metadata.mode) {
+        details.push(`📻 ${metadata.mode}`);
+      }
+      
+      return details.length > 0 ? details.join(' • ') : null;
     }
     
-    return details.length > 0 ? details.join(' • ') : null;
+    return null;
   };
 
   // Handle avatar/image click for admin complete QSO action
@@ -96,7 +108,7 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
   // Determine which image to show
   const hasQrzImage = qrzData?.image;
   const sourceDisplay = getQSOSourceDisplay(metadata);
-  const bridgeDetails = getBridgeQSODetails(metadata);
+  const qsoDetails = getQSODetails(metadata);
   
   return (
     <section className="current-active-section">
@@ -131,10 +143,10 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
             </div>
           )}
           
-          {/* Bridge QSO Details (frequency/mode) */}
-          {bridgeDetails && (
+          {/* QSO Details (frequency/mode) for bridge or logging software QSOs */}
+          {qsoDetails && (
             <div className="bridge-qso-details">
-              {bridgeDetails}
+              {qsoDetails}
             </div>
           )}
           
