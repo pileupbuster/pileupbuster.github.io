@@ -10,6 +10,13 @@ Pileup Buster is a web application designed for ham radio operators to register 
 - **Real-time Updates**: Interactive experience without manual page refreshing
 - **Universal Deployment**: Supports cloud platforms, servers, or local environments
 
+### ⚠️ CRITICAL SECURITY REQUIREMENTS
+- **Environment Variables**: NEVER put real credentials in `.env.example` (committed to Git)
+- **Credential Management**: Real values go in `.env` (Git-ignored), examples in `.env.example`
+- **Git Safety**: Always verify `.env` is not staged before committing
+- **Authentication**: All admin operations must require proper authentication
+- **Input Validation**: All user inputs must be validated and sanitized
+
 ## Project Structure
 
 ```

@@ -42,3 +42,31 @@ def verify_admin_credentials(credentials: HTTPBasicCredentials = Depends(securit
         )
     
     return credentials.username
+
+
+def verify_admin_credentials_direct(username: str, password: str) -> bool:
+    """
+    Verify admin credentials directly with username/password strings.
+    
+    This version is for WebSocket authentication where we don't have HTTPBasicCredentials.
+    
+    Args:
+        username: The username to verify
+        password: The password to verify
+        
+    Returns:
+        bool: True if credentials are valid, False otherwise
+    """
+    # Read credentials from environment variables
+    admin_username = os.getenv('ADMIN_USERNAME')
+    admin_password = os.getenv('ADMIN_PASSWORD')
+    
+    # If credentials are not configured, deny access
+    if not admin_username or not admin_password:
+        return False
+    
+    # Verify provided credentials
+    is_correct_username = secrets.compare_digest(username, admin_username)
+    is_correct_password = secrets.compare_digest(password, admin_password)
+    
+    return is_correct_username and is_correct_password
