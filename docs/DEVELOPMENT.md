@@ -101,13 +101,7 @@ npm run build
 
 ## Environment Variables
 
-⚠️ **CRITICAL SECURITY REQUIREMENT:**
-- **NEVER** put real credentials in `.env.example` - it gets committed to Git!
-- **ALWAYS** update both files when adding new environment variables:
-  1. **`.env`** - Real configuration (Git-ignored, contains actual credentials)
-  2. **`.env.example`** - Template only (committed to Git, placeholder values only)
-
-Copy `backend/.env.example` to `backend/.env` and configure with real values:
+Copy `backend/.env.example` to `backend/.env` and configure:
 
 ```bash
 # Database configuration
@@ -121,10 +115,6 @@ DEBUG=true
 # Admin authentication configuration
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your-secure-admin-password
-
-# WebSocket configuration
-WEBSOCKET_MAX_CONNECTIONS=100
-WEBSOCKET_HEARTBEAT_INTERVAL=30
 ```
 
 ## Project Architecture

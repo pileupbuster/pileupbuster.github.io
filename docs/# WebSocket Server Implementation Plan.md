@@ -19,49 +19,48 @@
 - [x] **Implementation Plan Creation** - This document
 
 ### 1.2 Project Setup
-- [x] **Dependencies Planning** - FastAPI built-in WebSocket support identified (July 17, 2025)
-- [x] **Development Environment** - WebSocket testing tools configured (July 17, 2025)
-- [x] **Documentation Structure** - Plan docs structure implemented (July 17, 2025)
+- [ ] **Dependencies Planning** - Identify required Python packages
+- [ ] **Development Environment** - Ensure WebSocket testing tools available
+- [ ] **Documentation Structure** - Plan docs updates
 
 ---
 
-## Phase 2: Core WebSocket Infrastructure ✅
+## Phase 2: Core WebSocket Infrastructure 🔄
 
 ### 2.1 Dependencies & Configuration
-- [x] **Add WebSocket Dependencies** to `pyproject.toml` - FastAPI includes WebSocket support (July 17, 2025)
-- [x] **Update Environment Variables** for WebSocket configuration (July 17, 2025)
-  - ⚠️ **SECURITY CHECK**: Added to both `.env` (real values) and `.env.example` (placeholders)
-  - `WEBSOCKET_MAX_CONNECTIONS` (default: 100)
-  - `WEBSOCKET_HEARTBEAT_INTERVAL` (default: 30 seconds)
-  - WebSocket will use same port as HTTP API
-- [x] **Poetry Lock Update** - No changes needed, using FastAPI built-in support (July 17, 2025)
+- [ ] **Add WebSocket Dependencies** to `pyproject.toml`
+  - `websockets` or `python-websockets`
+  - Any additional async utilities needed
+- [ ] **Update Environment Variables** for WebSocket configuration
+  - `WEBSOCKET_PORT` (optional, default to same as HTTP)
+  - `WEBSOCKET_MAX_CONNECTIONS` 
+  - `WEBSOCKET_HEARTBEAT_INTERVAL`
+- [ ] **Poetry Lock Update** - Run `poetry lock` after dependency changes
 
 ### 2.2 WebSocket Route Foundation
-- [x] **Create WebSocket Router** - `backend/app/routes/websocket.py` (July 17, 2025)
-- [x] **Basic Connection Handler** - Accept WebSocket connections at `/ws/connect` (July 17, 2025)
-- [x] **Connection Manager Class** - Track active WebSocket connections (July 17, 2025)
-- [x] **Integration with FastAPI App** - Add WebSocket routes to main app (July 17, 2025)
+- [ ] **Create WebSocket Router** - `backend/app/routes/websocket.py`
+- [ ] **Basic Connection Handler** - Accept WebSocket connections
+- [ ] **Connection Manager Class** - Track active WebSocket connections
+- [ ] **Integration with FastAPI App** - Add WebSocket routes to main app
 
 ### 2.3 Authentication System
-- [x] **WebSocket Auth Middleware** - Extend existing auth for WebSocket (July 17, 2025)
-- [x] **Connection Authentication** - Validate credentials on connect (July 17, 2025)
-- [x] **Session Management** - Track authenticated vs unauthenticated connections (July 17, 2025)
-- [x] **Authorization Checker** - Verify permissions for operations (July 17, 2025)
-
-**✅ Phase 2 Complete!** - WebSocket server successfully implemented and tested (July 17, 2025)
+- [ ] **WebSocket Auth Middleware** - Extend existing auth for WebSocket
+- [ ] **Connection Authentication** - Validate credentials on connect
+- [ ] **Session Management** - Track authenticated vs unauthenticated connections
+- [ ] **Authorization Checker** - Verify permissions for operations
 
 ---
 
-## Phase 3: Message Protocol Implementation ✅
+## Phase 3: Message Protocol Implementation 🔄
 
 ### 3.1 Message Handling Framework
-- [x] **Message Parser** - Parse incoming WebSocket messages (July 17, 2025)
-- [x] **Message Validator** - Validate message format and required fields (July 17, 2025)
-- [x] **Operation Dispatcher** - Route operations to appropriate handlers (July 17, 2025)
-- [x] **Response Formatter** - Format outgoing responses consistently (July 17, 2025)
+- [ ] **Message Parser** - Parse incoming WebSocket messages
+- [ ] **Message Validator** - Validate message format and required fields
+- [ ] **Operation Dispatcher** - Route operations to appropriate handlers
+- [ ] **Response Formatter** - Format outgoing responses consistently
 
 ### 3.2 Request/Response Protocol
-- [x] **Request Message Format** - Comprehensive request message structure (July 17, 2025)
+- [ ] **Request Message Format**
   ```json
   {
     "id": "unique-request-id",
@@ -71,7 +70,7 @@
     "timestamp": "ISO8601"
   }
   ```
-- [x] **Response Message Format** - Standardized response structure (July 17, 2025)
+- [ ] **Response Message Format**
   ```json
   {
     "id": "request-id",
@@ -83,7 +82,7 @@
     "timestamp": "ISO8601"
   }
   ```
-- [x] **Event Message Format** - Event broadcasting structure (July 17, 2025)
+- [ ] **Event Message Format**
   ```json
   {
     "type": "event",
@@ -94,20 +93,10 @@
   ```
 
 ### 3.3 Error Handling
-- [x] **Error Response Format** - Standardize error messages (July 17, 2025)
-- [x] **Connection Error Handling** - Handle disconnections gracefully (July 17, 2025)
-- [x] **Invalid Message Handling** - Respond to malformed requests (July 17, 2025)
-- [x] **Rate Limiting** - Message validation prevents spam (July 17, 2025)
-
-**✅ Phase 3 Complete!** - Comprehensive message protocol system implemented (July 17, 2025)
-
-**🔒 Security Checklist for Phase 3:**
-- ✅ **Environment Variable Updates**: No new environment variables added
-- ✅ **Authentication**: All admin operations require proper authentication  
-- ✅ **Input Validation**: Comprehensive message validation and sanitization implemented
-- ✅ **Error Messages**: No sensitive information leaked in error responses
-- ✅ **Rate Limiting**: Message validation prevents spam and malformed requests
-- ✅ **Test Credentials**: No real credentials used in test files or documentation
+- [ ] **Error Response Format** - Standardize error messages
+- [ ] **Connection Error Handling** - Handle disconnections gracefully
+- [ ] **Invalid Message Handling** - Respond to malformed requests
+- [ ] **Rate Limiting** - Prevent message spam
 
 ---
 
@@ -332,29 +321,11 @@
 - **Documentation**: Document all new APIs and integration patterns
 - **Security First**: Security considerations in every implementation decision
 
-### ⚠️ CRITICAL SECURITY REQUIREMENTS
-
-**Environment Variables Management:**
-- **NEVER** put real credentials, passwords, or sensitive data in `.env.example`
-- **ALWAYS** update both files when adding new environment variables:
-  1. **`.env`** - Real configuration used by server (Git-ignored, contains real credentials)
-  2. **`.env.example`** - Template file (committed to Git, contains placeholder values only)
-- **Real credentials** must ONLY go in `.env` (which is excluded from Git)
-- **Example/placeholder values** go in `.env.example` for documentation
-- **Double-check** Git status before committing to ensure `.env` is not accidentally staged
-
 ### Dependencies & Tools
-- **WebSocket Library**: FastAPI built-in WebSocket support (no additional dependencies)
+- **WebSocket Library**: Choose appropriate Python WebSocket library
 - **Testing Tools**: Set up WebSocket testing infrastructure  
 - **Monitoring**: Add WebSocket connection monitoring
 - **Documentation**: Update all relevant documentation
-
-### Port Configuration
-- **Same Port as HTTP**: WebSocket will run on same port as HTTP API (localhost:8000)
-- **URL Structure**: 
-  - HTTP: `http://localhost:8000/api/...`
-  - WebSocket: `ws://localhost:8000/ws/...`
-  - SSE: `http://localhost:8000/api/events/stream`
 
 ---
 
@@ -368,30 +339,3 @@
 ---
 
 *This plan will be updated as implementation progresses. Each completed item should be marked with completion date and any relevant notes.*
-
----
-
-## 🔒 MANDATORY SECURITY CHECKLIST
-
-**⚠️ Apply this checklist to EVERY phase before marking it complete:**
-
-### Environment Variables Security
-- [ ] **Environment Variable Updates**: If any new environment variables added:
-  - [ ] Real values added to `.env` (Git-ignored, contains actual credentials)
-  - [ ] Placeholder values added to `.env.example` (committed to Git, safe examples only)
-  - [ ] No sensitive data in `.env.example`
-  - [ ] Verified `.env` is in `.gitignore`
-  - [ ] Double-checked Git status before committing (`.env` must NOT be staged)
-
-### Code Security
-- [ ] **Authentication**: All admin operations require proper authentication
-- [ ] **Input Validation**: All user inputs properly validated and sanitized
-- [ ] **Error Messages**: No sensitive information leaked in error responses
-- [ ] **Rate Limiting**: Protection against abuse implemented where needed
-
-### Testing Security
-- [ ] **Test Credentials**: No real credentials used in test files or documentation
-- [ ] **Security Tests**: Authentication and authorization properly tested
-- [ ] **Error Handling**: Security error conditions properly tested
-
-**🔒 This security checklist is MANDATORY for every phase!**

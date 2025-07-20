@@ -273,6 +273,12 @@
   border: 1px solid #ff9800;
 }
 
+.qso-source.manual-direct {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #9c27b0;
+}
+
 /* Bridge QSO Details */
 .bridge-qso-details {
   margin: 0.5rem 0;
@@ -303,6 +309,12 @@
     background-color: #2d1b0d;
     color: #ffb74d;
     border-color: #f57c00;
+  }
+
+  .qso-source.manual-direct {
+    background-color: #2d1b2d;
+    color: #ce93d8;
+    border-color: #ab47bc;
   }
 }
 
@@ -985,15 +997,6 @@
 }
 
 /* Admin QSO Control Buttons */
-.admin-qso-controls {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 0;
-}
-
 .admin-qso-controls .complete-qso-button,
 .admin-qso-controls .work-next-button {
   white-space: nowrap;
@@ -1445,6 +1448,17 @@
 /* Single column when frequency is hidden */
 .top-section.frequency-hidden {
   grid-template-columns: 1fr;
+}
+
+/* Admin QSO Control Buttons - spans full width as first row */
+.admin-qso-controls {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0;
+  grid-column: 1 / -1; /* Span all columns */
 }
 
 /* Mobile Frequency Row - hidden on desktop */
