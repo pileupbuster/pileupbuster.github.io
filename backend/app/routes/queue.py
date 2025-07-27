@@ -6,6 +6,7 @@ from app.services.qrz import qrz_service
 from app.database import queue_db
 from app.validation import validate_callsign
 from app.services.events import event_broadcaster
+from app.websocket_handlers import handler
 import logging
 import asyncio
 import os
@@ -58,16 +59,22 @@ async def register_callsign(request: CallsignRequest):
         # Register callsign with QRZ information
         entry = queue_db.register_callsign(callsign, qrz_info)
         
-        # Broadcast updated queue
+        # Broadcast updated queue to both SSE and WebSocket clients
         try:
-            queue_list = queue_db.get_queue_list()
+            queue_list = queue_db.get_queue_list_with_time()
             max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
+            
+            # Broadcast to SSE clients (web frontend)
             await event_broadcaster.broadcast_queue_update({
                 'queue': queue_list, 
                 'total': len(queue_list), 
                 'max_size': max_queue_size,
                 'system_active': True
             })
+            
+            # Broadcast to WebSocket clients
+            await handler.broadcast_queue_update()
+            
         except Exception as e:
             logger.warning(f"Failed to broadcast queue update event: {e}")
         
@@ -120,7 +127,7 @@ def list_queue():
                 'system_active': False
             }
         
-        queue = queue_db.get_queue_list()
+        queue = queue_db.get_queue_list_with_time()
         return {
             'queue': queue, 
             'total': len(queue), 

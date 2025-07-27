@@ -34,7 +34,7 @@ class LoggingSoftwareQSORequest(BaseModel):
 def admin_queue(username: str = Depends(verify_admin_credentials)):
     """Admin view of the queue"""
     try:
-        queue_list = queue_db.get_queue_list()
+        queue_list = queue_db.get_queue_list_with_time()
         return {
             'queue': queue_list,
             'total': len(queue_list),
@@ -144,7 +144,7 @@ async def next_callsign(username: str = Depends(verify_admin_credentials)):
             await event_broadcaster.broadcast_current_qso(new_qso)
             
             # Broadcast updated queue (since someone was removed)
-            queue_list = queue_db.get_queue_list()
+            queue_list = queue_db.get_queue_list_with_time()
             max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
             await event_broadcaster.broadcast_queue_update({
                 'queue': queue_list, 
@@ -156,6 +156,130 @@ async def next_callsign(username: str = Depends(verify_admin_credentials)):
             logger.warning(f"Failed to broadcast SSE events: {e}")
         
         return new_qso
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.post('/queue/work/{callsign}')
+async def work_specific_callsign(callsign: str, username: str = Depends(verify_admin_credentials)):
+    """Work a specific callsign from the queue (removes from queue and sets as current QSO)"""
+    callsign = callsign.upper().strip()
+    
+    try:
+        # First, check if callsign is already the current QSO
+        current_qso = queue_db.get_current_qso()
+        if current_qso and current_qso.get('callsign', '').upper() == callsign:
+            # Already working this callsign, return success
+            return {
+                'message': f'Already working {callsign} (current QSO)',
+                'current_qso': current_qso,
+                'was_already_current': True
+            }
+        
+        # Find the callsign in the queue
+        queue_list = queue_db.get_queue_list_with_time()
+        target_entry = None
+        
+        for entry in queue_list:
+            if entry.get('callsign', '').upper() == callsign:
+                target_entry = entry
+                break
+                
+        if not target_entry:
+            raise HTTPException(status_code=404, detail=f'Callsign {callsign} not found in queue or current QSO')
+        
+        # Clear any existing current QSO
+        current_qso = queue_db.clear_current_qso()
+        
+        # Remove the specific callsign from queue
+        removed_entry = queue_db.remove_callsign(callsign)
+        
+        if not removed_entry:
+            raise HTTPException(status_code=404, detail=f'Callsign {callsign} could not be removed from queue')
+        
+        # Set as current QSO with stored QRZ information
+        qrz_info = target_entry.get('qrz', {
+            'callsign': callsign,
+            'name': None,
+            'address': None,
+            'image': None,
+            'error': 'QRZ information not available'
+        })
+        
+        # Create QSO with metadata indicating it was worked from queue
+        new_qso = queue_db.set_current_qso_with_metadata(
+            callsign=callsign,
+            qrz_info=qrz_info,
+            metadata={
+                'source': 'queue_specific',
+                'bridge_initiated': False,
+                'original_position': target_entry.get('position', 'unknown'),
+                'worked_by': username
+            }
+        )
+        
+        # Send to logger integration if enabled (but prevent feedback loops)
+        try:
+            logger_settings = queue_db.get_logger_integration()
+            if logger_settings.get('enabled', False):
+                # Check if the QSO we just cleared came from the logging software
+                # If so, don't send notification back to prevent feedback loop
+                should_notify_logger = True
+                if current_qso and current_qso.get('metadata', {}).get('started_via') == 'logging_software':
+                    logger.info(f"🔄 FEEDBACK PREVENTION: Not sending {callsign} back to logger (previous QSO {current_qso['callsign']} came from logging software)")
+                    should_notify_logger = False
+                
+                if should_notify_logger:
+                    # Get current frequency for UDP packet
+                    frequency_hz = None
+                    try:
+                        freq_data = queue_db.get_frequency()
+                        if freq_data and freq_data.get('frequency'):
+                            # Convert frequency to Hz for WSJT-X protocol
+                            freq_str = freq_data['frequency'].replace(' ', '').replace('KHz', '').replace('kHz', '').replace('MHz', '').replace('mHz', '')
+                            try:
+                                freq_float = float(freq_str)
+                                # Determine if it's in kHz or MHz based on magnitude
+                                if freq_float > 1000:
+                                    frequency_hz = int(freq_float * 1000)  # kHz to Hz
+                                else:
+                                    frequency_hz = int(freq_float * 1_000_000)  # MHz to Hz
+                            except ValueError:
+                                logger.warning(f"Could not parse frequency for logger: {freq_str}")
+                    except Exception as e:
+                        logger.warning(f"Could not get frequency for logger integration: {e}")
+                    
+                    # Send QSO start notification to logger
+                    from app.services.logger_integration import logger_service
+                    logger_service.send_qso_started(callsign, frequency_hz)
+                    logger.info(f"📤 LOGGER: Sent QSO start notification for {callsign}")
+        except Exception as e:
+            logger.warning(f"Failed to send logger integration notification: {e}")
+        
+        # Broadcast the new current QSO
+        try:
+            await event_broadcaster.broadcast_current_qso(new_qso)
+            
+            # Broadcast updated queue (since someone was removed)
+            queue_list = queue_db.get_queue_list_with_time()
+            max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
+            await event_broadcaster.broadcast_queue_update({
+                'queue': queue_list, 
+                'total': len(queue_list), 
+                'max_size': max_queue_size,
+                'system_active': True
+            })
+        except Exception as e:
+            logger.warning(f"Failed to broadcast SSE events: {e}")
+        
+        return {
+            'message': f'Now working {callsign} (taken from queue)',
+            'current_qso': new_qso,
+            'removed_from_queue': removed_entry,
+            'was_already_current': False
+        }
         
     except HTTPException:
         raise
@@ -184,6 +308,35 @@ async def complete_current_qso(username: str = Depends(verify_admin_credentials)
         return {
             'message': f'QSO with {cleared_qso["callsign"]} completed successfully',
             'cleared_qso': cleared_qso
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.post('/qso/cancel')
+async def cancel_current_qso(username: str = Depends(verify_admin_credentials)):
+    """Cancel the current QSO without advancing to the next station"""
+    try:
+        # Clear the current QSO
+        cleared_qso = queue_db.clear_current_qso()
+        
+        if not cleared_qso:
+            return {
+                'message': 'No active QSO to cancel',
+                'cancelled_qso': None
+            }
+        
+        # Broadcast that current QSO is now None
+        try:
+            await event_broadcaster.broadcast_current_qso(None)
+        except Exception as e:
+            logger.warning(f"Failed to broadcast current QSO cancel event: {e}")
+        
+        return {
+            'message': f'QSO with {cleared_qso["callsign"]} cancelled successfully',
+            'cancelled_qso': cleared_qso
         }
         
     except HTTPException:
@@ -461,7 +614,7 @@ async def receive_logging_qso(request: LoggingSoftwareQSORequest):
         qso_source = "direct"
         
         try:
-            queue_list = queue_db.get_queue_list()
+            queue_list = queue_db.get_queue_list_with_time()
             for entry in queue_list:
                 if entry.get('callsign', '').upper() == callsign.upper():
                     queue_entry = entry
@@ -518,7 +671,7 @@ async def receive_logging_qso(request: LoggingSoftwareQSORequest):
             logger.info(f"📻 LOGGING: Broadcasted current QSO for {callsign}")
             
             if queue_entry:
-                queue_list = queue_db.get_queue_list()
+                queue_list = queue_db.get_queue_list_with_time()
                 max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
                 await event_broadcaster.broadcast_queue_update({
                     'queue': queue_list,
@@ -579,4 +732,19 @@ async def debug_echo_qso(request: dict):
         'received_data': request,
         'message': 'This is what your logging software sent to Pileup Buster',
         'timestamp': datetime.utcnow().isoformat()
+    }
+
+@admin_router.get('/ping')
+async def admin_ping(username: str = Depends(verify_admin_credentials)):
+    """
+    Simple authenticated ping endpoint for connection testing
+    Requires admin authentication and returns pong with server info
+    """
+    return {
+        'message': 'pong',
+        'authenticated': True,
+        'username': username,
+        'server_time': datetime.utcnow().isoformat(),
+        'ping_type': 'admin_authenticated_http',
+        'status': 'healthy'
     }
