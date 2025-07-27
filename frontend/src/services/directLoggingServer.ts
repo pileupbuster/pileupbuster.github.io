@@ -23,10 +23,6 @@ export type QSOEventHandler = (qso: QSOEvent) => void
 export type StatusChangeHandler = (connected: boolean) => void
 
 class DirectLoggingWebSocketServer {
-  private server: any = null
-  private isListening = false
-  private connectedClients: Set<any> = new Set()
-  
   // Event handlers
   private qsoEventHandlers: Set<QSOEventHandler> = new Set()
   private statusChangeHandlers: Set<StatusChangeHandler> = new Set()
