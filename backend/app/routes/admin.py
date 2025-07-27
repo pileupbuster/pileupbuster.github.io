@@ -34,7 +34,7 @@ class LoggingSoftwareQSORequest(BaseModel):
 def admin_queue(username: str = Depends(verify_admin_credentials)):
     """Admin view of the queue"""
     try:
-        queue_list = queue_db.get_queue_list()
+        queue_list = queue_db.get_queue_list_with_time()
         return {
             'queue': queue_list,
             'total': len(queue_list),
@@ -144,7 +144,7 @@ async def next_callsign(username: str = Depends(verify_admin_credentials)):
             await event_broadcaster.broadcast_current_qso(new_qso)
             
             # Broadcast updated queue (since someone was removed)
-            queue_list = queue_db.get_queue_list()
+            queue_list = queue_db.get_queue_list_with_time()
             max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
             await event_broadcaster.broadcast_queue_update({
                 'queue': queue_list, 
@@ -179,7 +179,7 @@ async def work_specific_callsign(callsign: str, username: str = Depends(verify_a
             }
         
         # Find the callsign in the queue
-        queue_list = queue_db.get_queue_list()
+        queue_list = queue_db.get_queue_list_with_time()
         target_entry = None
         
         for entry in queue_list:
@@ -263,7 +263,7 @@ async def work_specific_callsign(callsign: str, username: str = Depends(verify_a
             await event_broadcaster.broadcast_current_qso(new_qso)
             
             # Broadcast updated queue (since someone was removed)
-            queue_list = queue_db.get_queue_list()
+            queue_list = queue_db.get_queue_list_with_time()
             max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
             await event_broadcaster.broadcast_queue_update({
                 'queue': queue_list, 
@@ -308,6 +308,35 @@ async def complete_current_qso(username: str = Depends(verify_admin_credentials)
         return {
             'message': f'QSO with {cleared_qso["callsign"]} completed successfully',
             'cleared_qso': cleared_qso
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.post('/qso/cancel')
+async def cancel_current_qso(username: str = Depends(verify_admin_credentials)):
+    """Cancel the current QSO without advancing to the next station"""
+    try:
+        # Clear the current QSO
+        cleared_qso = queue_db.clear_current_qso()
+        
+        if not cleared_qso:
+            return {
+                'message': 'No active QSO to cancel',
+                'cancelled_qso': None
+            }
+        
+        # Broadcast that current QSO is now None
+        try:
+            await event_broadcaster.broadcast_current_qso(None)
+        except Exception as e:
+            logger.warning(f"Failed to broadcast current QSO cancel event: {e}")
+        
+        return {
+            'message': f'QSO with {cleared_qso["callsign"]} cancelled successfully',
+            'cancelled_qso': cleared_qso
         }
         
     except HTTPException:
@@ -585,7 +614,7 @@ async def receive_logging_qso(request: LoggingSoftwareQSORequest):
         qso_source = "direct"
         
         try:
-            queue_list = queue_db.get_queue_list()
+            queue_list = queue_db.get_queue_list_with_time()
             for entry in queue_list:
                 if entry.get('callsign', '').upper() == callsign.upper():
                     queue_entry = entry
@@ -642,7 +671,7 @@ async def receive_logging_qso(request: LoggingSoftwareQSORequest):
             logger.info(f"📻 LOGGING: Broadcasted current QSO for {callsign}")
             
             if queue_entry:
-                queue_list = queue_db.get_queue_list()
+                queue_list = queue_db.get_queue_list_with_time()
                 max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
                 await event_broadcaster.broadcast_queue_update({
                     'queue': queue_list,
@@ -703,4 +732,19 @@ async def debug_echo_qso(request: dict):
         'received_data': request,
         'message': 'This is what your logging software sent to Pileup Buster',
         'timestamp': datetime.utcnow().isoformat()
+    }
+
+@admin_router.get('/ping')
+async def admin_ping(username: str = Depends(verify_admin_credentials)):
+    """
+    Simple authenticated ping endpoint for connection testing
+    Requires admin authentication and returns pong with server info
+    """
+    return {
+        'message': 'pong',
+        'authenticated': True,
+        'username': username,
+        'server_time': datetime.utcnow().isoformat(),
+        'ping_type': 'admin_authenticated_http',
+        'status': 'healthy'
     }

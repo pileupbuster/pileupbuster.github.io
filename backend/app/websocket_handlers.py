@@ -287,6 +287,8 @@ class WebSocketMessageHandler:
             await self.handle_admin_get_queue(websocket, data)
         elif message_type == "admin_complete_qso":
             await self.handle_admin_complete_qso(websocket, data)
+        elif message_type == "admin_cancel_qso":
+            await self.handle_admin_cancel_qso(websocket, data)
         elif message_type == "admin_work_next":
             await self.handle_admin_work_next(websocket, data)
         elif message_type == "admin_work_specific":
@@ -299,6 +301,8 @@ class WebSocketMessageHandler:
             await self.handle_admin_clear_frequency(websocket, data)
         elif message_type == "admin_toggle_system":
             await self.handle_admin_toggle_system(websocket, data)
+        elif message_type == "admin_ping":
+            await self.handle_admin_ping(websocket, data)
         else:
             await self.send_error(websocket, request_id, ErrorCodes.INVALID_REQUEST,
                                 f"Unknown admin message type: {message_type}")
@@ -323,7 +327,7 @@ class WebSocketMessageHandler:
         request_id = data.get("request_id")
         
         try:
-            queue = queue_db.get_queue_list()
+            queue = queue_db.get_queue_list_with_time()
             max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
             system_status = queue_db.get_system_status()
             
@@ -349,8 +353,11 @@ class WebSocketMessageHandler:
         request_id = data.get("request_id")
         
         try:
+            # Get current QSO before clearing it
+            current_qso = queue_db.get_current_qso()
+            
             # Clear current QSO without advancing queue
-            queue_db.clear_current_qso()
+            cleared_qso = queue_db.clear_current_qso()
             
             response = SuccessResponse(
                 request_id=request_id,
@@ -365,6 +372,37 @@ class WebSocketMessageHandler:
             logger.error(f"Error completing QSO: {e}")
             await self.send_error(websocket, request_id, ErrorCodes.SYSTEM_ERROR,
                                 "Failed to complete QSO")
+                                
+    async def handle_admin_cancel_qso(self, websocket: WebSocket, data: dict):
+        """Handle admin cancel QSO request"""
+        request_id = data.get("request_id")
+        
+        try:
+            # Clear current QSO without advancing queue
+            cleared_qso = queue_db.clear_current_qso()
+            
+            if not cleared_qso:
+                response = SuccessResponse(
+                    request_id=request_id,
+                    message="No active QSO to cancel",
+                    data={"cancelled_qso": None}
+                )
+            else:
+                response = SuccessResponse(
+                    request_id=request_id,
+                    message=f'QSO with {cleared_qso["callsign"]} cancelled successfully',
+                    data={"cancelled_qso": cleared_qso}
+                )
+            
+            await self.manager.send_message(websocket, response.dict())
+            
+            # Broadcast QSO update (current QSO is now None)
+            await self.broadcast_qso_update()
+            
+        except Exception as e:
+            logger.error(f"Error cancelling QSO: {e}")
+            await self.send_error(websocket, request_id, ErrorCodes.SYSTEM_ERROR,
+                                "Failed to cancel QSO")
                                 
     async def handle_admin_work_next(self, websocket: WebSocket, data: dict):
         """Handle admin work next request"""
@@ -542,7 +580,7 @@ class WebSocketMessageHandler:
                 }
             }
             
-            if frequency_mhz:
+            if frequency_mhz and source != "direct":
                 current_qso['metadata']['frequency_mhz'] = frequency_mhz
             if mode:
                 current_qso['metadata']['mode'] = mode
@@ -657,6 +695,28 @@ class WebSocketMessageHandler:
             await self.send_error(websocket, request_id, ErrorCodes.SYSTEM_ERROR,
                                 "Failed to toggle system status")
                                 
+    async def handle_admin_ping(self, websocket: WebSocket, data: dict):
+        """Handle admin ping request with authentication"""
+        request_id = data.get("request_id")
+        
+        try:
+            # Authentication already verified in handle_admin_message
+            response = SuccessResponse(
+                request_id=request_id,
+                message="pong",
+                data={
+                    "server_time": datetime.now().isoformat(),
+                    "authenticated": True,
+                    "ping_type": "admin_authenticated"
+                }
+            )
+            await self.manager.send_message(websocket, response.dict())
+            
+        except Exception as e:
+            logger.error(f"Error handling admin ping: {e}")
+            await self.send_error(websocket, request_id, ErrorCodes.SYSTEM_ERROR,
+                                "Failed to process ping request")
+                                
     async def handle_get_queue_status(self, websocket: WebSocket, data: dict):
         """Handle public get queue status request"""
         request_id = data.get("request_id")
@@ -674,7 +734,7 @@ class WebSocketMessageHandler:
                     'system_active': False
                 }
             else:
-                queue = queue_db.get_queue_list()
+                queue = queue_db.get_queue_list_with_time()
                 queue_data = {
                     'queue': queue, 
                     'total': len(queue), 
@@ -809,7 +869,7 @@ class WebSocketMessageHandler:
     async def broadcast_queue_update(self):
         """Broadcast queue update to all connections (WebSocket + SSE)"""
         try:
-            queue = queue_db.get_queue_list()
+            queue = queue_db.get_queue_list_with_time()
             max_queue_size = int(os.getenv('MAX_QUEUE_SIZE', '4'))
             system_status = queue_db.get_system_status()
             

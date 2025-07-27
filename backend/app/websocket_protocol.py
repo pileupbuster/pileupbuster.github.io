@@ -14,10 +14,10 @@ MessageType = Literal[
     "auth_request", "auth_response", "auth_logout",
     
     # Admin Operations
-    "admin_get_queue", "admin_complete_qso", "admin_work_next", "admin_work_specific",
+    "admin_get_queue", "admin_complete_qso", "admin_cancel_qso", "admin_work_next", "admin_work_specific",
     "admin_start_qso", "admin_set_frequency", "admin_clear_frequency",
     "admin_set_split", "admin_clear_split", "admin_toggle_system",
-    "admin_get_status", "admin_get_current_qso",
+    "admin_get_status", "admin_get_current_qso", "admin_ping",
     
     # Public Operations
     "register_callsign", "get_queue_status", "get_current_qso",
@@ -64,6 +64,12 @@ class AdminCompleteQsoRequest(BaseModel):
     request_id: str
     session_token: str
 
+class AdminCancelQsoRequest(BaseModel):
+    """Request to cancel current QSO"""
+    type: Literal["admin_cancel_qso"] = "admin_cancel_qso"
+    request_id: str
+    session_token: str
+
 class AdminWorkNextRequest(BaseModel):
     """Request to work next person in queue"""
     type: Literal["admin_work_next"] = "admin_work_next"
@@ -99,6 +105,12 @@ class AdminToggleSystemRequest(BaseModel):
     request_id: str
     session_token: str
     active: bool
+
+class AdminPingRequest(BaseModel):
+    """Admin-only ping request with authentication"""
+    type: Literal["admin_ping"] = "admin_ping"
+    request_id: str
+    session_token: str
 
 class RegisterCallsignRequest(BaseModel):
     """Request to register callsign (public)"""

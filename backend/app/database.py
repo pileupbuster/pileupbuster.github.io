@@ -1,10 +1,13 @@
 """Database module for MongoDB operations"""
 import os
+import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.errors import PyMongoError
+
+logger = logging.getLogger(__name__)
 
 
 class QueueDatabase:
@@ -131,6 +134,31 @@ class QueueDatabase:
             if '_id' in entry:
                 del entry['_id']
             queue_list.append(entry)
+        
+        return queue_list
+    
+    def get_queue_list_with_time(self) -> List[Dict[str, Any]]:
+        """Get the complete queue list with updated positions and time_in_queue"""
+        queue_list = self.get_queue_list()
+        
+        # Add time_in_queue for each entry
+        for entry in queue_list:
+            if 'timestamp' in entry:
+                try:
+                    # Parse the timestamp
+                    if isinstance(entry['timestamp'], str):
+                        entry_time = datetime.fromisoformat(entry['timestamp'].replace('Z', '+00:00'))
+                    else:
+                        entry_time = entry['timestamp']
+                    
+                    # Calculate time in queue (seconds)
+                    time_in_queue = (datetime.now(entry_time.tzinfo) - entry_time).total_seconds()
+                    entry['time_in_queue'] = round(time_in_queue, 1)
+                except Exception as e:
+                    logger.warning(f"Could not calculate time_in_queue for {entry.get('callsign', 'unknown')}: {e}")
+                    entry['time_in_queue'] = 0.0
+            else:
+                entry['time_in_queue'] = 0.0
         
         return queue_list
     
