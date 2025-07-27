@@ -41,18 +41,18 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
     
     if (metadata.bridge_initiated) {
       return metadata.source === 'queue' 
-        ? { text: '📻 Worked from Queue (via QLog)', className: 'qso-source bridge-queue' }
+        ? { text: '📻 Worked from Pileupbuster (via QLog)', className: 'qso-source bridge-queue' }
         : { text: '🔗 Worked Direct (via QLog)', className: 'qso-source bridge-direct' };
     }
     
     // Handle logging software initiated QSOs
     if (metadata.started_via === 'logging_software') {
       return metadata.source === 'queue' 
-        ? { text: '🎯 Worked from Queue', className: 'qso-source manual-queue' }
+        ? { text: '🎯 Worked from Pileupbuster', className: 'qso-source manual-queue' }
         : { text: '🎯 Worked Direct', className: 'qso-source manual-direct' };
     }
     
-    return { text: '🎯 Worked from Queue', className: 'qso-source manual-queue' };
+    return { text: '🎯 Worked from Pileupbuster', className: 'qso-source manual-queue' };
   };
 
   // Get QSO details (frequency/mode) for bridge or logging software QSOs
