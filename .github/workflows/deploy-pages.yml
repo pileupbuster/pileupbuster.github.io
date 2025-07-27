@@ -1,9 +1,8 @@
 name: Deploy Frontend to GitHub Pages
 
-on:
+'on':
   push:
-    tags:
-      - 'v*'  # Triggers on version tags like v1.0.0
+    branches: [ main, master, develop ]
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
