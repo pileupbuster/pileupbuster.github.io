@@ -299,6 +299,10 @@ class WebSocketMessageHandler:
             await self.handle_admin_set_frequency(websocket, data)
         elif message_type == "admin_clear_frequency":
             await self.handle_admin_clear_frequency(websocket, data)
+        elif message_type == "admin_set_split":
+            await self.handle_admin_set_split(websocket, data)
+        elif message_type == "admin_clear_split":
+            await self.handle_admin_clear_split(websocket, data)
         elif message_type == "admin_toggle_system":
             await self.handle_admin_toggle_system(websocket, data)
         elif message_type == "admin_ping":
@@ -616,12 +620,23 @@ class WebSocketMessageHandler:
             return
             
         try:
+            # Get the session to get the username
+            session = self.manager.get_session(websocket)
+            username = session.username if session else "websocket-admin"
+            
             # Set frequency in database
-            queue_db.set_frequency(frequency)
+            frequency_data = queue_db.set_frequency(frequency, username)
+            
+            # Broadcast frequency update to SSE clients
+            try:
+                await event_broadcaster.broadcast_frequency_update(frequency_data)
+            except Exception as e:
+                logger.warning(f"Failed to broadcast frequency update event: {e}")
             
             response = SuccessResponse(
                 request_id=request_id,
-                message=f"Frequency set to {frequency}"
+                message=f"Frequency set to {frequency}",
+                data={"frequency_data": frequency_data}
             )
             await self.manager.send_message(websocket, response.dict())
             
@@ -635,12 +650,27 @@ class WebSocketMessageHandler:
         request_id = data.get("request_id")
         
         try:
+            # Get the session to get the username
+            session = self.manager.get_session(websocket)
+            username = session.username if session else "websocket-admin"
+            
             # Clear frequency in database
-            queue_db.clear_frequency()
+            frequency_data = queue_db.clear_frequency(username)
+            
+            # Broadcast frequency update (with None frequency) to SSE clients
+            try:
+                await event_broadcaster.broadcast_frequency_update({
+                    'frequency': None,
+                    'last_updated': frequency_data['last_updated'],
+                    'updated_by': frequency_data['updated_by']
+                })
+            except Exception as e:
+                logger.warning(f"Failed to broadcast frequency clear event: {e}")
             
             response = SuccessResponse(
                 request_id=request_id,
-                message="Frequency cleared"
+                message="Frequency cleared",
+                data={"frequency_data": frequency_data}
             )
             await self.manager.send_message(websocket, response.dict())
             
@@ -648,6 +678,72 @@ class WebSocketMessageHandler:
             logger.error(f"Error clearing frequency: {e}")
             await self.send_error(websocket, request_id, ErrorCodes.SYSTEM_ERROR,
                                 "Failed to clear frequency")
+                                
+    async def handle_admin_set_split(self, websocket: WebSocket, data: dict):
+        """Handle admin set split request"""
+        request_id = data.get("request_id")
+        split = data.get("split")
+        
+        if not split:
+            await self.send_error(websocket, request_id, ErrorCodes.INVALID_REQUEST,
+                                "Split is required")
+            return
+            
+        try:
+            # Get the session to get the username
+            session = self.manager.get_session(websocket)
+            username = session.username if session else "websocket-admin"
+            
+            # Set split in database
+            split_data = queue_db.set_split(split, username)
+            
+            # Broadcast split update to SSE clients
+            try:
+                await event_broadcaster.broadcast_split_update(split_data)
+            except Exception as e:
+                logger.warning(f"Failed to broadcast split update event: {e}")
+            
+            response = SuccessResponse(
+                request_id=request_id,
+                message=f"Split set to {split}",
+                data={"split_data": split_data}
+            )
+            await self.manager.send_message(websocket, response.dict())
+            
+        except Exception as e:
+            logger.error(f"Error setting split: {e}")
+            await self.send_error(websocket, request_id, ErrorCodes.SYSTEM_ERROR,
+                                "Failed to set split")
+                                
+    async def handle_admin_clear_split(self, websocket: WebSocket, data: dict):
+        """Handle admin clear split request"""
+        request_id = data.get("request_id")
+        
+        try:
+            # Get the session to get the username
+            session = self.manager.get_session(websocket)
+            username = session.username if session else "websocket-admin"
+            
+            # Clear split in database
+            split_data = queue_db.clear_split(username)
+            
+            # Broadcast split update to SSE clients
+            try:
+                await event_broadcaster.broadcast_split_update(split_data)
+            except Exception as e:
+                logger.warning(f"Failed to broadcast split clear event: {e}")
+            
+            response = SuccessResponse(
+                request_id=request_id,
+                message="Split cleared",
+                data={"split_data": split_data}
+            )
+            await self.manager.send_message(websocket, response.dict())
+            
+        except Exception as e:
+            logger.error(f"Error clearing split: {e}")
+            await self.send_error(websocket, request_id, ErrorCodes.SYSTEM_ERROR,
+                                "Failed to clear split")
                                 
     async def handle_admin_toggle_system(self, websocket: WebSocket, data: dict):
         """Handle admin toggle system request"""

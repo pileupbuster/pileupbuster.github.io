@@ -115,18 +115,14 @@ export default function FrequencySignalPane({ className = '' }: FrequencySignalP
         </span>
       </div>
       
-      {/* Split Display only - no input controls */}
-      <div className="split-section">
-        {split ? (
+      {/* Split Display only if split is set and not zero */}
+      {split && split !== '0'  ? (
+              <div className="split-section">
           <div className="split-display">
             SPLIT {split}
           </div>
-        ) : (
-          <div className="split-display no-split">
-            SPLIT 0
-          </div>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       {/* NOTE: Signal meter was removed in July 2025 */}
       {lastUpdated && (

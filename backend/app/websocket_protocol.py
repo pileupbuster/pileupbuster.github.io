@@ -99,6 +99,19 @@ class AdminClearFrequencyRequest(BaseModel):
     request_id: str
     session_token: str
 
+class AdminSetSplitRequest(BaseModel):
+    """Request to set split"""
+    type: Literal["admin_set_split"] = "admin_set_split"
+    request_id: str
+    session_token: str
+    split: str
+
+class AdminClearSplitRequest(BaseModel):
+    """Request to clear split"""
+    type: Literal["admin_clear_split"] = "admin_clear_split"
+    request_id: str
+    session_token: str
+
 class AdminToggleSystemRequest(BaseModel):
     """Request to toggle system status"""
     type: Literal["admin_toggle_system"] = "admin_toggle_system"
