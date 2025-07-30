@@ -77,8 +77,27 @@ def clear_queue(username: str = Depends(verify_admin_credentials)):
 async def next_callsign(username: str = Depends(verify_admin_credentials)):
     """Process the next callsign in queue and manage QSO status"""
     try:
-        # Clear any existing current QSO
-        current_qso = queue_db.clear_current_qso()
+        # Complete any existing current QSO instead of just clearing it
+        current_qso = queue_db.get_current_qso()
+        if current_qso:
+            # Complete the existing QSO (adds to worked callers)
+            completed_qso = queue_db.complete_current_qso()
+            if completed_qso:
+                logger.info(f"📋 ADMIN: Completed existing QSO with {completed_qso['callsign']} before working next user")
+                
+                # Broadcast the worked callers update
+                try:
+                    worked_list = queue_db.get_worked_callers()
+                    count = queue_db.get_worked_callers_count()
+                    await event_broadcaster.broadcast_worked_callers_update({
+                        'worked_callers': worked_list,
+                        'total': count
+                    })
+                except Exception as e:
+                    logger.warning(f"Failed to broadcast worked callers update: {e}")
+        else:
+            # No existing QSO to complete
+            queue_db.clear_current_qso()  # Just to be safe
         
         # Get the next callsign from queue
         next_entry = queue_db.get_next_callsign()
@@ -190,8 +209,27 @@ async def work_specific_callsign(callsign: str, username: str = Depends(verify_a
         if not target_entry:
             raise HTTPException(status_code=404, detail=f'Callsign {callsign} not found in queue or current QSO')
         
-        # Clear any existing current QSO
-        current_qso = queue_db.clear_current_qso()
+        # Complete any existing current QSO instead of just clearing it
+        current_qso = queue_db.get_current_qso()
+        if current_qso:
+            # Complete the existing QSO (adds to worked callers)
+            completed_qso = queue_db.complete_current_qso()
+            if completed_qso:
+                logger.info(f"📋 ADMIN: Completed existing QSO with {completed_qso['callsign']} before working {callsign}")
+                
+                # Broadcast the worked callers update
+                try:
+                    worked_list = queue_db.get_worked_callers()
+                    count = queue_db.get_worked_callers_count()
+                    await event_broadcaster.broadcast_worked_callers_update({
+                        'worked_callers': worked_list,
+                        'total': count
+                    })
+                except Exception as e:
+                    logger.warning(f"Failed to broadcast worked callers update: {e}")
+        else:
+            # No existing QSO to complete
+            queue_db.clear_current_qso()  # Just to be safe
         
         # Remove the specific callsign from queue
         removed_entry = queue_db.remove_callsign(callsign)
