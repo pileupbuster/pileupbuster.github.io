@@ -379,7 +379,7 @@ body {
 }
 
 /* Responsive design */
-@media (max-width: 1199px) {
+@media (max-width: 1200px) {
     .main-content {
         flex-direction: column;
     }
