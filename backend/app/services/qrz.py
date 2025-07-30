@@ -53,12 +53,16 @@ class QRZService:
             if not result:
                 raise Exception(f'No QRZ.com profile found for callsign {callsign}')
 
+            # Extract grid/coordinates information
+            grid_info = self._extract_grid_info(result)
+
             response = {
                 'callsign': callsign,
                 'name': result.name.formatted_name,
                 'address': self._format_address(result.address),
                 'dxcc_name': result.dxcc.name if hasattr(result, 'dxcc') and result.dxcc else None,
                 'image': result.image.url if hasattr(result, 'image') and result.image else None,
+                'grid': grid_info,
                 'error': None
             }
             return response
@@ -70,9 +74,45 @@ class QRZService:
                 'name': None,
                 'address': None,
                 'dxcc_name': None,
+                'grid': {
+                    'lat': None,
+                    'long': None,
+                    'grid': None
+                },
                 'error': str(e)
             }
     
+    def _extract_grid_info(self, result) -> Dict[str, Optional[str]]:
+        """Extract grid and coordinate information from QRZ result"""
+        grid_info = {
+            'lat': None,
+            'long': None,
+            'grid': None
+        }
+        
+        try:
+            # Extract grid square (Maidenhead locator)
+            if hasattr(result, 'grid') and result.grid:
+                # Handle Grid object or string
+                if hasattr(result.grid, 'grid'):
+                    # It's a Grid object, extract the grid string
+                    grid_info['grid'] = str(result.grid.grid)
+                else:
+                    # It's already a string
+                    grid_info['grid'] = str(result.grid)
+            
+            # Extract latitude and longitude
+            if hasattr(result, 'latlong') and result.latlong:
+                if hasattr(result.latlong, 'lat') and result.latlong.lat is not None:
+                    grid_info['lat'] = float(result.latlong.lat)
+                if hasattr(result.latlong, 'long') and result.latlong.long is not None:
+                    grid_info['long'] = float(result.latlong.long)
+                    
+        except (ValueError, TypeError, AttributeError) as e:
+            print(f"Warning: Could not extract grid info: {e}")
+            
+        return grid_info
+
     def _format_address(self, address) -> Optional[str]:
         """Format address from QRZ data"""
         addr = address.line1

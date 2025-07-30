@@ -334,6 +334,11 @@ class QueueDatabase:
                 'address': None,
                 'dxcc_name': None,
                 'image': None,
+                'grid': {
+                    'lat': None,
+                    'long': None,
+                    'grid': None
+                },
                 'error': 'QRZ information not available'
             }
         }
@@ -367,6 +372,11 @@ class QueueDatabase:
                 'address': None,
                 'dxcc_name': None,
                 'image': None,
+                'grid': {
+                    'lat': None,
+                    'long': None,
+                    'grid': None
+                },
                 'error': 'QRZ information not available'
             },
             "metadata": metadata or {}
@@ -622,6 +632,15 @@ class QueueDatabase:
                 "location": qrz_info.get('address') if qrz_info else None,
                 "country": qrz_info.get('dxcc_name') if qrz_info else None,
                 "qrz_image": qrz_info.get('image') if qrz_info else None,
+                "grid": qrz_info.get('grid', {
+                    'lat': None,
+                    'long': None,
+                    'grid': None
+                }) if qrz_info else {
+                    'lat': None,
+                    'long': None,
+                    'grid': None
+                },
                 "worked_timestamp": datetime.utcnow().isoformat(),
                 "first_worked": existing.get('first_worked', datetime.utcnow().isoformat()),
                 "times_worked": existing.get('times_worked', 0) + 1
@@ -639,6 +658,15 @@ class QueueDatabase:
                 "location": qrz_info.get('address') if qrz_info else None,
                 "country": qrz_info.get('dxcc_name') if qrz_info else None,
                 "qrz_image": qrz_info.get('image') if qrz_info else None,
+                "grid": qrz_info.get('grid', {
+                    'lat': None,
+                    'long': None,
+                    'grid': None
+                }) if qrz_info else {
+                    'lat': None,
+                    'long': None,
+                    'grid': None
+                },
                 "worked_timestamp": datetime.utcnow().isoformat(),
                 "first_worked": datetime.utcnow().isoformat(),
                 "times_worked": 1
@@ -684,6 +712,59 @@ class QueueDatabase:
             return 0
         
         return self.worked_callers_collection.count_documents({})
+    
+    def get_previous_qsos(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Get the last N previous QSOs (default 10)"""
+        if self.worked_callers_collection is None:
+            return []
+        
+        # Get the most recent QSOs, limited by the limit parameter
+        entries = list(self.worked_callers_collection.find({}).sort("worked_timestamp", -1).limit(limit))
+        
+        # Remove MongoDB ObjectIds and format for API response
+        previous_qsos = []
+        for entry in entries:
+            if '_id' in entry:
+                del entry['_id']
+            previous_qsos.append(entry)
+        
+        return previous_qsos
+
+    def get_previous_qsos(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Get the last N previous QSOs (worked callers) for the current session"""
+        if self.worked_callers_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Get the most recent worked callers, limited by the specified count
+        entries = list(self.worked_callers_collection.find({}).sort("worked_timestamp", -1).limit(limit))
+        
+        # Convert to frontend-compatible format and remove MongoDB ObjectIds
+        previous_qsos = []
+        for entry in entries:
+            # Remove MongoDB ObjectId
+            if '_id' in entry:
+                del entry['_id']
+            
+            # Convert to CurrentQsoData format for consistency
+            qso_data = {
+                "callsign": entry.get("callsign", ""),
+                "timestamp": entry.get("worked_timestamp", ""),
+                "qrz": {
+                    "name": entry.get("name"),
+                    "address": entry.get("location"),
+                    "dxcc_name": entry.get("country"),
+                    "image": entry.get("qrz_image"),
+                    "url": f"https://www.qrz.com/db/{entry.get('callsign', '')}" if entry.get('callsign') else None
+                },
+                "metadata": {
+                    "source": "queue",  # All worked callers came from queue
+                    "times_worked": entry.get("times_worked", 1),
+                    "first_worked": entry.get("first_worked")
+                }
+            }
+            previous_qsos.append(qso_data)
+        
+        return previous_qsos
 
 
 # Global database instance
