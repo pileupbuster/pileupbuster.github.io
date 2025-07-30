@@ -19,11 +19,17 @@ function Sidebar({ currentOperator, queueCount, workedCount, onWorkOperator }: S
       {/* Current Operator Section */}
       <div className="current-operator-section">
         <div className="current-operator-card" onClick={onWorkOperator}>
-          <img 
-            src={currentOperator?.profileImage || 'https://i.pravatar.cc/200?img=68'} 
-            alt={currentOperator?.callsign || 'Waiting'} 
-            className="current-operator-image" 
-          />
+          {currentOperator ? (
+            <img 
+              src={currentOperator.profileImage} 
+              alt={currentOperator.callsign} 
+              className="current-operator-image" 
+            />
+          ) : (
+            <div className="current-operator-image placeholder-radio">
+              📻
+            </div>
+          )}
           <div className="current-operator-info">
             <h2 className="current-callsign">
               {currentOperator?.callsign || 'No Active QSO'}
