@@ -288,10 +288,10 @@ async def work_specific_callsign(callsign: str, username: str = Depends(verify_a
 
 @admin_router.post('/qso/complete')
 async def complete_current_qso(username: str = Depends(verify_admin_credentials)):
-    """Complete the current QSO without advancing to the next station"""
+    """Complete the current QSO and add caller to worked list"""
     try:
-        # Clear the current QSO
-        cleared_qso = queue_db.clear_current_qso()
+        # Complete the QSO (this will add to worked callers and clear current QSO)
+        cleared_qso = queue_db.complete_current_qso()
         
         if not cleared_qso:
             return {
@@ -302,11 +302,19 @@ async def complete_current_qso(username: str = Depends(verify_admin_credentials)
         # Broadcast that current QSO is now None
         try:
             await event_broadcaster.broadcast_current_qso(None)
+            
+            # Broadcast updated worked callers list
+            worked_list = queue_db.get_worked_callers()
+            count = queue_db.get_worked_callers_count()
+            await event_broadcaster.broadcast_worked_callers_update({
+                'worked_callers': worked_list,
+                'total': count
+            })
         except Exception as e:
-            logger.warning(f"Failed to broadcast current QSO clear event: {e}")
+            logger.warning(f"Failed to broadcast QSO completion events: {e}")
         
         return {
-            'message': f'QSO with {cleared_qso["callsign"]} completed successfully',
+            'message': f'QSO with {cleared_qso["callsign"]} completed successfully and added to worked callers',
             'cleared_qso': cleared_qso
         }
         
@@ -355,12 +363,15 @@ async def set_system_status(
         action = "activated" if request.active else "deactivated"
         cleared_count = status.get("cleared_count", 0)
         qso_cleared = status.get("qso_cleared", False)
+        worked_callers_cleared = status.get("worked_callers_cleared", 0)
         
-        # Build message with queue and QSO clearing information
+        # Build message with queue, QSO, and worked callers clearing information
         message_parts = [f'System {action} successfully.']
         message_parts.append(f'Queue cleared ({cleared_count} entries removed)')
         if qso_cleared:
             message_parts.append('Current QSO cleared')
+        if worked_callers_cleared > 0:
+            message_parts.append(f'Worked callers cleared ({worked_callers_cleared} entries removed)')
         message = '. '.join(message_parts)
         
         # Broadcast system status change
@@ -378,6 +389,12 @@ async def set_system_status(
                     'total': 0, 
                     'max_size': max_queue_size,
                     'system_active': False
+                })
+                
+                # Broadcast empty worked callers list when system is deactivated
+                await event_broadcaster.broadcast_worked_callers_update({
+                    'worked_callers': [],
+                    'total': 0
                 })
                 
                 # Clear split when system goes offline
@@ -748,3 +765,29 @@ async def admin_ping(username: str = Depends(verify_admin_credentials)):
         'ping_type': 'admin_authenticated_http',
         'status': 'healthy'
     }
+
+@admin_router.get('/worked-callers')
+def get_worked_callers(username: str = Depends(verify_admin_credentials)):
+    """Get the list of all worked callers since system was activated"""
+    try:
+        worked_list = queue_db.get_worked_callers()
+        count = queue_db.get_worked_callers_count()
+        return {
+            'worked_callers': worked_list,
+            'total': count,
+            'admin': True
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.post('/worked-callers/clear')
+def clear_worked_callers(username: str = Depends(verify_admin_credentials)):
+    """Clear all worked callers"""
+    try:
+        count = queue_db.clear_worked_callers()
+        return {
+            'message': f'Worked callers cleared. Removed {count} entries.',
+            'cleared_count': count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')

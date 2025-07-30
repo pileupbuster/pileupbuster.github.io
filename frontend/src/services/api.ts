@@ -113,4 +113,10 @@ export const apiService = {
     const response = await fetch(`${API_BASE_URL}/public/split`)
     return handleResponse<{ split: string | null; last_updated: string | null }>(response)
   },
+
+  // Get system status (public endpoint)
+  async getSystemStatus(): Promise<{ active: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/public/status`)
+    return handleResponse<{ active: boolean }>(response)
+  },
 }

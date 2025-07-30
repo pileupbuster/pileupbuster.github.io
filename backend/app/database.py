@@ -19,6 +19,7 @@ class QueueDatabase:
         self.collection: Optional[Collection] = None
         self.status_collection: Optional[Collection] = None
         self.currentqso_collection: Optional[Collection] = None
+        self.worked_callers_collection: Optional[Collection] = None
         self._connect()
     
     def _connect(self):
@@ -36,6 +37,7 @@ class QueueDatabase:
             self.collection = self.db.queue
             self.status_collection = self.db.status
             self.currentqso_collection = self.db.currentqso
+            self.worked_callers_collection = self.db.worked_callers
             
             # Test connection with short timeout
             self.client.admin.command('ping')
@@ -49,6 +51,7 @@ class QueueDatabase:
             self.collection = None
             self.status_collection = None
             self.currentqso_collection = None
+            self.worked_callers_collection = None
     
     def register_callsign(self, callsign: str, qrz_info: Dict[str, Any] = None) -> Dict[str, Any]:
         """Register a callsign in the queue with optional QRZ information"""
@@ -250,6 +253,11 @@ class QueueDatabase:
         cleared_qso = self.clear_current_qso()
         qso_cleared = cleared_qso is not None
         
+        # Clear worked callers when system is set to inactive
+        worked_callers_cleared = 0
+        if not active:
+            worked_callers_cleared = self.clear_worked_callers()
+        
         # Update or create status document
         status_update = {
             "_id": "system_status",
@@ -270,7 +278,8 @@ class QueueDatabase:
             "updated_by": updated_by,
             "queue_cleared": True,
             "cleared_count": cleared_count,
-            "qso_cleared": qso_cleared
+            "qso_cleared": qso_cleared,
+            "worked_callers_cleared": worked_callers_cleared
         }
         
         return result
@@ -377,6 +386,32 @@ class QueueDatabase:
             "metadata": qso_entry["metadata"]
         }
     
+    def complete_current_qso(self) -> Optional[Dict[str, Any]]:
+        """Complete the current QSO and add caller to worked list"""
+        if self.currentqso_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Get the current QSO
+        current_qso = self.get_current_qso()
+        if not current_qso:
+            return None
+        
+        # Add the caller to worked callers list
+        callsign = current_qso.get('callsign')
+        qrz_info = current_qso.get('qrz', {})
+        
+        if callsign:
+            try:
+                worked_entry = self.add_worked_caller(callsign, qrz_info)
+                logger.info(f"Added {callsign} to worked callers list")
+            except Exception as e:
+                logger.warning(f"Failed to add {callsign} to worked callers: {e}")
+        
+        # Clear the current QSO
+        cleared_qso = self.clear_current_qso()
+        
+        return cleared_qso
+
     def clear_current_qso(self) -> Optional[Dict[str, Any]]:
         """Clear the current QSO"""
         if self.currentqso_collection is None:
@@ -571,6 +606,84 @@ class QueueDatabase:
             "last_updated": logger_update["last_updated"],
             "updated_by": updated_by
         }
+
+    def add_worked_caller(self, callsign: str, qrz_info: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Add a caller to the worked callers list"""
+        if self.worked_callers_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Check if callsign is already in worked callers list
+        existing = self.worked_callers_collection.find_one({"callsign": callsign.upper()})
+        if existing:
+            # Update the existing entry with new timestamp
+            worked_entry = {
+                "callsign": callsign.upper(),
+                "name": qrz_info.get('name') if qrz_info else None,
+                "location": qrz_info.get('address') if qrz_info else None,
+                "country": qrz_info.get('dxcc_name') if qrz_info else None,
+                "qrz_image": qrz_info.get('image') if qrz_info else None,
+                "worked_timestamp": datetime.utcnow().isoformat(),
+                "first_worked": existing.get('first_worked', datetime.utcnow().isoformat()),
+                "times_worked": existing.get('times_worked', 0) + 1
+            }
+            
+            self.worked_callers_collection.replace_one(
+                {"callsign": callsign.upper()},
+                worked_entry
+            )
+        else:
+            # Create new entry
+            worked_entry = {
+                "callsign": callsign.upper(),
+                "name": qrz_info.get('name') if qrz_info else None,
+                "location": qrz_info.get('address') if qrz_info else None,
+                "country": qrz_info.get('dxcc_name') if qrz_info else None,
+                "qrz_image": qrz_info.get('image') if qrz_info else None,
+                "worked_timestamp": datetime.utcnow().isoformat(),
+                "first_worked": datetime.utcnow().isoformat(),
+                "times_worked": 1
+            }
+            
+            self.worked_callers_collection.insert_one(worked_entry)
+        
+        # Remove MongoDB ObjectId from response
+        if '_id' in worked_entry:
+            del worked_entry['_id']
+        
+        return worked_entry
+
+    def get_worked_callers(self) -> List[Dict[str, Any]]:
+        """Get the list of all worked callers since system was activated"""
+        if self.worked_callers_collection is None:
+            raise Exception("Database connection not available")
+        
+        # Get all worked callers sorted by most recently worked
+        entries = list(self.worked_callers_collection.find({}).sort("worked_timestamp", -1))
+        
+        # Remove MongoDB ObjectIds
+        worked_list = []
+        for entry in entries:
+            if '_id' in entry:
+                del entry['_id']
+            worked_list.append(entry)
+        
+        return worked_list
+
+    def clear_worked_callers(self) -> int:
+        """Clear all worked callers and return count of removed entries"""
+        if self.worked_callers_collection is None:
+            raise Exception("Database connection not available")
+        
+        count = self.worked_callers_collection.count_documents({})
+        self.worked_callers_collection.delete_many({})
+        return count
+
+    def get_worked_callers_count(self) -> int:
+        """Get the total count of worked callers"""
+        if self.worked_callers_collection is None:
+            return 0
+        
+        return self.worked_callers_collection.count_documents({})
 
 
 # Global database instance

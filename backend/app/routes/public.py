@@ -59,3 +59,27 @@ def get_current_split():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@public_router.get('/worked-callers')
+def get_public_worked_callers():
+    """Get the list of worked callers - public endpoint"""
+    try:
+        # Check if system is active first
+        system_status = queue_db.get_system_status()
+        if not system_status.get('active', False):
+            # Return empty list if system is inactive
+            return {
+                'worked_callers': [],
+                'total': 0,
+                'system_active': False
+            }
+        
+        worked_list = queue_db.get_worked_callers()
+        count = queue_db.get_worked_callers_count()
+        return {
+            'worked_callers': worked_list,
+            'total': count,
+            'system_active': True
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')

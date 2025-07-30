@@ -18,6 +18,7 @@ class EventType(str, Enum):
     SYSTEM_STATUS = "system_status"
     FREQUENCY_UPDATE = "frequency_update"
     SPLIT_UPDATE = "split_update"
+    WORKED_CALLERS_UPDATE = "worked_callers_update"
 
 
 class EventBroadcaster:
@@ -89,6 +90,10 @@ class EventBroadcaster:
     async def broadcast_split_update(self, split_data: Dict[str, Any]):
         """Broadcast split update event"""
         await self.broadcast_event(EventType.SPLIT_UPDATE, split_data)
+    
+    async def broadcast_worked_callers_update(self, worked_callers_data: Dict[str, Any]):
+        """Broadcast worked callers update event"""
+        await self.broadcast_event(EventType.WORKED_CALLERS_UPDATE, worked_callers_data)
 
 
 # Global event broadcaster instance

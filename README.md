@@ -55,6 +55,9 @@ pileup-buster/
 - **Database**: MongoDB Atlas for data persistence
 - **Queue Management**: FIFO queue system for callsign callbacks
 - **QRZ.com Integration**: Automatic lookup of amateur radio callsign information
+- **Worked Callers Tracking**: Automatic logging of completed QSOs with callsign, name, location, country, and QRZ image
+- **Real-time Updates**: Server-Sent Events (SSE) for live queue and status updates
+- **WebSocket Integration**: Full WebSocket API for external logging software integration
 
 ## Quick Start
 
