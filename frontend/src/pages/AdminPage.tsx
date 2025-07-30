@@ -11,6 +11,10 @@ export default function AdminPage({}: AdminPageProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [systemStatus, setSystemStatus] = useState<boolean | null>(null)
+  const [frequency, setFrequency] = useState('')
+  const [split, setSplit] = useState('')
+  const [frequencyError, setFrequencyError] = useState('')
+  const [splitError, setSplitError] = useState('')
 
   useEffect(() => {
     // Check if already logged in
@@ -88,6 +92,58 @@ export default function AdminPage({}: AdminPageProps) {
       // You could add a success message here
     } catch (error) {
       console.error('Failed to complete QSO:', error)
+    }
+  }
+
+  const handleSetFrequency = async () => {
+    if (!frequency.trim()) {
+      setFrequencyError('Please enter a frequency')
+      return
+    }
+    
+    try {
+      setFrequencyError('')
+      await adminApiService.setFrequency(frequency.trim())
+      setFrequency('')
+    } catch (error) {
+      console.error('Failed to set frequency:', error)
+      setFrequencyError('Failed to set frequency')
+    }
+  }
+
+  const handleClearFrequency = async () => {
+    try {
+      setFrequencyError('')
+      await adminApiService.clearFrequency()
+    } catch (error) {
+      console.error('Failed to clear frequency:', error)
+      setFrequencyError('Failed to clear frequency')
+    }
+  }
+
+  const handleSetSplit = async () => {
+    if (!split.trim()) {
+      setSplitError('Please enter a split frequency')
+      return
+    }
+    
+    try {
+      setSplitError('')
+      await adminApiService.setSplit(split.trim())
+      setSplit('')
+    } catch (error) {
+      console.error('Failed to set split:', error)
+      setSplitError('Failed to set split')
+    }
+  }
+
+  const handleClearSplit = async () => {
+    try {
+      setSplitError('')
+      await adminApiService.clearSplit()
+    } catch (error) {
+      console.error('Failed to clear split:', error)
+      setSplitError('Failed to clear split')
     }
   }
 
@@ -208,6 +264,56 @@ export default function AdminPage({}: AdminPageProps) {
               >
                 Go to Main Page
               </button>
+            </div>
+
+            <div className="admin-control-card">
+              <h3 className="admin-control-title">Frequency Management</h3>
+              <p className="admin-control-description">
+                Set or clear the current operating frequency.
+              </p>
+              {frequencyError && <div className="admin-error">{frequencyError}</div>}
+              <div className="admin-input-group">
+                <input
+                  type="text"
+                  placeholder="e.g., 14.205.00"
+                  value={frequency}
+                  onChange={(e) => setFrequency(e.target.value)}
+                  className="admin-input"
+                />
+                <div className="admin-button-group">
+                  <button className="admin-control-button" onClick={handleSetFrequency}>
+                    Set Frequency
+                  </button>
+                  <button className="admin-control-button admin-secondary" onClick={handleClearFrequency}>
+                    Clear Frequency
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="admin-control-card">
+              <h3 className="admin-control-title">Split Management</h3>
+              <p className="admin-control-description">
+                Set or clear the split frequency for duplex operation.
+              </p>
+              {splitError && <div className="admin-error">{splitError}</div>}
+              <div className="admin-input-group">
+                <input
+                  type="text"
+                  placeholder="e.g., 14.230.00"
+                  value={split}
+                  onChange={(e) => setSplit(e.target.value)}
+                  className="admin-input"
+                />
+                <div className="admin-button-group">
+                  <button className="admin-control-button" onClick={handleSetSplit}>
+                    Set Split
+                  </button>
+                  <button className="admin-control-button admin-secondary" onClick={handleClearSplit}>
+                    Clear Split
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
