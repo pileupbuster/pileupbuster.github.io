@@ -21,18 +21,18 @@ function Sidebar({ currentOperator, queueCount, workedCount, onWorkOperator }: S
         <div className="current-operator-card" onClick={onWorkOperator}>
           <img 
             src={currentOperator?.profileImage || 'https://i.pravatar.cc/200?img=68'} 
-            alt={currentOperator?.callsign || 'EI6LF'} 
+            alt={currentOperator?.callsign || 'Waiting'} 
             className="current-operator-image" 
           />
           <div className="current-operator-info">
             <h2 className="current-callsign">
-              {currentOperator?.callsign || 'EI6LF'}
+              {currentOperator?.callsign || 'No Active QSO'}
             </h2>
             <p className="current-name">
-              {currentOperator?.name || 'Brian Keating'}
+              {currentOperator?.name || 'Waiting for Callers'}
             </p>
             <p className="current-location">
-              {currentOperator?.location || 'Worked from Pileupbuster'}
+              {currentOperator?.location || 'Queue is empty'}
             </p>
           </div>
         </div>
