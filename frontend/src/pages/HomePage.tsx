@@ -69,7 +69,7 @@ export default function HomePage() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [worked, setWorked] = useState<WorkedItem[]>([]);
   const [currentOperator, setCurrentOperator] = useState<CurrentOperator | null>(null);
-  const [frequency] = useState('14,121.00');
+  const [frequency, setFrequency] = useState('');
   const [loading, setLoading] = useState(true);
 
   // SSE connection for real-time updates
@@ -85,6 +85,16 @@ export default function HomePage() {
         setQueue(convertedQueue);
       } else if (data.type === 'worked_update') {
         setWorked(data.worked);
+      } else if (data.type === 'frequency_update') {
+        // Update frequency when changed
+        console.log('SSE frequency update:', data);
+        if (data.frequency) {
+          const formattedFreq = data.frequency.replace('.', ',');
+          console.log('SSE formatted frequency:', data.frequency, '->', formattedFreq);
+          setFrequency(formattedFreq);
+        } else {
+          setFrequency('');
+        }
       }
     };
 
@@ -96,8 +106,9 @@ export default function HomePage() {
     Promise.all([
       apiService.getQueueList(),
       apiService.getPreviousQsos(10),
-      apiService.getCurrentQso()
-    ]).then(([queueData, workedData, currentQso]) => {
+      apiService.getCurrentQso(),
+      apiService.getCurrentFrequency()
+    ]).then(([queueData, workedData, currentQso, frequencyData]) => {
       // Convert queue entries to the format expected by the UI
       const convertedQueue = queueData.queue?.map(convertQueueEntryToItem) || [];
       setQueue(convertedQueue);
@@ -147,6 +158,15 @@ export default function HomePage() {
           coordinates: { lat: 53.3498, lon: -6.2603 },
           profileImage: 'https://i.pravatar.cc/200?img=68'
         });
+      }
+      
+      // Set frequency if available
+      console.log('Frequency data from API:', frequencyData);
+      if (frequencyData.frequency) {
+        // Format frequency with comma separator
+        const formattedFreq = frequencyData.frequency.replace('.', ',');
+        console.log('Formatted frequency:', frequencyData.frequency, '->', formattedFreq);
+        setFrequency(formattedFreq);
       }
       
       setLoading(false);

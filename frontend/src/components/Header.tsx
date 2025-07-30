@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 
 interface HeaderProps {
   frequency: string;
+  split?: string;
 }
 
-function Header({ frequency }: HeaderProps) {
+function Header({ frequency, split }: HeaderProps) {
   const [currentTime, setCurrentTime] = useState('');
 
   useEffect(() => {
@@ -33,6 +34,12 @@ function Header({ frequency }: HeaderProps) {
       <div className="frequency-section">
         <div className="frequency-value">{frequency}</div>
         <div className="frequency-unit">MHz</div>
+        {split && (
+          <div className="split-frequency">
+            <span className="split-label">Split:</span>
+            <span className="split-value">{split}</span>
+          </div>
+        )}
       </div>
       <div className="clock-section">
         <div className="clock">{currentTime}</div>

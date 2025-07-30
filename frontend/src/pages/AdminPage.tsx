@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import { adminApiService } from '../services/adminApi'
+import { apiService } from '../services/api'
 import './AdminPage.css'
 
-interface AdminPageProps {}
-
-export default function AdminPage({}: AdminPageProps) {
+export default function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [username, setUsername] = useState('')
@@ -20,9 +19,11 @@ export default function AdminPage({}: AdminPageProps) {
     // Check if already logged in
     setIsLoggedIn(adminApiService.isLoggedIn())
     
-    // Load system status if logged in
+    // Load system status, frequency and split if logged in
     if (adminApiService.isLoggedIn()) {
       loadSystemStatus()
+      loadCurrentFrequency()
+      loadCurrentSplit()
     }
   }, [])
 
@@ -33,6 +34,30 @@ export default function AdminPage({}: AdminPageProps) {
     } catch (error) {
       console.error('Failed to load system status:', error)
       setSystemStatus(false)
+    }
+  }
+
+  const loadCurrentFrequency = async () => {
+    try {
+      const data = await apiService.getCurrentFrequency()
+      console.log('Loaded frequency from API:', data)
+      if (data.frequency) {
+        setFrequency(data.frequency)
+      }
+    } catch (error) {
+      console.error('Failed to load current frequency:', error)
+    }
+  }
+
+  const loadCurrentSplit = async () => {
+    try {
+      const data = await apiService.getCurrentSplit()
+      console.log('Loaded split from API:', data)
+      if (data.split) {
+        setSplit(data.split)
+      }
+    } catch (error) {
+      console.error('Failed to load current split:', error)
     }
   }
 
@@ -48,10 +73,12 @@ export default function AdminPage({}: AdminPageProps) {
         setUsername('')
         setPassword('')
         await loadSystemStatus()
+        await loadCurrentFrequency()
+        await loadCurrentSplit()
       } else {
         setError('Invalid credentials. Please try again.')
       }
-    } catch (err) {
+    } catch {
       setError('Login failed. Please check your connection and try again.')
     } finally {
       setIsLoggingIn(false)
@@ -103,8 +130,11 @@ export default function AdminPage({}: AdminPageProps) {
     
     try {
       setFrequencyError('')
+      console.log('Setting frequency:', frequency.trim())
       await adminApiService.setFrequency(frequency.trim())
-      setFrequency('')
+      // Keep the frequency in the input field
+      // Reload to see what the backend stored
+      await loadCurrentFrequency()
     } catch (error) {
       console.error('Failed to set frequency:', error)
       setFrequencyError('Failed to set frequency')
@@ -115,6 +145,7 @@ export default function AdminPage({}: AdminPageProps) {
     try {
       setFrequencyError('')
       await adminApiService.clearFrequency()
+      setFrequency('')
     } catch (error) {
       console.error('Failed to clear frequency:', error)
       setFrequencyError('Failed to clear frequency')
@@ -129,8 +160,11 @@ export default function AdminPage({}: AdminPageProps) {
     
     try {
       setSplitError('')
+      console.log('Setting split:', split.trim())
       await adminApiService.setSplit(split.trim())
-      setSplit('')
+      // Keep the split in the input field
+      // Reload to see what the backend stored
+      await loadCurrentSplit()
     } catch (error) {
       console.error('Failed to set split:', error)
       setSplitError('Failed to set split')
@@ -141,6 +175,7 @@ export default function AdminPage({}: AdminPageProps) {
     try {
       setSplitError('')
       await adminApiService.clearSplit()
+      setSplit('')
     } catch (error) {
       console.error('Failed to clear split:', error)
       setSplitError('Failed to clear split')
@@ -300,7 +335,7 @@ export default function AdminPage({}: AdminPageProps) {
               <div className="admin-input-group">
                 <input
                   type="text"
-                  placeholder="e.g., 14.230.00"
+                  placeholder="Up 5 to 10"
                   value={split}
                   onChange={(e) => setSplit(e.target.value)}
                   className="admin-input"

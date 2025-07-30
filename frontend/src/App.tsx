@@ -71,16 +71,19 @@ function MainApp() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [worked, setWorked] = useState<WorkedItem[]>([]);
   const [currentOperator, setCurrentOperator] = useState<CurrentOperator | null>(null);
-  const [frequency] = useState('14,121.00');
+  const [frequency, setFrequency] = useState('');
+  const [split, setSplit] = useState('');
   const [loading, setLoading] = useState(true);
 
   // Function to fetch initial data
   const fetchInitialData = async () => {
     try {
-      const [queueData, workedData, currentQsoData] = await Promise.all([
+      const [queueData, workedData, currentQsoData, frequencyData, splitData] = await Promise.all([
         apiService.getQueueList(),
         apiService.getPreviousQsos(10),
-        apiService.getCurrentQso()
+        apiService.getCurrentQso(),
+        apiService.getCurrentFrequency(),
+        apiService.getCurrentSplit()
       ]);
 
       // Convert queue entries to the format expected by the UI
@@ -109,6 +112,25 @@ function MainApp() {
       // Explicitly handle null case from getCurrentQso
       const qsoData = currentQsoData || null;
       updateCurrentOperator(qsoData);
+      
+      // Set frequency if available
+      console.log('Frequency data from API:', frequencyData);
+      if (frequencyData.frequency) {
+        // Format frequency with comma separator
+        const formattedFreq = frequencyData.frequency.replace('.', ',');
+        console.log('Formatted frequency:', frequencyData.frequency, '->', formattedFreq);
+        setFrequency(formattedFreq);
+      }
+      
+      // Set split if available
+      console.log('Split data from API:', splitData);
+      if (splitData.split) {
+        // Format split with comma separator
+        const formattedSplit = splitData.split.replace('.', ',');
+        console.log('Formatted split:', splitData.split, '->', formattedSplit);
+        setSplit(formattedSplit);
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error('Error fetching initial data:', error);
@@ -183,12 +205,36 @@ function MainApp() {
     }
   };
 
+  const handleFrequencyUpdateEvent = (event: StateChangeEvent) => {
+    console.log('Main app received frequency_update event:', event);
+    if (event.data?.frequency) {
+      const formattedFreq = event.data.frequency.replace('.', ',');
+      console.log('SSE formatted frequency:', event.data.frequency, '->', formattedFreq);
+      setFrequency(formattedFreq);
+    } else {
+      setFrequency('');
+    }
+  };
+
+  const handleSplitUpdateEvent = (event: StateChangeEvent) => {
+    console.log('Main app received split_update event:', event);
+    if (event.data?.split) {
+      const formattedSplit = event.data.split.replace('.', ',');
+      console.log('SSE formatted split:', event.data.split, '->', formattedSplit);
+      setSplit(formattedSplit);
+    } else {
+      setSplit('');
+    }
+  };
+
   // SSE connection setup
   useEffect(() => {
     // Register SSE event listeners
     sseService.addEventListener('queue_update', handleQueueUpdateEvent);
     sseService.addEventListener('current_qso', handleCurrentQsoEvent);
     sseService.addEventListener('worked_callers_update', handleWorkedCallersUpdateEvent);
+    sseService.addEventListener('frequency_update', handleFrequencyUpdateEvent);
+    sseService.addEventListener('split_update', handleSplitUpdateEvent);
 
     // Start SSE connection
     sseService.connect();
@@ -201,6 +247,8 @@ function MainApp() {
       sseService.removeEventListener('queue_update', handleQueueUpdateEvent);
       sseService.removeEventListener('current_qso', handleCurrentQsoEvent);
       sseService.removeEventListener('worked_callers_update', handleWorkedCallersUpdateEvent);
+      sseService.removeEventListener('frequency_update', handleFrequencyUpdateEvent);
+      sseService.removeEventListener('split_update', handleSplitUpdateEvent);
       sseService.disconnect();
     };
   }, []);
@@ -249,7 +297,7 @@ function MainApp() {
 
   return (
     <div className="container">
-      <Header frequency={frequency} />
+      <Header frequency={frequency} split={split} />
       
       <div className="main-content">
         <MapSection 
