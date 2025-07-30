@@ -6,7 +6,7 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import QueueBar from './components/QueueBar';
 import AdminPage from './pages/AdminPage';
-import { apiService, type QueueEntry, type PreviousQsoData } from './services/api';
+import { apiService, type QueueEntry, type PreviousQsoData, type CurrentQsoData } from './services/api';
 import { sseService, type StateChangeEvent } from './services/sse';
 
 interface QueueItem {
@@ -71,13 +71,14 @@ function MainApp() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [worked, setWorked] = useState<WorkedItem[]>([]);
   const [currentOperator, setCurrentOperator] = useState<CurrentOperator | null>(null);
+  const [currentQso, setCurrentQso] = useState<CurrentQsoData | null>(null); // Track the current QSO state
   const [frequency] = useState('14,121.00');
   const [loading, setLoading] = useState(true);
 
   // Function to fetch initial data
   const fetchInitialData = async () => {
     try {
-      const [queueData, workedData, currentQso] = await Promise.all([
+      const [queueData, workedData, currentQsoData] = await Promise.all([
         apiService.getQueueList(),
         apiService.getPreviousQsos(10),
         apiService.getCurrentQso()
@@ -105,8 +106,9 @@ function MainApp() {
       })) || [];
       setWorked(convertedWorked);
       
-      // Set current operator based on current QSO
-      updateCurrentOperator(currentQso, convertedQueue);
+      // Set current QSO state and update current operator display
+      setCurrentQso(currentQsoData);
+      updateCurrentOperator(currentQsoData, convertedQueue);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching initial data:', error);
@@ -115,32 +117,39 @@ function MainApp() {
   };
 
   // Function to update current operator based on QSO data
-  const updateCurrentOperator = (currentQso: any, queueData?: QueueItem[]) => {
-    if (currentQso) {
+  const updateCurrentOperator = (currentQsoData: CurrentQsoData | null, queueData?: QueueItem[]) => {
+    console.log('Updating current operator with QSO data:', currentQsoData);
+    
+    if (currentQsoData && currentQsoData.callsign) {
+      // We have an active QSO - display the current QSO operator
+      console.log('Setting current operator from active QSO:', currentQsoData.callsign);
       setCurrentOperator({
-        callsign: currentQso.callsign,
-        name: currentQso.qrz?.name || currentQso.callsign,
-        location: currentQso.qrz?.address || currentQso.qrz?.dxcc_name || 'Unknown',
+        callsign: currentQsoData.callsign,
+        name: currentQsoData.qrz?.name || currentQsoData.callsign,
+        location: currentQsoData.qrz?.address || currentQsoData.qrz?.dxcc_name || 'In QSO',
         coordinates: { lat: 53.3498, lon: -6.2603 }, // Default coordinates
-        profileImage: currentQso.qrz?.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
+        profileImage: currentQsoData.qrz?.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
       });
     } else {
+      // No active QSO - show next in queue or default
       const currentQueue = queueData || queue;
       if (currentQueue.length > 0) {
         const first = currentQueue[0];
+        console.log('Setting current operator from queue:', first.callsign);
         setCurrentOperator({
           callsign: first.callsign,
           name: first.name || first.callsign,
-          location: first.location || 'Unknown',
+          location: first.location || 'Next in Queue',
           coordinates: { lat: 53.3498, lon: -6.2603 },
           profileImage: first.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
         });
       } else {
-        // Default operator when no QSO and no queue
+        // No QSO and no queue - show default/waiting state
+        console.log('Setting default operator - no QSO or queue');
         setCurrentOperator({
           callsign: 'EI6LF',
           name: 'Brian Keating',
-          location: 'Worked from Pileupbuster',
+          location: 'Waiting for Callers',
           coordinates: { lat: 53.3498, lon: -6.2603 },
           profileImage: 'https://i.pravatar.cc/200?img=68'
         });
@@ -157,7 +166,7 @@ function MainApp() {
       setQueue(convertedQueue);
       
       // If no current QSO, update current operator based on new queue
-      if (!currentOperator || currentOperator.callsign === 'EI6LF') {
+      if (!currentQso) {
         updateCurrentOperator(null, convertedQueue);
       }
     }
@@ -165,6 +174,11 @@ function MainApp() {
 
   const handleCurrentQsoEvent = (event: StateChangeEvent) => {
     console.log('Main app received current_qso event:', event);
+    
+    // Update the current QSO state
+    setCurrentQso(event.data);
+    
+    // Update the current operator display based on the new QSO data
     updateCurrentOperator(event.data);
   };
 
