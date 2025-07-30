@@ -107,8 +107,10 @@ function MainApp() {
       setWorked(convertedWorked);
       
       // Set current QSO state and update current operator display
-      setCurrentQso(currentQsoData);
-      updateCurrentOperator(currentQsoData, convertedQueue);
+      // Explicitly handle null case from getCurrentQso
+      const qsoData = currentQsoData || null;
+      setCurrentQso(qsoData);
+      updateCurrentOperator(qsoData, convertedQueue);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching initial data:', error);
@@ -120,6 +122,7 @@ function MainApp() {
   const updateCurrentOperator = (currentQsoData: CurrentQsoData | null, queueData?: QueueItem[]) => {
     console.log('Updating current operator with QSO data:', currentQsoData);
     
+    // Check if we have a valid current QSO with a callsign
     if (currentQsoData && currentQsoData.callsign) {
       // We have an active QSO - display the current QSO operator
       console.log('Setting current operator from active QSO:', currentQsoData.callsign);
@@ -131,7 +134,8 @@ function MainApp() {
         profileImage: currentQsoData.qrz?.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
       });
     } else {
-      // No active QSO - show next in queue or default
+      // No active QSO (null/undefined/empty) - show next in queue or default
+      console.log('No current QSO, checking queue for next operator');
       const currentQueue = queueData || queue;
       if (currentQueue.length > 0) {
         const first = currentQueue[0];
@@ -165,21 +169,27 @@ function MainApp() {
       const convertedQueue = event.data.queue.map(convertQueueEntryToItem);
       setQueue(convertedQueue);
       
-      // If no current QSO, update current operator based on new queue
-      if (!currentQso) {
-        updateCurrentOperator(null, convertedQueue);
-      }
+      // Check current QSO state and update operator if needed
+      setCurrentQso(prevQso => {
+        // If no current QSO (null or empty), update current operator based on new queue
+        if (!prevQso || !prevQso.callsign) {
+          console.log('No current QSO, updating operator from queue after queue update');
+          updateCurrentOperator(null, convertedQueue);
+        }
+        return prevQso; // Return unchanged
+      });
     }
   };
 
   const handleCurrentQsoEvent = (event: StateChangeEvent) => {
     console.log('Main app received current_qso event:', event);
     
-    // Update the current QSO state
-    setCurrentQso(event.data);
+    // Update the current QSO state - explicitly handle null/undefined data
+    const qsoData = event.data || null;
+    setCurrentQso(qsoData);
     
     // Update the current operator display based on the new QSO data
-    updateCurrentOperator(event.data);
+    updateCurrentOperator(qsoData);
   };
 
   const handleWorkedCallersUpdateEvent = (event: StateChangeEvent) => {
