@@ -244,6 +244,8 @@ body {
 /* Bottom Queue Bar */
 .bottom-queue {
     display: flex;
+    justify-content: flex-end;
+    align-items: center;
     gap: 15px;
     padding: 20px 30px;
     background: rgba(26, 26, 46, 0.9);

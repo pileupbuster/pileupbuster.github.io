@@ -4,6 +4,8 @@ import MapSection from './components/MapSection';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import QueueBar from './components/QueueBar';
+import { apiService, type QueueEntry, type PreviousQsoData } from './services/api';
+import { API_BASE_URL } from './config/api';
 
 interface QueueItem {
   callsign: string;
@@ -45,6 +47,24 @@ interface CurrentOperator {
   profileImage: string;
 }
 
+// Helper function to convert QueueEntry to QueueItem
+function convertQueueEntryToItem(entry: QueueEntry): QueueItem {
+  return {
+    callsign: entry.callsign,
+    name: entry.qrz?.name,
+    timeInQueue: new Date(entry.timestamp).getTime(),
+    address: entry.qrz?.address,
+    grid: {
+      lat: undefined, // API doesn't provide coordinates yet
+      long: undefined,
+      grid: undefined
+    },
+    image: entry.qrz?.image,
+    dxcc_name: entry.qrz?.dxcc_name,
+    location: entry.qrz?.address || entry.qrz?.dxcc_name
+  };
+}
+
 function App() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [worked, setWorked] = useState<WorkedItem[]>([]);
@@ -54,13 +74,15 @@ function App() {
 
   // SSE connection for real-time updates
   useEffect(() => {
-    const eventSource = new EventSource('/api/events');
+    const eventSource = new EventSource(`${API_BASE_URL}/events/stream`);
     
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
       
       if (data.type === 'queue_update') {
-        setQueue(data.queue);
+        // Convert queue entries to the format expected by the UI
+        const convertedQueue = data.queue?.map(convertQueueEntryToItem) || [];
+        setQueue(convertedQueue);
       } else if (data.type === 'worked_update') {
         setWorked(data.worked);
       }
@@ -72,23 +94,48 @@ function App() {
 
     // Initial data fetch
     Promise.all([
-      fetch('/api/queue').then(res => res.json()),
-      fetch('/api/worked').then(res => res.json())
-    ]).then(([queueData, workedData]) => {
-      setQueue(queueData.queue || []);
-      setWorked(workedData.worked || []);
+      apiService.getQueueList(),
+      apiService.getPreviousQsos(10),
+      apiService.getCurrentQso()
+    ]).then(([queueData, workedData, currentQso]) => {
+      // Convert queue entries to the format expected by the UI
+      const convertedQueue = queueData.queue?.map(convertQueueEntryToItem) || [];
+      setQueue(convertedQueue);
       
-      // Set initial current operator (first in queue or placeholder)
-      if (queueData.queue && queueData.queue.length > 0) {
-        const first = queueData.queue[0];
+      // Convert previous QSOs to worked items
+      const convertedWorked: WorkedItem[] = workedData.previous_qsos?.map((qso: PreviousQsoData) => ({
+        callsign: qso.callsign,
+        name: qso.qrz?.name,
+        completedAt: qso.worked_timestamp,
+        source: qso.metadata?.source === 'queue' ? 'pileupbuster' : 'direct',
+        address: qso.qrz?.address,
+        grid: {
+          lat: undefined, // API doesn't provide coordinates yet
+          long: undefined,
+          grid: undefined
+        },
+        image: qso.qrz?.image,
+        dxcc_name: qso.qrz?.dxcc_name,
+        location: qso.qrz?.address || qso.qrz?.dxcc_name
+      })) || [];
+      setWorked(convertedWorked);
+      
+      // Set current operator based on current QSO or default
+      if (currentQso) {
+        setCurrentOperator({
+          callsign: currentQso.callsign,
+          name: currentQso.qrz?.name || currentQso.callsign,
+          location: currentQso.qrz?.address || currentQso.qrz?.dxcc_name || 'Unknown',
+          coordinates: { lat: 53.3498, lon: -6.2603 }, // Default coordinates
+          profileImage: currentQso.qrz?.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
+        });
+      } else if (convertedQueue.length > 0) {
+        const first = convertedQueue[0];
         setCurrentOperator({
           callsign: first.callsign,
           name: first.name || first.callsign,
-          location: first.address || first.dxcc_name || 'Unknown',
-          coordinates: { 
-            lat: first.grid?.lat || 53.3498, 
-            lon: first.grid?.long || -6.2603 
-          },
+          location: first.location || 'Unknown',
+          coordinates: { lat: 53.3498, lon: -6.2603 },
           profileImage: first.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
         });
       } else {
