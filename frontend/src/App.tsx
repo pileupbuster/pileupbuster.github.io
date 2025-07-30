@@ -7,7 +7,7 @@ import Sidebar from './components/Sidebar';
 import QueueBar from './components/QueueBar';
 import AdminPage from './pages/AdminPage';
 import { apiService, type QueueEntry, type PreviousQsoData } from './services/api';
-import { API_BASE_URL } from './config/api';
+import { sseService, type StateChangeEvent } from './services/sse';
 
 interface QueueItem {
   callsign: string;
@@ -74,32 +74,15 @@ function MainApp() {
   const [frequency] = useState('14,121.00');
   const [loading, setLoading] = useState(true);
 
-  // SSE connection for real-time updates
-  useEffect(() => {
-    const eventSource = new EventSource(`${API_BASE_URL}/events/stream`);
-    
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      
-      if (data.type === 'queue_update') {
-        // Convert queue entries to the format expected by the UI
-        const convertedQueue = data.queue?.map(convertQueueEntryToItem) || [];
-        setQueue(convertedQueue);
-      } else if (data.type === 'worked_update') {
-        setWorked(data.worked);
-      }
-    };
+  // Function to fetch initial data
+  const fetchInitialData = async () => {
+    try {
+      const [queueData, workedData, currentQso] = await Promise.all([
+        apiService.getQueueList(),
+        apiService.getPreviousQsos(10),
+        apiService.getCurrentQso()
+      ]);
 
-    eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
-    };
-
-    // Initial data fetch
-    Promise.all([
-      apiService.getQueueList(),
-      apiService.getPreviousQsos(10),
-      apiService.getCurrentQso()
-    ]).then(([queueData, workedData, currentQso]) => {
       // Convert queue entries to the format expected by the UI
       const convertedQueue = queueData.queue?.map(convertQueueEntryToItem) || [];
       setQueue(convertedQueue);
@@ -122,17 +105,29 @@ function MainApp() {
       })) || [];
       setWorked(convertedWorked);
       
-      // Set current operator based on current QSO or default
-      if (currentQso) {
-        setCurrentOperator({
-          callsign: currentQso.callsign,
-          name: currentQso.qrz?.name || currentQso.callsign,
-          location: currentQso.qrz?.address || currentQso.qrz?.dxcc_name || 'Unknown',
-          coordinates: { lat: 53.3498, lon: -6.2603 }, // Default coordinates
-          profileImage: currentQso.qrz?.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
-        });
-      } else if (convertedQueue.length > 0) {
-        const first = convertedQueue[0];
+      // Set current operator based on current QSO
+      updateCurrentOperator(currentQso, convertedQueue);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+      setLoading(false);
+    }
+  };
+
+  // Function to update current operator based on QSO data
+  const updateCurrentOperator = (currentQso: any, queueData?: QueueItem[]) => {
+    if (currentQso) {
+      setCurrentOperator({
+        callsign: currentQso.callsign,
+        name: currentQso.qrz?.name || currentQso.callsign,
+        location: currentQso.qrz?.address || currentQso.qrz?.dxcc_name || 'Unknown',
+        coordinates: { lat: 53.3498, lon: -6.2603 }, // Default coordinates
+        profileImage: currentQso.qrz?.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
+      });
+    } else {
+      const currentQueue = queueData || queue;
+      if (currentQueue.length > 0) {
+        const first = currentQueue[0];
         setCurrentOperator({
           callsign: first.callsign,
           name: first.name || first.callsign,
@@ -141,7 +136,7 @@ function MainApp() {
           profileImage: first.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
         });
       } else {
-        // Default operator
+        // Default operator when no QSO and no queue
         setCurrentOperator({
           callsign: 'EI6LF',
           name: 'Brian Keating',
@@ -150,15 +145,71 @@ function MainApp() {
           profileImage: 'https://i.pravatar.cc/200?img=68'
         });
       }
-      
-      setLoading(false);
-    }).catch(error => {
-      console.error('Error fetching initial data:', error);
-      setLoading(false);
-    });
+    }
+  };
 
+  // SSE event handlers
+  const handleQueueUpdateEvent = (event: StateChangeEvent) => {
+    console.log('Main app received queue_update event:', event);
+    if (event.data?.queue) {
+      // Convert queue entries to the format expected by the UI
+      const convertedQueue = event.data.queue.map(convertQueueEntryToItem);
+      setQueue(convertedQueue);
+      
+      // If no current QSO, update current operator based on new queue
+      if (!currentOperator || currentOperator.callsign === 'EI6LF') {
+        updateCurrentOperator(null, convertedQueue);
+      }
+    }
+  };
+
+  const handleCurrentQsoEvent = (event: StateChangeEvent) => {
+    console.log('Main app received current_qso event:', event);
+    updateCurrentOperator(event.data);
+  };
+
+  const handleWorkedCallersUpdateEvent = (event: StateChangeEvent) => {
+    console.log('Main app received worked_callers_update event:', event);
+    if (event.data?.worked_callers) {
+      // Convert worked callers to the format expected by the UI
+      const convertedWorked: WorkedItem[] = event.data.worked_callers.map((caller: any) => ({
+        callsign: caller.callsign,
+        name: caller.qrz?.name,
+        completedAt: caller.worked_timestamp,
+        source: caller.metadata?.source === 'queue' ? 'pileupbuster' : 'direct',
+        address: caller.qrz?.address,
+        grid: {
+          lat: undefined,
+          long: undefined,
+          grid: undefined
+        },
+        image: caller.qrz?.image,
+        dxcc_name: caller.qrz?.dxcc_name,
+        location: caller.qrz?.address || caller.qrz?.dxcc_name
+      }));
+      setWorked(convertedWorked);
+    }
+  };
+
+  // SSE connection setup
+  useEffect(() => {
+    // Register SSE event listeners
+    sseService.addEventListener('queue_update', handleQueueUpdateEvent);
+    sseService.addEventListener('current_qso', handleCurrentQsoEvent);
+    sseService.addEventListener('worked_callers_update', handleWorkedCallersUpdateEvent);
+
+    // Start SSE connection
+    sseService.connect();
+
+    // Fetch initial data
+    fetchInitialData();
+
+    // Cleanup on component unmount
     return () => {
-      eventSource.close();
+      sseService.removeEventListener('queue_update', handleQueueUpdateEvent);
+      sseService.removeEventListener('current_qso', handleCurrentQsoEvent);
+      sseService.removeEventListener('worked_callers_update', handleWorkedCallersUpdateEvent);
+      sseService.disconnect();
     };
   }, []);
 
