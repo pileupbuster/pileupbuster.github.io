@@ -1,13 +1,25 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
+import AdminLogin from '../components/AdminLogin'
 import CurrentActiveCallsign, { type CurrentActiveUser } from '../components/CurrentActiveCallsign'
 import WaitingQueue from '../components/WaitingQueue'
+import AdminSection from '../components/AdminSection'
 import FrequencySignalPane from '../components/FrequencySignalPane'
+import ScaleControl from '../components/ScaleControl'
 import { type QueueItemData } from '../components/QueueItem'
 import { apiService, type CurrentQsoData, type QueueEntry, ApiError } from '../services/api'
+import { adminApiService } from '../services/adminApi'
 import { sseService, type StateChangeEvent } from '../services/sse'
 
-export default function UserPage() {
+export default function AdminPage() {
+  const navigate = useNavigate()
+  
+  // UI Scale state
+  const handleScaleChange = (scale: number) => {
+    document.documentElement.style.setProperty('--ui-scale', scale.toString())
+  }
+  
   // Real data state
   const [currentQso, setCurrentQso] = useState<CurrentQsoData | null>(null)
   const [queueData, setQueueData] = useState<QueueItemData[]>([])
@@ -15,8 +27,47 @@ export default function UserPage() {
   const [queueMaxSize, setQueueMaxSize] = useState(4)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Admin state
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
   const [systemStatus, setSystemStatus] = useState<boolean | null>(null)
   const [currentFrequency, setCurrentFrequency] = useState<string | null>(null)
+  const [loggerIntegrationEnabled, setLoggerIntegrationEnabled] = useState(false)
+
+  // Ref to track previous callsign for clipboard functionality
+  const previousCallsignRef = useRef<string | null>(null)
+
+  // Utility function to copy text to clipboard
+  const copyToClipboard = async (text: string): Promise<void> => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        // Use modern Clipboard API if available
+        await navigator.clipboard.writeText(text)
+        console.log(`Copied callsign to clipboard: ${text}`)
+      } else {
+        // Fallback for older browsers or insecure contexts
+        const textArea = document.createElement('textarea')
+        textArea.value = text
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-999999px'
+        textArea.style.top = '-999999px'
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        
+        try {
+          document.execCommand('copy')
+          console.log(`Copied callsign to clipboard (fallback): ${text}`)
+        } catch (err) {
+          console.warn('Failed to copy callsign to clipboard:', err)
+        } finally {
+          document.body.removeChild(textArea)
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to copy callsign to clipboard:', err)
+    }
+  }
 
   // Convert QueueEntry to QueueItemData format
   const convertQueueEntryToItemData = (entry: QueueEntry): QueueItemData => {
@@ -42,6 +93,8 @@ export default function UserPage() {
     try {
       const data = await apiService.getCurrentQso()
       setCurrentQso(data)
+      // Update ref for initial load (don't copy to clipboard on initial load)
+      previousCallsignRef.current = data?.callsign || null
     } catch (err) {
       if (err instanceof ApiError) {
         console.error('Failed to fetch current QSO:', err.detail || err.message)
@@ -72,14 +125,28 @@ export default function UserPage() {
     }
   }, [])
 
-  // Load system status
+  // Load admin system status
   const loadSystemStatus = async () => {
     try {
-      const status = await apiService.getSystemStatus()
-      setSystemStatus(status.active)
+      const status = await adminApiService.getSystemStatus()
+      setSystemStatus(status)
     } catch (error) {
       console.error('Failed to load system status:', error)
+      // Set default status if can't load
       setSystemStatus(false)
+    }
+  }
+
+  // Load logger integration status
+  const loadLoggerIntegrationStatus = async () => {
+    try {
+      if (adminApiService.isLoggedIn()) {
+        const enabled = await adminApiService.getLoggerIntegration()
+        setLoggerIntegrationEnabled(enabled)
+      }
+    } catch (error) {
+      console.error('Failed to load logger integration status:', error)
+      setLoggerIntegrationEnabled(false) // Default to disabled on error
     }
   }
 
@@ -102,9 +169,7 @@ export default function UserPage() {
       
       await Promise.all([
         fetchCurrentQso(),
-        fetchQueueList(),
-        loadSystemStatus(),
-        loadCurrentFrequency()
+        fetchQueueList()
       ])
       
       setLoading(false)
@@ -113,12 +178,31 @@ export default function UserPage() {
     loadData()
   }, [fetchCurrentQso, fetchQueueList])
 
+  // Admin initialization
+  useEffect(() => {
+    // Check if admin is already logged in
+    setIsAdminLoggedIn(adminApiService.isLoggedIn())
+    
+    // Load initial system status and frequency
+    loadSystemStatus()
+    loadCurrentFrequency()
+    // Load logger integration status if admin is logged in
+    if (adminApiService.isLoggedIn()) {
+      loadLoggerIntegrationStatus()
+    }
+  }, [])
+
   // Real-time updates via Server-Sent Events (SSE)
   useEffect(() => {
     // Event handlers for different types of state changes
     const handleCurrentQsoEvent = (event: StateChangeEvent) => {
       console.log('Received current_qso event:', event)
       const newQso = event.data
+      const newCallsign = newQso?.callsign
+      
+      // Update the ref with the new callsign
+      previousCallsignRef.current = newCallsign || null
+      
       setCurrentQso(newQso)
     }
 
@@ -170,7 +254,7 @@ export default function UserPage() {
     const handleSplitUpdateEvent = (event: StateChangeEvent) => {
       console.log('Received split_update event:', event)
       // Split updates are handled by the FrequencySignalPane component via SSE
-      // No additional state management needed at this level
+      // No additional state management needed at App level
     }
 
     // Register event listeners
@@ -223,8 +307,134 @@ export default function UserPage() {
     }
   }
 
+  // Admin handlers
+  const handleAdminLogin = async (username: string, password: string): Promise<boolean> => {
+    const success = await adminApiService.login(username, password)
+    if (success) {
+      setIsAdminLoggedIn(true)
+      // Reload system status after login
+      await loadSystemStatus()
+      // Load logger integration status after login
+      await loadLoggerIntegrationStatus()
+    }
+    return success
+  }
+
+  const handleAdminLogout = () => {
+    adminApiService.logout()
+    setIsAdminLoggedIn(false)
+    // Redirect to home page after logout
+    navigate('/')
+  }
+
+  const handleToggleSystemStatus = async (active: boolean): Promise<boolean> => {
+    try {
+      await adminApiService.setSystemStatus(active)
+      // SSE will handle the system status update
+      // No need to manually refresh data - SSE events will handle this
+      
+      return true
+    } catch (error) {
+      console.error('Failed to toggle system status:', error)
+      return false
+    }
+  }
+
+  const handleWorkNextUser = async (targetCallsign?: string): Promise<void> => {
+    // For now, we'll keep the existing API that just works the next user in queue
+    // The targetCallsign parameter is for future enhancement if we want to support
+    // working specific users from the queue
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    targetCallsign; // Suppress unused parameter warning
+    
+    const newQso = await adminApiService.workNextUser()
+    // Copy callsign to clipboard only for the user who clicked "work next"
+    if (newQso?.callsign) {
+      copyToClipboard(newQso.callsign)
+    }
+    // No need to manually refresh - SSE will broadcast the updates
+  }
+
+  const handleCompleteCurrentQso = async (): Promise<void> => {
+    await adminApiService.completeCurrentQso()
+    // No need to manually refresh - SSE will broadcast the updates
+  }
+
+  const handleSetFrequency = async (frequency: string): Promise<void> => {
+    await adminApiService.setFrequency(frequency)
+    // No need to manually refresh - SSE will broadcast the frequency update
+    // But also update local state for immediate feedback
+    setCurrentFrequency(frequency)
+  }
+
+  const handleClearFrequency = async (): Promise<void> => {
+    await adminApiService.clearFrequency()
+    // Update local state immediately
+    setCurrentFrequency(null)
+  }
+
+  const handleSetSplit = async (split: string): Promise<void> => {
+    await adminApiService.setSplit(split)
+    // No need to manually refresh - SSE will broadcast the split update
+  }
+
+  const handleClearSplit = async (): Promise<void> => {
+    await adminApiService.clearSplit()
+    // No need to manually refresh - SSE will broadcast the split update
+  }
+
+  const handleToggleLoggerIntegration = async (enabled: boolean): Promise<void> => {
+    try {
+      await adminApiService.setLoggerIntegration(enabled)
+      setLoggerIntegrationEnabled(enabled)
+    } catch (error) {
+      console.error('Failed to toggle logger integration:', error)
+      throw error // Re-throw to let AdminSection handle the error
+    }
+  }
+
+  // Show login screen if not logged in
+  if (!isAdminLoggedIn) {
+    return (
+      <Layout 
+        headerControls={
+          <AdminLogin 
+            onLogin={handleAdminLogin}
+            isLoggedIn={isAdminLoggedIn}
+            onLogout={handleAdminLogout}
+          />
+        }
+      >
+        <main className="main-content">
+          <div className="admin-login-page">
+            <div className="admin-login-container">
+              <h1>Admin Access Required</h1>
+              <p>Please log in to access the admin panel.</p>
+              <AdminLogin 
+                onLogin={handleAdminLogin}
+                isLoggedIn={isAdminLoggedIn}
+                onLogout={handleAdminLogout}
+              />
+            </div>
+          </div>
+        </main>
+      </Layout>
+    )
+  }
+
   return (
-    <Layout>
+    <Layout 
+      headerControls={
+        <>
+          <AdminLogin 
+            onLogin={handleAdminLogin}
+            isLoggedIn={isAdminLoggedIn}
+            onLogout={handleAdminLogout}
+          />
+          <ScaleControl onScaleChange={handleScaleChange} />
+        </>
+      }
+    >
       <main className="main-content">
       {loading && <div>Loading...</div>}
       
@@ -241,13 +451,33 @@ export default function UserPage() {
       )}
       
       <div className={`top-section ${currentFrequency ? 'has-frequency' : 'frequency-hidden'}`}>
+        {/* Admin QSO Control Buttons - Always visible on admin page when logged in */}
+        <div className="admin-qso-controls">
+          <button 
+            className="complete-qso-button"
+            onClick={handleCompleteCurrentQso}
+            disabled={!currentQso}
+            title="Complete the current QSO without advancing the queue"
+          >
+            Complete Current QSO
+          </button>
+          <button 
+            className="work-next-button"
+            onClick={() => handleWorkNextUser()}
+            disabled={queueTotal === 0}
+            title="Work the next person in the queue (FIFO order)"
+          >
+            Work Next ({queueTotal} waiting)
+          </button>
+        </div>
+
         {/* Current Active Callsign (Green Border) */}
         <CurrentActiveCallsign 
           activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
           qrzData={currentQso?.qrz}
           metadata={currentQso?.metadata}
-          onCompleteQso={async () => {}} // No-op async function for user page
-          isAdminLoggedIn={false} // Always false on user page
+          onCompleteQso={handleCompleteCurrentQso}
+          isAdminLoggedIn={isAdminLoggedIn}
         />
 
         {/* Frequency and Signal Display - Only show if frequency is set */}
@@ -262,7 +492,7 @@ export default function UserPage() {
         queueTotal={queueTotal}
         queueMaxSize={queueMaxSize}
         onAddCallsign={handleCallsignRegistration}
-        isAdminLoggedIn={false} // Always false on user page
+        isAdminLoggedIn={isAdminLoggedIn}
         systemActive={systemStatus === true}
       />
 
@@ -272,6 +502,20 @@ export default function UserPage() {
           <FrequencySignalPane className="frequency-signal-display-mobile" />
         </div>
       )}
+
+      {/* Admin Section - Always visible on admin page */}
+      <AdminSection 
+        isLoggedIn={isAdminLoggedIn}
+        onToggleSystemStatus={handleToggleSystemStatus}
+        onSetFrequency={handleSetFrequency}
+        onClearFrequency={handleClearFrequency}
+        onSetSplit={handleSetSplit}
+        onClearSplit={handleClearSplit}
+        systemStatus={systemStatus}
+        currentFrequency={currentFrequency}
+        loggerIntegrationEnabled={loggerIntegrationEnabled}
+        onToggleLoggerIntegration={handleToggleLoggerIntegration}
+      />
     </main>
     </Layout>
   )

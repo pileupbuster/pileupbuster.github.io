@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, useLocation } from 'react-router-dom';
-import './App.css';
-import MapSection from './components/MapSection';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
-import QueueBar from './components/QueueBar';
-import AdminPage from './pages/AdminPage';
-import { apiService, type QueueEntry, type PreviousQsoData } from './services/api';
-import { API_BASE_URL } from './config/api';
+import Layout from '../components/Layout'
+import MapSection from '../components/MapSection';
+import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
+import QueueBar from '../components/QueueBar';
+import { apiService, type QueueEntry, type PreviousQsoData } from '../services/api';
+import { API_BASE_URL } from '../config/api';
 
 interface QueueItem {
   callsign: string;
@@ -67,7 +65,7 @@ function convertQueueEntryToItem(entry: QueueEntry): QueueItem {
   };
 }
 
-function MainApp() {
+export default function HomePage() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [worked, setWorked] = useState<WorkedItem[]>([]);
   const [currentOperator, setCurrentOperator] = useState<CurrentOperator | null>(null);
@@ -201,50 +199,34 @@ function MainApp() {
   };
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <Layout>
+        <div className="loading">Loading...</div>
+      </Layout>
+    );
   }
 
   return (
-    <div className="container">
-      <Header frequency={frequency} />
-      
-      <div className="main-content">
-        <MapSection 
-          workedOperators={worked}
-          currentOperator={currentOperator}
-        />
+    <Layout>
+      <div className="container">
+        <Header frequency={frequency} />
         
-        <Sidebar 
-          currentOperator={currentOperator}
-          queueCount={queue.length}
-          workedCount={worked.length}
-          onWorkOperator={handleWorkCurrentOperator}
-        />
+        <div className="main-content">
+          <MapSection 
+            workedOperators={worked}
+            currentOperator={currentOperator}
+          />
+          
+          <Sidebar 
+            currentOperator={currentOperator}
+            queueCount={queue.length}
+            workedCount={worked.length}
+            onWorkOperator={handleWorkCurrentOperator}
+          />
+        </div>
+        
+        <QueueBar queue={queue} />
       </div>
-      
-      <QueueBar queue={queue} />
-    </div>
+    </Layout>
   );
 }
-
-function AppRouter() {
-  const location = useLocation();
-  
-  // If the path is /admin, show the admin page
-  if (location.pathname === '/admin') {
-    return <AdminPage />;
-  }
-  
-  // Otherwise, always show the main app (no 404)
-  return <MainApp />;
-}
-
-function App() {
-  return (
-    <Router>
-      <AppRouter />
-    </Router>
-  );
-}
-
-export default App;
