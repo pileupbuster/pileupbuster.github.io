@@ -218,6 +218,12 @@ body {
     object-fit: cover;
 }
 
+.marker-avatar.placeholder {
+    font-size: 32px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
 .map-popup {
     text-align: center;
     font-size: 12px;

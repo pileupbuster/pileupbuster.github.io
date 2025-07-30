@@ -6,7 +6,7 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import QueueBar from './components/QueueBar';
 import AdminPage from './pages/AdminPage';
-import { apiService, type QueueEntry, type PreviousQsoData, type CurrentQsoData } from './services/api';
+import { apiService, type QueueEntry, type PreviousQsoData, type CurrentQsoData, type WorkedCallerData } from './services/api';
 import { sseService, type StateChangeEvent } from './services/sse';
 
 interface QueueItem {
@@ -78,9 +78,9 @@ function MainApp() {
   // Function to fetch initial data
   const fetchInitialData = async () => {
     try {
-      const [queueData, workedData, currentQsoData, frequencyData, splitData] = await Promise.all([
+      const [queueData, workedCallersData, currentQsoData, frequencyData, splitData] = await Promise.all([
         apiService.getQueueList(),
-        apiService.getPreviousQsos(10),
+        apiService.getWorkedCallers(),
         apiService.getCurrentQso(),
         apiService.getCurrentFrequency(),
         apiService.getCurrentSplit()
@@ -90,21 +90,21 @@ function MainApp() {
       const convertedQueue = queueData.queue?.map(convertQueueEntryToItem) || [];
       setQueue(convertedQueue);
       
-      // Convert previous QSOs to worked items
-      const convertedWorked: WorkedItem[] = workedData.previous_qsos?.map((qso: PreviousQsoData) => ({
-        callsign: qso.callsign,
-        name: qso.qrz?.name,
-        completedAt: qso.worked_timestamp,
-        source: qso.metadata?.source === 'queue' ? 'pileupbuster' : 'direct',
-        address: qso.qrz?.address,
-        grid: {
-          lat: undefined, // API doesn't provide coordinates yet
-          long: undefined,
-          grid: undefined
+      // Convert worked callers to worked items
+      const convertedWorked: WorkedItem[] = workedCallersData.worked_callers?.map((caller: any) => ({
+        callsign: caller.callsign,
+        name: caller.name || caller.qrz?.name,
+        completedAt: caller.worked_timestamp,
+        source: caller.metadata?.source === 'queue' ? 'pileupbuster' : 'direct',
+        address: caller.location || caller.qrz?.address,
+        grid: caller.grid || {
+          lat: caller.qrz?.grid?.lat,
+          long: caller.qrz?.grid?.long,
+          grid: caller.qrz?.grid?.grid
         },
-        image: qso.qrz?.image,
-        dxcc_name: qso.qrz?.dxcc_name,
-        location: qso.qrz?.address || qso.qrz?.dxcc_name
+        image: caller.qrz_image || caller.qrz?.image,
+        dxcc_name: caller.country || caller.qrz?.dxcc_name,
+        location: caller.location || caller.qrz?.address || caller.qrz?.dxcc_name
       })) || [];
       setWorked(convertedWorked);
       
@@ -188,18 +188,18 @@ function MainApp() {
       // Convert worked callers to the format expected by the UI
       const convertedWorked: WorkedItem[] = event.data.worked_callers.map((caller: any) => ({
         callsign: caller.callsign,
-        name: caller.qrz?.name,
+        name: caller.name || caller.qrz?.name,
         completedAt: caller.worked_timestamp,
         source: caller.metadata?.source === 'queue' ? 'pileupbuster' : 'direct',
-        address: caller.qrz?.address,
-        grid: {
-          lat: undefined,
-          long: undefined,
-          grid: undefined
+        address: caller.location || caller.qrz?.address,
+        grid: caller.grid || {
+          lat: caller.qrz?.grid?.lat,
+          long: caller.qrz?.grid?.long,
+          grid: caller.qrz?.grid?.grid
         },
-        image: caller.qrz?.image,
-        dxcc_name: caller.qrz?.dxcc_name,
-        location: caller.qrz?.address || caller.qrz?.dxcc_name
+        image: caller.qrz_image || caller.qrz?.image,
+        dxcc_name: caller.country || caller.qrz?.dxcc_name,
+        location: caller.location || caller.qrz?.address || caller.qrz?.dxcc_name
       }));
       setWorked(convertedWorked);
     }

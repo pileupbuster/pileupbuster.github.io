@@ -54,6 +54,37 @@ export interface PreviousQsoData {
   }
 }
 
+export interface WorkedCallerData {
+  callsign: string
+  worked_timestamp: string
+  qrz?: {
+    name?: string
+    address?: string
+    dxcc_name?: string
+    image?: string
+    url?: string
+    grid?: {
+      lat?: number
+      long?: number
+      grid?: string
+    }
+  }
+  metadata?: {
+    source?: 'queue' | 'direct'
+    bridge_initiated?: boolean
+    frequency_mhz?: number
+    mode?: string
+    started_via?: string
+    bridge_timestamp?: string
+  }
+}
+
+export interface WorkedCallersResponse {
+  worked_callers: WorkedCallerData[]
+  total: number
+  system_active: boolean
+}
+
 export interface QueueListResponse {
   queue: QueueEntry[]
   total: number
@@ -150,5 +181,11 @@ export const apiService = {
   async getPreviousQsos(limit: number = 10): Promise<PreviousQsosResponse> {
     const response = await fetch(`${API_BASE_URL}/public/previous-qsos?limit=${limit}`)
     return handleResponse<PreviousQsosResponse>(response)
+  },
+
+  // Get worked callers (public endpoint)
+  async getWorkedCallers(): Promise<WorkedCallersResponse> {
+    const response = await fetch(`${API_BASE_URL}/public/worked-callers`)
+    return handleResponse<WorkedCallersResponse>(response)
   },
 }

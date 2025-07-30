@@ -72,7 +72,9 @@ function MapSection({ workedOperators, currentOperator }: MapSectionProps) {
     workedOperators.forEach(operator => {
       if (operator.grid?.lat && operator.grid?.long) {
         const icon = L.divIcon({
-          html: `<div class="marker-avatar worked"><img src="${operator.image || `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`}" alt="${operator.callsign}" /></div>`,
+          html: operator.image 
+            ? `<div class="marker-avatar worked"><img src="${operator.image}" alt="${operator.callsign}" /></div>`
+            : `<div class="marker-avatar worked placeholder">👤</div>`,
           iconSize: [60, 60],
           iconAnchor: [30, 30],
           popupAnchor: [0, -30],
@@ -94,7 +96,9 @@ function MapSection({ workedOperators, currentOperator }: MapSectionProps) {
     // Add current operator if exists
     if (currentOperator) {
       const icon = L.divIcon({
-        html: `<div class="marker-avatar current"><img src="${currentOperator.profileImage}" alt="${currentOperator.callsign}" /></div>`,
+        html: currentOperator.profileImage 
+          ? `<div class="marker-avatar current"><img src="${currentOperator.profileImage}" alt="${currentOperator.callsign}" /></div>`
+          : `<div class="marker-avatar current placeholder">👤</div>`,
         iconSize: [60, 60],
         iconAnchor: [30, 30],
         popupAnchor: [0, -30],
