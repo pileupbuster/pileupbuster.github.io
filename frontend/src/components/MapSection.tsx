@@ -55,14 +55,20 @@ function MapSection({ workedOperators, currentOperator, queueItems = [] }: MapSe
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Initialize map with darker tiles using CartoDB Dark Matter (English-only labels)
+    // Initialize map with Esri World Imagery tiles (English-only labels)
     const map = L.map(mapContainerRef.current).setView([45, -93], 4);
 
-    // Using CartoDB Dark Matter tiles which typically show English-only place names
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
+    // Using Esri World Imagery tiles for satellite imagery
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles © <a href="https://www.esri.com/">Esri</a> — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
       maxZoom: 20
+    }).addTo(map);
+
+    // Add labels overlay for place names (English only)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '',
+      maxZoom: 20,
+      opacity: 0.8
     }).addTo(map);
 
     mapRef.current = map;
