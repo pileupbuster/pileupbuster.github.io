@@ -463,6 +463,14 @@ body {
         0 0 0 1px rgba(0, 255, 157, 0.1);
 }
 
+.queue-image.placeholder-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
 .queue-placeholder-icon {
     width: 60px;
     height: 60px;

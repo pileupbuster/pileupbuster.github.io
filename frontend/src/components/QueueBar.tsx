@@ -129,11 +129,15 @@ function QueueBar({ queue }: QueueBarProps) {
     
     displayItems.push(
       <div key={item.callsign} className="queue-card" data-position={originalPosition}>
-        <img 
-          src={item.image || `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`} 
-          alt={item.callsign} 
-          className="queue-image" 
-        />
+        {item.image ? (
+          <img 
+            src={item.image} 
+            alt={item.callsign} 
+            className="queue-image" 
+          />
+        ) : (
+          <div className="queue-image placeholder-image">👤</div>
+        )}
         <div className="queue-info">
           <h3 className="queue-callsign">{item.callsign}</h3>
           <p className="queue-location">
