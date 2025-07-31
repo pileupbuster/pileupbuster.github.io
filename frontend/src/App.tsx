@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 import './App.css';
 import MapSection from './components/MapSection';
@@ -89,6 +89,10 @@ function MainApp() {
   const [split, setSplit] = useState('');
   const [loading, setLoading] = useState(true);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [queueAnimation, setQueueAnimation] = useState<{ callsign: string; animation: string } | null>(null);
+  const previousQsoRef = useRef<CurrentOperator | null>(null);
+  const [animatingQueueItem, setAnimatingQueueItem] = useState<QueueItem | null>(null);
+  const queueRef = useRef<QueueItem[]>([]);
 
   // Check admin login status
   useEffect(() => {
@@ -109,6 +113,7 @@ function MainApp() {
       // Convert queue entries to the format expected by the UI
       const convertedQueue = queueData.queue?.map(convertQueueEntryToItem) || [];
       setQueue(convertedQueue);
+      queueRef.current = convertedQueue;
       
       // Convert worked callers to worked items
       const convertedWorked: WorkedItem[] = workedCallersData.worked_callers?.map((caller: any) => ({
@@ -162,6 +167,9 @@ function MainApp() {
   const updateCurrentOperator = (currentQsoData: CurrentQsoData | null) => {
     console.log('Updating current operator with QSO data:', currentQsoData);
     
+    // Track the previous operator for animation purposes
+    previousQsoRef.current = currentOperator;
+    
     // Only show a current operator if we have an active QSO from the backend
     // The queue is only for waiting - not for showing current operator
     if (currentQsoData && currentQsoData.callsign) {
@@ -189,7 +197,25 @@ function MainApp() {
     if (event.data?.queue) {
       // Convert queue entries to the format expected by the UI
       const convertedQueue = event.data.queue.map(convertQueueEntryToItem);
+      
+      // Check if someone was removed from the queue (worked)
+      const oldCallsigns = queue.map(item => item.callsign);
+      const newCallsigns = convertedQueue.map(item => item.callsign);
+      const removedCallsign = oldCallsigns.find(callsign => !newCallsigns.includes(callsign));
+      
+      // If someone was removed and they're now the current operator, trigger animation
+      if (removedCallsign && currentOperator && currentOperator.callsign === removedCallsign) {
+        console.log('Detected queue removal for current operator, triggering animation:', removedCallsign);
+        setQueueAnimation({ callsign: removedCallsign, animation: 'queue-to-current-animation' });
+        
+        // Remove animation after it completes
+        setTimeout(() => {
+          setQueueAnimation(null);
+        }, 800);
+      }
+      
       setQueue(convertedQueue);
+      queueRef.current = convertedQueue;
       
       // Note: Queue changes don't affect current operator display
       // Only active QSO data determines current operator
@@ -201,6 +227,28 @@ function MainApp() {
     
     // Update the current operator display based on the new QSO data
     const qsoData = event.data || null;
+    
+    // Check if this is a new QSO from the queue
+    if (qsoData && qsoData.callsign && (qsoData.metadata?.source === 'queue' || qsoData.metadata?.source === 'queue_specific')) {
+      // Find the queue item in the ref (more up-to-date than state)
+      const queueItem = queueRef.current.find(item => item.callsign === qsoData.callsign);
+      if (queueItem) {
+        console.log('New QSO from queue, triggering animation for:', qsoData.callsign);
+        console.log('Queue items:', queueRef.current.map(item => item.callsign));
+        setAnimatingQueueItem(queueItem);
+        setQueueAnimation({ callsign: qsoData.callsign, animation: 'queue-to-current-animation' });
+        
+        // Remove animation after it completes
+        setTimeout(() => {
+          setQueueAnimation(null);
+          setAnimatingQueueItem(null);
+        }, 800);
+      } else {
+        console.log('Queue item not found for callsign:', qsoData.callsign);
+        console.log('Current queue:', queueRef.current.map(item => item.callsign));
+      }
+    }
+    
     updateCurrentOperator(qsoData);
   };
 
@@ -225,6 +273,12 @@ function MainApp() {
         dxcc_name: caller.country || caller.qrz?.dxcc_name,
         location: caller.location || caller.qrz?.address || caller.qrz?.dxcc_name
       };
+      
+      // Trigger animation for QSO to map if this was the current operator
+      if (previousQsoRef.current && previousQsoRef.current.callsign === caller.callsign) {
+        // The animation will be handled by the CurrentActiveCallsign component
+        // when it detects the operator change
+      }
       
       // Prepend new worked item to the list
       setWorked(prev => [newWorkedItem, ...prev]);
@@ -361,7 +415,10 @@ function MainApp() {
       </div>
       
       <QueueBar 
-        queue={queue} 
+        queue={queue}
+        animatingCallsign={queueAnimation?.callsign}
+        animationClass={queueAnimation?.animation}
+        animatingItem={animatingQueueItem}
       />
     </div>
   );

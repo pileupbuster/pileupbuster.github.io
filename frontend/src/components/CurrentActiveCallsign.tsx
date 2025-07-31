@@ -1,3 +1,4 @@
+import { useEffect, useState, useRef } from 'react';
 import { QRZ_LOOKUP_URL_TEMPLATE } from '../config/api';
 
 export interface CurrentActiveUser {
@@ -27,7 +28,76 @@ interface CurrentActiveCallsignProps {
   metadata?: QsoMetadata;
 }
 
+interface PreviousUserData {
+  user: CurrentActiveUser;
+  qrzData?: QrzData;
+  metadata?: QsoMetadata;
+}
+
 function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveCallsignProps) {
+  const [animationClass, setAnimationClass] = useState('');
+  const [previousCallsign, setPreviousCallsign] = useState<string | null>(null);
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+  const [previousUserData, setPreviousUserData] = useState<PreviousUserData | null>(null);
+  const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Handle when activeUser changes
+    if (activeUser && activeUser.callsign !== previousCallsign) {
+      // Store the previous user data before updating
+      if (previousCallsign && previousUserData) {
+        // Keep showing previous user during animation
+      }
+      
+      // Check if this is a direct QSO (not from queue)
+      if (metadata?.source === 'direct') {
+        console.log('Setting dissolve-in animation for direct QSO:', activeUser.callsign);
+        setAnimationClass('dissolve-in-animation');
+      } else {
+        setAnimationClass('');
+      }
+      setPreviousCallsign(activeUser.callsign);
+      setPreviousUserData({ user: activeUser, qrzData, metadata });
+      setIsAnimatingOut(false);
+      
+      // Remove animation class after animation completes
+      const timer = setTimeout(() => {
+        setAnimationClass('');
+      }, 800);
+      
+      return () => clearTimeout(timer);
+    } else if (!activeUser && previousUserData && !isAnimatingOut) {
+      // Handle when QSO ends (activeUser becomes null)
+      console.log('QSO ended, starting animation out');
+      setIsAnimatingOut(true);
+      setAnimationClass('animating-out');
+      
+      // Clear any existing timer
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+      }
+      
+      // Clean up after animation
+      animationTimerRef.current = setTimeout(() => {
+        console.log('Animation out complete, clearing previous user data');
+        setPreviousCallsign(null);
+        setPreviousUserData(null);
+        setIsAnimatingOut(false);
+        setAnimationClass('');
+        animationTimerRef.current = null;
+      }, 1000);
+    }
+  }, [activeUser, metadata?.source, previousCallsign, isAnimatingOut, qrzData]);
+  
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+      }
+    };
+  }, []);
+
   // Helper function to generate QRZ lookup URL for a callsign
   const getQrzUrl = (callsign: string): string => {
     return QRZ_LOOKUP_URL_TEMPLATE.replace('{CALLSIGN}', callsign);
@@ -92,23 +162,38 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveC
   // Handle avatar/image click to open QRZ profile
   const handleAvatarClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (activeUser) {
-      window.open(getQrzUrl(activeUser.callsign), '_blank');
+    const userToOpen = isAnimatingOut && previousUserData ? previousUserData.user : activeUser;
+    if (userToOpen) {
+      window.open(getQrzUrl(userToOpen.callsign), '_blank');
     }
   };
 
-  // If no active user, show placeholder
-  if (!activeUser) {
+  // Determine which user to display (current or animating out previous)
+  const displayUser = isAnimatingOut && previousUserData ? previousUserData.user : activeUser;
+  const displayQrzData = isAnimatingOut && previousUserData ? previousUserData.qrzData : qrzData;
+  const displayMetadata = isAnimatingOut && previousUserData ? previousUserData.metadata : metadata;
+  
+  console.log('CurrentActiveCallsign state:', {
+    activeUser: activeUser?.callsign,
+    isAnimatingOut,
+    previousUserData: previousUserData?.user?.callsign,
+    displayUser: displayUser?.callsign,
+    animationClass
+  });
+  
+  // If no user to display, show placeholder
+  if (!displayUser) {
+    console.log('Showing placeholder - no active user');
     return (
       <section className="current-active-section">
         <div className="current-active-card">
           <div className="operator-image-large">
-            <div className="placeholder-image" style={{ fontSize: '3rem' }}>👤</div>
+            <div className="placeholder-image" style={{ fontSize: '6rem' }}>👤</div>
           </div>
           <div className="active-info">
-            <div className="active-callsign">No active callsign</div>
-            <div className="active-name">Waiting for next QSO</div>
-            <div className="active-location">-</div>
+            <div className="active-callsign" style={{ color: '#00ff9d' }}>No active callsign</div>
+            <div className="active-name" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Waiting for next QSO</div>
+            <div className="active-location" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>-</div>
           </div>
         </div>
       </section>
@@ -116,36 +201,38 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveC
   }
 
   // Determine which image to show
-  const hasQrzImage = qrzData?.image;
-  const sourceDisplay = getQSOSourceDisplay(metadata);
-  const qsoDetails = getQSODetails(metadata);
+  const hasQrzImage = displayQrzData?.image;
+  const sourceDisplay = getQSOSourceDisplay(displayMetadata);
+  const qsoDetails = getQSODetails(displayMetadata);
+  
+  console.log('Rendering active user:', displayUser?.callsign, 'with animation:', animationClass);
   
   return (
     <section className="current-active-section">
-      <div className="current-active-card">
+      <div className={`current-active-card ${animationClass}`}>
         <div 
           className="operator-image-large clickable"
           onClick={handleAvatarClick}
-          title={activeUser ? `View ${activeUser.callsign} on QRZ.com` : undefined}
-          style={{ cursor: activeUser ? 'pointer' : 'default' }}
+          title={displayUser ? `View ${displayUser.callsign} on QRZ.com` : undefined}
+          style={{ cursor: displayUser ? 'pointer' : 'default' }}
         >
           {hasQrzImage ? (
-            <img src={qrzData.image} alt="Operator" className="operator-image" />
+            <img src={displayQrzData.image} alt="Operator" className="operator-image" />
           ) : (
             <div className="placeholder-image" style={{ fontSize: '3rem' }}>👤</div>
           )}
         </div>
         <div className="active-info">
           <a 
-            href={getQrzUrl(activeUser.callsign)}
+            href={getQrzUrl(displayUser.callsign)}
             target="_blank"
             rel="noopener noreferrer"
             className="active-callsign active-callsign-link"
           >
-            {activeUser.callsign}
+            {displayUser.callsign}
           </a>
-          <div className="active-name">{activeUser.name}</div>
-          <div className="active-location">{activeUser.location}</div>
+          <div className="active-name">{displayUser.name}</div>
+          <div className="active-location">{displayUser.location}</div>
           
           {/* QSO Source Indicator */}
           {sourceDisplay && (
@@ -161,10 +248,10 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveC
             </div>
           )}
           
-          {qrzData?.url && (
+          {displayQrzData?.url && (
             <button 
               className="qrz-button"
-              onClick={() => window.open(qrzData.url, '_blank')}
+              onClick={() => window.open(displayQrzData.url, '_blank')}
             >
               QRZ.COM INFO
             </button>

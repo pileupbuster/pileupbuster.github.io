@@ -19,9 +19,12 @@ interface QueueItem {
 
 interface QueueBarProps {
   queue: QueueItem[];
+  animatingCallsign?: string;
+  animationClass?: string;
+  animatingItem?: QueueItem | null;
 }
 
-function QueueBar({ queue }: QueueBarProps) {
+function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: QueueBarProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCallsign, setNewCallsign] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -100,18 +103,25 @@ function QueueBar({ queue }: QueueBarProps) {
   // We'll show only one empty slot if queue size < 4
   const displayItems = [];
   
+  // If there's an animating item that's not in the queue anymore, include it
+  const displayQueue = [...queue];
+  if (animatingItem && !queue.some(item => item.callsign === animatingItem.callsign)) {
+    // Insert the animating item at the beginning (it was first in queue)
+    displayQueue.unshift(animatingItem);
+  }
+  
   // Reverse the queue so first person appears on the right
-  const reversedQueue = [...queue].reverse();
+  const reversedQueue = [...displayQueue].reverse();
   
   // Add actual queue items (up to 4)
   for (let i = 0; i < Math.min(4, reversedQueue.length); i++) {
     const item = reversedQueue[i];
-    const originalPosition = queue.length - 1 - i; // Calculate original position in queue (0 = first in queue)
+    const originalPosition = displayQueue.length - 1 - i; // Calculate original position in queue (0 = first in queue)
     
     displayItems.push(
       <div 
         key={item.callsign} 
-        className="queue-card" 
+        className={`queue-card ${animatingCallsign === item.callsign ? animationClass : ''}`}
         data-position={originalPosition}
         onClick={() => openProfile(item.callsign)}
         style={{ cursor: 'pointer' }}
@@ -136,7 +146,7 @@ function QueueBar({ queue }: QueueBarProps) {
   }
   
   // Add one empty slot if queue is not full (only show one empty slot)
-  if (queue.length < 4) {
+  if (displayQueue.length < 4) {
     displayItems.unshift(
       <div 
         key="empty-slot" 
