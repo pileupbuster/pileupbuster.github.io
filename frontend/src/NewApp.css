@@ -1,0 +1,420 @@
+/* Pileup Buster - Live Map Style */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+    overflow-x: hidden;
+}
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top Header */
+.top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    background: rgba(26, 26, 46, 0.9);
+    border-bottom: 2px solid rgba(0, 255, 157, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+}
+
+.logo-image {
+    height: 60px;
+    width: auto;
+}
+
+.frequency-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 255, 157, 0.1);
+    padding: 15px 30px;
+    border-radius: 15px;
+    border: 2px solid rgba(0, 255, 157, 0.3);
+    box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
+}
+
+.frequency-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: #00ff9d;
+    text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+}
+
+.frequency-unit {
+    font-size: 14px;
+    color: rgba(0, 255, 157, 0.7);
+    margin-top: -5px;
+}
+
+.clock-section {
+    background: rgba(0, 255, 157, 0.1);
+    padding: 15px 25px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 255, 157, 0.3);
+}
+
+.clock {
+    font-size: 24px;
+    font-weight: bold;
+    color: #00ff9d;
+    text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+}
+
+/* Main Content */
+.main-content {
+    display: flex;
+    flex: 1;
+    gap: 20px;
+    padding: 20px;
+}
+
+/* Map Section */
+.map-section {
+    flex: 3;
+    height: calc(100vh - 300px);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.map-container {
+    width: 100%;
+    height: 100%;
+    border-radius: 15px;
+}
+
+/* Custom marker styles */
+.marker-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 4px solid;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+}
+
+.marker-avatar.worked {
+    border-color: #00ff9d;
+    box-shadow: 0 0 20px rgba(0, 255, 157, 0.6);
+}
+
+.marker-avatar.queue {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
+}
+
+.marker-avatar.current {
+    border-color: #ffd93d;
+    box-shadow: 0 0 20px rgba(255, 217, 61, 0.6);
+}
+
+.marker-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.map-popup {
+    text-align: center;
+    font-size: 12px;
+    color: white;
+    background: rgba(26, 26, 46, 0.95);
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 255, 157, 0.3);
+}
+
+/* Sidebar */
+.sidebar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 350px;
+}
+
+/* Current Operator Section */
+.current-operator-section {
+    background: rgba(26, 26, 46, 0.9);
+    border-radius: 15px;
+    padding: 20px;
+    border: 2px solid rgba(0, 255, 157, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.current-operator-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.current-operator-card:hover {
+    background: rgba(0, 255, 157, 0.1);
+    transform: translateY(-2px);
+}
+
+.current-operator-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #00ff9d;
+    object-fit: cover;
+    box-shadow: 0 0 15px rgba(0, 255, 157, 0.4);
+}
+
+.current-operator-info {
+    flex: 1;
+}
+
+.current-callsign {
+    font-size: 24px;
+    font-weight: bold;
+    color: #00ff9d;
+    margin-bottom: 5px;
+    text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+}
+
+.current-name {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 3px;
+}
+
+.current-location {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Queue Stats */
+.queue-stats {
+    display: flex;
+    gap: 20px;
+    justify-content: space-around;
+}
+
+.stat-item {
+    background: rgba(26, 26, 46, 0.9);
+    border-radius: 10px;
+    padding: 15px 20px;
+    text-align: center;
+    border: 1px solid rgba(0, 255, 157, 0.3);
+    flex: 1;
+}
+
+.stat-label {
+    display: block;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #00ff9d;
+    text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+}
+
+/* Bottom Queue Bar */
+.bottom-queue {
+    display: flex;
+    gap: 15px;
+    padding: 20px 30px;
+    background: rgba(26, 26, 46, 0.9);
+    border-top: 2px solid rgba(0, 255, 157, 0.3);
+    backdrop-filter: blur(10px);
+    overflow-x: auto;
+    min-height: 140px;
+}
+
+.queue-card {
+    min-width: 250px;
+    background: rgba(255, 107, 107, 0.1);
+    border: 2px solid rgba(255, 107, 107, 0.3);
+    border-radius: 15px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.queue-card:hover {
+    background: rgba(255, 107, 107, 0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+}
+
+.queue-card.placeholder {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    cursor: default;
+}
+
+.queue-card.placeholder:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.queue-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 107, 107, 0.5);
+    object-fit: cover;
+}
+
+.queue-placeholder-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.queue-info {
+    flex: 1;
+}
+
+.queue-callsign {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ff6b6b;
+    margin-bottom: 3px;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+.queue-location {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 2px;
+}
+
+.queue-time {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Animations */
+@keyframes dropToMap {
+    0% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(0.8) rotate(180deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0.6) rotate(360deg);
+        opacity: 0.3;
+    }
+}
+
+@keyframes riseToCurrentPosition {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-200px) scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+.queue-shift-animation {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drop-to-map {
+    animation: dropToMap 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    z-index: 1000;
+}
+
+.rise-to-current {
+    animation: riseToCurrentPosition 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    z-index: 1000;
+}
+
+/* Loading screen */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 24px;
+    color: #00ff9d;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .main-content {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        min-width: auto;
+    }
+    
+    .map-section {
+        height: 60vh;
+    }
+}
+
+@media (max-width: 768px) {
+    .top-header {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .frequency-value {
+        font-size: 24px;
+    }
+    
+    .bottom-queue {
+        padding: 15px;
+        gap: 10px;
+    }
+    
+    .queue-card {
+        min-width: 200px;
+    }
+    
+    .current-operator-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}

@@ -1,520 +1,463 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import './App.css'
-import pileupBusterLogo from './assets/logo.png'
-import pileupBusterLogoDark from './assets/logo-dark.png'
-import ScaleControl from './components/ScaleControl'
-import CurrentActiveCallsign, { type CurrentActiveUser } from './components/CurrentActiveCallsign'
-import WaitingQueue from './components/WaitingQueue'
-import AdminLogin from './components/AdminLogin'
-import AdminSection from './components/AdminSection'
-import FrequencySignalPane from './components/FrequencySignalPane'
-import ThemeToggle from './components/ThemeToggle'
-import { useTheme } from './contexts/ThemeContext'
-import { type QueueItemData } from './components/QueueItem'
-import { apiService, type CurrentQsoData, type QueueEntry, ApiError } from './services/api'
-import { adminApiService } from './services/adminApi'
-import { sseService, type StateChangeEvent } from './services/sse'
+import { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, useLocation } from 'react-router-dom';
+import './App.css';
+import MapSection from './components/MapSection';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import QueueBar from './components/QueueBar';
+import AdminPage from './pages/AdminPage';
+import { apiService, type QueueEntry, type CurrentQsoData } from './services/api';
+import { adminApiService } from './services/adminApi';
+import { formatCountryWithState } from './utils/countryStateFormatter';
+import { sseService, type StateChangeEvent } from './services/sse';
 
-function App() {
-  // Theme
-  const { resolvedTheme } = useTheme()
-  
-  // UI Scale state
-  const handleScaleChange = (scale: number) => {
-    document.documentElement.style.setProperty('--ui-scale', scale.toString())
-  }
-  
-  // Real data state
-  const [currentQso, setCurrentQso] = useState<CurrentQsoData | null>(null)
-  const [queueData, setQueueData] = useState<QueueItemData[]>([])
-  const [queueTotal, setQueueTotal] = useState(0)
-  const [queueMaxSize, setQueueMaxSize] = useState(4)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  
-  // Admin state
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
-  const [systemStatus, setSystemStatus] = useState<boolean | null>(null)
-  const [currentFrequency, setCurrentFrequency] = useState<string | null>(null)
-  const [loggerIntegrationEnabled, setLoggerIntegrationEnabled] = useState(false)
+interface QueueItem {
+  callsign: string;
+  name?: string;
+  timeInQueue: number;
+  address?: string;
+  grid?: {
+    lat?: number;
+    long?: number;
+    grid?: string;
+  };
+  image?: string;
+  dxcc_name?: string;
+  location?: string;
+  waitTime?: string;
+}
 
-  // Ref to track previous callsign for clipboard functionality
-  const previousCallsignRef = useRef<string | null>(null)
+interface WorkedItem {
+  callsign: string;
+  name?: string;
+  completedAt: string;
+  source: 'pileupbuster' | 'direct';
+  address?: string;
+  grid?: {
+    lat?: number;
+    long?: number;
+    grid?: string;
+  };
+  image?: string;
+  dxcc_name?: string;
+  location?: string;
+}
 
-  // Utility function to copy text to clipboard
-  const copyToClipboard = async (text: string): Promise<void> => {
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        // Use modern Clipboard API if available
-        await navigator.clipboard.writeText(text)
-        console.log(`Copied callsign to clipboard: ${text}`)
-      } else {
-        // Fallback for older browsers or insecure contexts
-        const textArea = document.createElement('textarea')
-        textArea.value = text
-        textArea.style.position = 'fixed'
-        textArea.style.left = '-999999px'
-        textArea.style.top = '-999999px'
-        document.body.appendChild(textArea)
-        textArea.focus()
-        textArea.select()
-        
-        try {
-          document.execCommand('copy')
-          console.log(`Copied callsign to clipboard (fallback): ${text}`)
-        } catch (err) {
-          console.warn('Failed to copy callsign to clipboard:', err)
-        } finally {
-          document.body.removeChild(textArea)
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to copy callsign to clipboard:', err)
-    }
-  }
+interface CurrentOperator {
+  callsign: string;
+  name: string;
+  location: string;
+  coordinates: { lat: number; lon: number };
+  profileImage: string;
+  qrz?: {
+    name?: string;
+    address?: string;
+    image?: string;
+    url?: string;
+  };
+  metadata?: {
+    source?: 'queue' | 'direct' | 'queue_specific';
+    bridge_initiated?: boolean;
+    frequency_mhz?: number;
+    mode?: string;
+    started_via?: string;
+  };
+}
 
-  // Convert QueueEntry to QueueItemData format
-  const convertQueueEntryToItemData = (entry: QueueEntry): QueueItemData => {
-    return {
-      callsign: entry.callsign,
-      location: entry.qrz?.dxcc_name || entry.qrz?.address || 'Location not available',
-      timestamp: entry.timestamp,
-      qrz: entry.qrz
-    }
-  }
+// Helper function to convert QueueEntry to QueueItem
+function convertQueueEntryToItem(entry: QueueEntry): QueueItem {
+  return {
+    callsign: entry.callsign,
+    name: entry.qrz?.name,
+    timeInQueue: new Date(entry.timestamp).getTime(),
+    address: entry.qrz?.address,
+    grid: {
+      lat: entry.qrz?.grid?.lat,
+      long: entry.qrz?.grid?.long,
+      grid: entry.qrz?.grid?.grid
+    },
+    image: entry.qrz?.image,
+    dxcc_name: entry.qrz?.dxcc_name,
+    location: formatCountryWithState(entry.qrz?.dxcc_name, entry.qrz?.address)
+  };
+}
 
-  // Convert CurrentQsoData to CurrentActiveUser format
-  const convertCurrentQsoToActiveUser = (qso: CurrentQsoData): CurrentActiveUser => {
-    return {
-      callsign: qso.callsign,
-      name: qso.qrz?.name || 'Name not available',
-      location: qso.qrz?.dxcc_name || qso.qrz?.address || 'Location not available'
-    }
-  }
+function MainApp() {
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [worked, setWorked] = useState<WorkedItem[]>([]);
+  const [currentOperator, setCurrentOperator] = useState<CurrentOperator | null>(null);
+  const [frequency, setFrequency] = useState('');
+  const [split, setSplit] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [queueAnimation, setQueueAnimation] = useState<{ callsign: string; animation: string } | null>(null);
+  const previousQsoRef = useRef<CurrentOperator | null>(null);
+  const [animatingQueueItem, setAnimatingQueueItem] = useState<QueueItem | null>(null);
+  const [systemStatus, setSystemStatus] = useState<boolean | null>(null);
+  const queueRef = useRef<QueueItem[]>([]);
 
-  // Fetch current QSO data
-  const fetchCurrentQso = useCallback(async () => {
-    try {
-      const data = await apiService.getCurrentQso()
-      setCurrentQso(data)
-      // Update ref for initial load (don't copy to clipboard on initial load)
-      previousCallsignRef.current = data?.callsign || null
-    } catch (err) {
-      if (err instanceof ApiError) {
-        console.error('Failed to fetch current QSO:', err.detail || err.message)
-        setError(err.detail || err.message)
-      } else {
-        console.error('Failed to fetch current QSO:', err)
-        setError('Failed to load current QSO')
-      }
-    }
-  }, [])
-
-  // Fetch queue list
-  const fetchQueueList = useCallback(async () => {
-    try {
-      const response = await apiService.getQueueList()
-      const queueItems = response.queue.map(convertQueueEntryToItemData)
-      setQueueData(queueItems)
-      setQueueTotal(response.total)
-      setQueueMaxSize(response.max_size)
-    } catch (err) {
-      if (err instanceof ApiError) {
-        console.error('Failed to fetch queue list:', err.detail || err.message)
-        setError(err.detail || err.message)
-      } else {
-        console.error('Failed to fetch queue list:', err)
-        setError('Failed to load queue')
-      }
-    }
-  }, [])
-
-  // Load admin system status
-  const loadSystemStatus = async () => {
-    try {
-      const status = await adminApiService.getSystemStatus()
-      setSystemStatus(status)
-    } catch (error) {
-      console.error('Failed to load system status:', error)
-      // Set default status if can't load
-      setSystemStatus(false)
-    }
-  }
-
-  // Load logger integration status
-  const loadLoggerIntegrationStatus = async () => {
-    try {
-      if (adminApiService.isLoggedIn()) {
-        const enabled = await adminApiService.getLoggerIntegration()
-        setLoggerIntegrationEnabled(enabled)
-      }
-    } catch (error) {
-      console.error('Failed to load logger integration status:', error)
-      setLoggerIntegrationEnabled(false) // Default to disabled on error
-    }
-  }
-
-  // Load current frequency
-  const loadCurrentFrequency = async () => {
-    try {
-      const frequencyData = await apiService.getCurrentFrequency()
-      setCurrentFrequency(frequencyData.frequency)
-    } catch (error) {
-      console.error('Failed to load current frequency:', error)
-      setCurrentFrequency(null)
-    }
-  }
-
-  // Initial data load
+  // Check admin login status
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true)
-      setError(null)
+    setIsAdminLoggedIn(adminApiService.isLoggedIn());
+  }, []);
+
+  // Function to fetch initial data
+  const fetchInitialData = async () => {
+    try {
+      const [queueData, workedCallersData, currentQsoData, frequencyData, splitData, statusData] = await Promise.all([
+        apiService.getQueueList(),
+        apiService.getWorkedCallers(),
+        apiService.getCurrentQso(),
+        apiService.getCurrentFrequency(),
+        apiService.getCurrentSplit(),
+        fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/public/status`).then(r => r.json())
+      ]);
+
+      // Convert queue entries to the format expected by the UI
+      const convertedQueue = queueData.queue?.map(convertQueueEntryToItem) || [];
+      setQueue(convertedQueue);
+      queueRef.current = convertedQueue;
       
-      await Promise.all([
-        fetchCurrentQso(),
-        fetchQueueList()
-      ])
+      // Convert worked callers to worked items
+      const convertedWorked: WorkedItem[] = workedCallersData.worked_callers?.map((caller: any) => ({
+        callsign: caller.callsign,
+        name: caller.name || caller.qrz?.name,
+        completedAt: caller.worked_timestamp,
+        source: caller.metadata?.source === 'queue' ? 'pileupbuster' : 'direct',
+        address: caller.location || caller.qrz?.address,
+        grid: caller.grid || {
+          lat: caller.qrz?.grid?.lat,
+          long: caller.qrz?.grid?.long,
+          grid: caller.qrz?.grid?.grid
+        },
+        image: caller.qrz_image || caller.qrz?.image,
+        dxcc_name: caller.country || caller.qrz?.dxcc_name,
+        location: formatCountryWithState(caller.qrz?.dxcc_name, caller.qrz?.address)
+      })) || [];
+      setWorked(convertedWorked);
       
-      setLoading(false)
+      // Set current operator display
+      // Explicitly handle null case from getCurrentQso
+      const qsoData = currentQsoData || null;
+      updateCurrentOperator(qsoData);
+      
+      // Set frequency if available
+      console.log('Frequency data from API:', frequencyData);
+      if (frequencyData.frequency) {
+        console.log('Setting frequency:', frequencyData.frequency);
+        setFrequency(frequencyData.frequency);
+      }
+      
+      // Set split if available
+      console.log('Split data from API:', splitData);
+      if (splitData.split) {
+        console.log('Setting split:', splitData.split);
+        setSplit(splitData.split);
+      }
+      
+      // Set system status
+      console.log('Status data from API:', statusData);
+      setSystemStatus(statusData.active);
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+      setLoading(false);
     }
+  };
 
-    loadData()
-  }, [fetchCurrentQso, fetchQueueList])
-
-  // Admin initialization
-  useEffect(() => {
-    // Check if admin is already logged in
-    setIsAdminLoggedIn(adminApiService.isLoggedIn())
+  // Function to update current operator based on QSO data
+  const updateCurrentOperator = (currentQsoData: CurrentQsoData | null) => {
+    console.log('Updating current operator with QSO data:', currentQsoData);
     
-    // Load initial system status and frequency
-    loadSystemStatus()
-    loadCurrentFrequency()
-    // Load logger integration status if admin is logged in
-    if (adminApiService.isLoggedIn()) {
-      loadLoggerIntegrationStatus()
+    // Track the previous operator for animation purposes
+    previousQsoRef.current = currentOperator;
+    
+    // Only show a current operator if we have an active QSO from the backend
+    // The queue is only for waiting - not for showing current operator
+    if (currentQsoData && currentQsoData.callsign) {
+      // We have an active QSO - display the current QSO operator
+      console.log('Setting current operator from active QSO:', currentQsoData.callsign);
+      setCurrentOperator({
+        callsign: currentQsoData.callsign,
+        name: currentQsoData.qrz?.name || currentQsoData.callsign,
+        location: formatCountryWithState(currentQsoData.qrz?.dxcc_name || 'In QSO', currentQsoData.qrz?.address),
+        coordinates: { lat: 53.3498, lon: -6.2603 }, // Default coordinates
+        profileImage: currentQsoData.qrz?.image || '',
+        qrz: currentQsoData.qrz,
+        metadata: currentQsoData.metadata
+      });
+    } else {
+      // No active QSO - clear current operator regardless of queue status
+      console.log('No current QSO - clearing current operator (queue status irrelevant)');
+      setCurrentOperator(null);
     }
-  }, [])
+  };
 
-  // Real-time updates via Server-Sent Events (SSE)
-  useEffect(() => {
-    // Event handlers for different types of state changes
-    const handleCurrentQsoEvent = (event: StateChangeEvent) => {
-      console.log('Received current_qso event:', event)
-      const newQso = event.data
-      const newCallsign = newQso?.callsign
+  // SSE event handlers
+  const handleQueueUpdateEvent = (event: StateChangeEvent) => {
+    console.log('Main app received queue_update event:', event);
+    if (event.data?.queue) {
+      // Convert queue entries to the format expected by the UI
+      const convertedQueue = event.data.queue.map(convertQueueEntryToItem);
       
-      // Update the ref with the new callsign
-      previousCallsignRef.current = newCallsign || null
+      // Check if someone was removed from the queue (worked)
+      const oldCallsigns = queue.map(item => item.callsign);
+      const newCallsigns = convertedQueue.map(item => item.callsign);
+      const removedCallsign = oldCallsigns.find(callsign => !newCallsigns.includes(callsign));
       
-      setCurrentQso(newQso)
-    }
-
-    const handleQueueUpdateEvent = (event: StateChangeEvent) => {
-      console.log('Received queue_update event:', event)
-      if (event.data?.queue) {
-        const queueItems = event.data.queue.map(convertQueueEntryToItemData)
-        setQueueData(queueItems)
-        if (event.data.total !== undefined) {
-          setQueueTotal(event.data.total)
-        }
-        if (event.data.max_size !== undefined) {
-          setQueueMaxSize(event.data.max_size)
-        }
-      }
-    }
-
-    const handleSystemStatusEvent = (event: StateChangeEvent) => {
-      console.log('Received system_status event:', event)
-      if (event.data?.active !== undefined) {
-        setSystemStatus(event.data.active)
+      // If someone was removed and they're now the current operator, trigger animation
+      if (removedCallsign && currentOperator && currentOperator.callsign === removedCallsign) {
+        console.log('Detected queue removal for current operator, triggering animation:', removedCallsign);
+        setQueueAnimation({ callsign: removedCallsign, animation: 'queue-to-current-animation' });
         
-        // Clear error state when system is activated
-        if (event.data.active) {
-          setError(null)
-        }
+        // Remove animation after it completes
+        setTimeout(() => {
+          setQueueAnimation(null);
+        }, 800);
+      }
+      
+      setQueue(convertedQueue);
+      queueRef.current = convertedQueue;
+      
+      // Note: Queue changes don't affect current operator display
+      // Only active QSO data determines current operator
+    }
+  };
+
+  const handleCurrentQsoEvent = (event: StateChangeEvent) => {
+    console.log('Main app received current_qso event:', event);
+    
+    // Update the current operator display based on the new QSO data
+    const qsoData = event.data || null;
+    
+    // Check if this is a new QSO from the queue
+    if (qsoData && qsoData.callsign && (qsoData.metadata?.source === 'queue' || qsoData.metadata?.source === 'queue_specific')) {
+      // Find the queue item in the ref (more up-to-date than state)
+      const queueItem = queueRef.current.find(item => item.callsign === qsoData.callsign);
+      if (queueItem) {
+        console.log('New QSO from queue, triggering animation for:', qsoData.callsign);
+        console.log('Queue items:', queueRef.current.map(item => item.callsign));
+        setAnimatingQueueItem(queueItem);
+        setQueueAnimation({ callsign: qsoData.callsign, animation: 'queue-to-current-animation' });
+        
+        // Remove animation after it completes
+        setTimeout(() => {
+          setQueueAnimation(null);
+          setAnimatingQueueItem(null);
+        }, 800);
+      } else {
+        console.log('Queue item not found for callsign:', qsoData.callsign);
+        console.log('Current queue:', queueRef.current.map(item => item.callsign));
       }
     }
+    
+    updateCurrentOperator(qsoData);
+  };
 
-    const handleConnectedEvent = (event: StateChangeEvent) => {
-      console.log('SSE connected:', event)
-      // When SSE connects, fetch initial data
-      Promise.all([
-        fetchCurrentQso(),
-        fetchQueueList(),
-        loadCurrentFrequency()
-      ]).catch(err => {
-        console.error('Failed to fetch initial data after SSE connection:', err)
-      })
-    }
-
-    const handleFrequencyUpdateEvent = (event: StateChangeEvent) => {
-      console.log('Received frequency_update event:', event)
-      if (event.data?.frequency !== undefined) {
-        setCurrentFrequency(event.data.frequency)
+  const handleWorkedCallersUpdateEvent = (event: StateChangeEvent) => {
+    console.log('Main app received worked_callers_update event:', event);
+    
+    // Handle single worked caller (new format)
+    if (event.data?.worked_caller) {
+      const caller = event.data.worked_caller;
+      const newWorkedItem: WorkedItem = {
+        callsign: caller.callsign,
+        name: caller.name || caller.qrz?.name,
+        completedAt: caller.worked_timestamp,
+        source: caller.metadata?.source === 'queue' ? 'pileupbuster' : 'direct',
+        address: caller.location || caller.qrz?.address,
+        grid: caller.grid || {
+          lat: caller.qrz?.grid?.lat,
+          long: caller.qrz?.grid?.long,
+          grid: caller.qrz?.grid?.grid
+        },
+        image: caller.qrz_image || caller.qrz?.image,
+        dxcc_name: caller.country || caller.qrz?.dxcc_name,
+        location: formatCountryWithState(caller.qrz?.dxcc_name, caller.qrz?.address)
+      };
+      
+      // Trigger animation for QSO to map if this was the current operator
+      if (previousQsoRef.current && previousQsoRef.current.callsign === caller.callsign) {
+        // The animation will be handled by the CurrentActiveCallsign component
+        // when it detects the operator change
       }
+      
+      // Prepend new worked item to the list
+      setWorked(prev => [newWorkedItem, ...prev]);
     }
-
-    const handleSplitUpdateEvent = (event: StateChangeEvent) => {
-      console.log('Received split_update event:', event)
-      // Split updates are handled by the FrequencySignalPane component via SSE
-      // No additional state management needed at App level
+    // Handle array of worked callers (backwards compatibility)
+    else if (event.data?.worked_callers) {
+      // Convert worked callers to the format expected by the UI
+      const convertedWorked: WorkedItem[] = event.data.worked_callers.map((caller: any) => ({
+        callsign: caller.callsign,
+        name: caller.name || caller.qrz?.name,
+        completedAt: caller.worked_timestamp,
+        source: caller.metadata?.source === 'queue' ? 'pileupbuster' : 'direct',
+        address: caller.location || caller.qrz?.address,
+        grid: caller.grid || {
+          lat: caller.qrz?.grid?.lat,
+          long: caller.qrz?.grid?.long,
+          grid: caller.qrz?.grid?.grid
+        },
+        image: caller.qrz_image || caller.qrz?.image,
+        dxcc_name: caller.country || caller.qrz?.dxcc_name,
+        location: formatCountryWithState(caller.qrz?.dxcc_name, caller.qrz?.address)
+      }));
+      setWorked(convertedWorked);
     }
+  };
 
-    // Register event listeners
-    sseService.addEventListener('current_qso', handleCurrentQsoEvent)
-    sseService.addEventListener('queue_update', handleQueueUpdateEvent)
-    sseService.addEventListener('system_status', handleSystemStatusEvent)
-    sseService.addEventListener('connected', handleConnectedEvent)
-    sseService.addEventListener('frequency_update', handleFrequencyUpdateEvent)
-    sseService.addEventListener('split_update', handleSplitUpdateEvent)
+  const handleFrequencyUpdateEvent = (event: StateChangeEvent) => {
+    console.log('Main app received frequency_update event:', event);
+    if (event.data?.frequency) {
+      console.log('SSE setting frequency:', event.data.frequency);
+      setFrequency(event.data.frequency);
+    } else {
+      setFrequency('');
+    }
+  };
+
+  const handleSplitUpdateEvent = (event: StateChangeEvent) => {
+    console.log('Main app received split_update event:', event);
+    if (event.data?.split) {
+      console.log('SSE setting split:', event.data.split);
+      setSplit(event.data.split);
+    } else {
+      setSplit('');
+    }
+  };
+
+  const handleSystemStatusUpdateEvent = (event: StateChangeEvent) => {
+    console.log('Main app received system_status event:', event);
+    setSystemStatus(event.data?.active);
+    
+    // When system goes offline, clear frequency and split
+    if (!event.data?.active) {
+      setFrequency('');
+      setSplit('');
+    }
+  };
+
+  // SSE connection setup
+  useEffect(() => {
+    // Register SSE event listeners
+    sseService.addEventListener('queue_update', handleQueueUpdateEvent);
+    sseService.addEventListener('current_qso', handleCurrentQsoEvent);
+    sseService.addEventListener('worked_callers_update', handleWorkedCallersUpdateEvent);
+    sseService.addEventListener('frequency_update', handleFrequencyUpdateEvent);
+    sseService.addEventListener('split_update', handleSplitUpdateEvent);
+    sseService.addEventListener('system_status', handleSystemStatusUpdateEvent);
 
     // Start SSE connection
-    sseService.connect()
+    sseService.connect();
 
-    // Fallback polling in case SSE fails (every 30 seconds)
-    const fallbackInterval = setInterval(() => {
-      if (!sseService.isConnected()) {
-        console.log('SSE not connected, using fallback polling')
-        fetchCurrentQso()
-        fetchQueueList()
-      }
-    }, 30000) // Fallback poll every 30 seconds
+    // Fetch initial data
+    fetchInitialData();
 
     // Cleanup on component unmount
     return () => {
-      sseService.removeEventListener('current_qso', handleCurrentQsoEvent)
-      sseService.removeEventListener('queue_update', handleQueueUpdateEvent)
-      sseService.removeEventListener('system_status', handleSystemStatusEvent)
-      sseService.removeEventListener('connected', handleConnectedEvent)
-      sseService.removeEventListener('frequency_update', handleFrequencyUpdateEvent)
-      sseService.removeEventListener('split_update', handleSplitUpdateEvent)
-      sseService.disconnect()
-      clearInterval(fallbackInterval)
+      sseService.removeEventListener('queue_update', handleQueueUpdateEvent);
+      sseService.removeEventListener('current_qso', handleCurrentQsoEvent);
+      sseService.removeEventListener('worked_callers_update', handleWorkedCallersUpdateEvent);
+      sseService.removeEventListener('frequency_update', handleFrequencyUpdateEvent);
+      sseService.removeEventListener('split_update', handleSplitUpdateEvent);
+      sseService.removeEventListener('system_status', handleSystemStatusUpdateEvent);
+      sseService.disconnect();
+    };
+  }, []);
+
+  const handleWorkCurrentOperator = () => {
+    if (!currentOperator || queue.length === 0) return;
+
+    // Move current operator to worked list
+    const newWorkedItem: WorkedItem = {
+      callsign: currentOperator.callsign,
+      name: currentOperator.name,
+      completedAt: new Date().toISOString(),
+      source: 'pileupbuster',
+      location: currentOperator.location,
+      grid: {
+        lat: currentOperator.coordinates.lat,
+        long: currentOperator.coordinates.lon
+      },
+      image: currentOperator.profileImage
+    };
+
+    setWorked(prev => [newWorkedItem, ...prev]);
+
+    // Move next in queue to current position
+    if (queue.length > 0) {
+      const nextOperator = queue[0];
+      setCurrentOperator({
+        callsign: nextOperator.callsign,
+        name: nextOperator.name || nextOperator.callsign,
+        location: formatCountryWithState(nextOperator.dxcc_name, nextOperator.address),
+        coordinates: { 
+          lat: nextOperator.grid?.lat || 53.3498, 
+          lon: nextOperator.grid?.long || -6.2603 
+        },
+        profileImage: nextOperator.image || ''
+      });
+
+      // Remove from queue
+      setQueue(prev => prev.slice(1));
     }
-  }, [fetchCurrentQso, fetchQueueList])
+  };
 
-  // Handle callsign registration
-  const handleCallsignRegistration = async (callsign: string) => {
-    try {
-      await apiService.registerCallsign(callsign)
-      // No need to manually refresh - SSE will broadcast the queue update
-    } catch (err) {
-      if (err instanceof ApiError) {
-        console.error('Failed to register callsign:', err.detail || err.message)
-        // You might want to show a user-visible error here
-        throw new Error(err.detail || err.message)
-      } else {
-        console.error('Failed to register callsign:', err)
-        throw new Error('Failed to register callsign')
-      }
-    }
-  }
 
-  // Admin handlers
-  const handleAdminLogin = async (username: string, password: string): Promise<boolean> => {
-    const success = await adminApiService.login(username, password)
-    if (success) {
-      setIsAdminLoggedIn(true)
-      // Reload system status after login
-      await loadSystemStatus()
-      // Load logger integration status after login
-      await loadLoggerIntegrationStatus()
-    }
-    return success
-  }
-
-  const handleAdminLogout = () => {
-    adminApiService.logout()
-    setIsAdminLoggedIn(false)
-  }
-
-  const handleToggleSystemStatus = async (active: boolean): Promise<boolean> => {
-    try {
-      await adminApiService.setSystemStatus(active)
-      // SSE will handle the system status update
-      // No need to manually refresh data - SSE events will handle this
-      
-      return true
-    } catch (error) {
-      console.error('Failed to toggle system status:', error)
-      return false
-    }
-  }
-
-  const handleWorkNextUser = async (targetCallsign?: string): Promise<void> => {
-    // For now, we'll keep the existing API that just works the next user in queue
-    // The targetCallsign parameter is for future enhancement if we want to support
-    // working specific users from the queue
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    targetCallsign; // Suppress unused parameter warning
-    
-    const newQso = await adminApiService.workNextUser()
-    // Copy callsign to clipboard only for the user who clicked "work next"
-    if (newQso?.callsign) {
-      copyToClipboard(newQso.callsign)
-    }
-    // No need to manually refresh - SSE will broadcast the updates
-  }
-
-  const handleCompleteCurrentQso = async (): Promise<void> => {
-    await adminApiService.completeCurrentQso()
-    // No need to manually refresh - SSE will broadcast the updates
-  }
-
-  const handleSetFrequency = async (frequency: string): Promise<void> => {
-    await adminApiService.setFrequency(frequency)
-    // No need to manually refresh - SSE will broadcast the frequency update
-    // But also update local state for immediate feedback
-    setCurrentFrequency(frequency)
-  }
-
-  const handleClearFrequency = async (): Promise<void> => {
-    await adminApiService.clearFrequency()
-    // Update local state immediately
-    setCurrentFrequency(null)
-  }
-
-  const handleSetSplit = async (split: string): Promise<void> => {
-    await adminApiService.setSplit(split)
-    // No need to manually refresh - SSE will broadcast the split update
-  }
-
-  const handleClearSplit = async (): Promise<void> => {
-    await adminApiService.clearSplit()
-    // No need to manually refresh - SSE will broadcast the split update
-  }
-
-  const handleToggleLoggerIntegration = async (enabled: boolean): Promise<void> => {
-    try {
-      await adminApiService.setLoggerIntegration(enabled)
-      setLoggerIntegrationEnabled(enabled)
-    } catch (error) {
-      console.error('Failed to toggle logger integration:', error)
-      throw error // Re-throw to let AdminSection handle the error
-    }
+  if (loading) {
+    return <div className="loading">Loading...</div>;
   }
 
   return (
-    <div className="pileup-buster-app">
-        {/* Header */}
-        <header className="header">
-          <img 
-            src={resolvedTheme === 'dark' ? pileupBusterLogoDark : pileupBusterLogo} 
-            alt="Pileup Buster Logo" 
-            className="logo"
-          />
-          <div className="header-controls">
-            <ThemeToggle />
-            <AdminLogin 
-              onLogin={handleAdminLogin}
-              isLoggedIn={isAdminLoggedIn}
-              onLogout={handleAdminLogout}
-            />
-            {isAdminLoggedIn && <ScaleControl onScaleChange={handleScaleChange} />}
-          </div>
-        </header>
-
-        <main className="main-content">
-          {loading && <div>Loading...</div>}
-          
-          {/* Show system status info instead of red error when system is inactive */}
-          {systemStatus === false && (
-            <div className="system-inactive-alert">
-              ⚠️ System is currently inactive. Registration and queue access are disabled.
-            </div>
-          )}
-          
-          {/* Show errors only if they're not system inactive related */}
-          {error && systemStatus !== false && (
-            <div className="alert-error">Error: {error}</div>
-          )}
-          
-          <div className={`top-section ${currentFrequency ? 'has-frequency' : 'frequency-hidden'}`}>
-            {/* Admin QSO Control Buttons - Only visible when admin is logged in */}
-            {isAdminLoggedIn && (
-              <div className="admin-qso-controls">
-                <button 
-                  className="complete-qso-button"
-                  onClick={handleCompleteCurrentQso}
-                  disabled={!currentQso}
-                  title="Complete the current QSO without advancing the queue"
-                >
-                  Complete Current QSO
-                </button>
-                <button 
-                  className="work-next-button"
-                  onClick={() => handleWorkNextUser()}
-                  disabled={queueTotal === 0}
-                  title="Work the next person in the queue (FIFO order)"
-                >
-                  Work Next ({queueTotal} waiting)
-                </button>
-              </div>
-            )}
-
-            {/* Current Active Callsign (Green Border) */}
-            <CurrentActiveCallsign 
-              activeUser={currentQso ? convertCurrentQsoToActiveUser(currentQso) : null}
-              qrzData={currentQso?.qrz}
-              metadata={currentQso?.metadata}
-              onCompleteQso={handleCompleteCurrentQso}
-              isAdminLoggedIn={isAdminLoggedIn}
-            />
-
-            {/* Frequency and Signal Display - Only show if frequency is set */}
-            {currentFrequency && (
-              <FrequencySignalPane className="frequency-signal-display" />
-            )}
-          </div>
-
-          {/* Waiting Queue Container (Red Border) */}
-          <WaitingQueue 
-            queueData={queueData} 
-            queueTotal={queueTotal}
-            queueMaxSize={queueMaxSize}
-            onAddCallsign={handleCallsignRegistration}
-            isAdminLoggedIn={isAdminLoggedIn}
-            systemActive={systemStatus === true}
-          />
-
-          {/* Mobile Frequency Display - Below queue for mobile priority */}
-          {currentFrequency && (
-            <div className="mobile-frequency-row">
-              <FrequencySignalPane className="frequency-signal-display-mobile" />
-            </div>
-          )}
-
-          {/* Admin Section - Only visible when logged in */}
-          <AdminSection 
-            isLoggedIn={isAdminLoggedIn}
-            onToggleSystemStatus={handleToggleSystemStatus}
-            onSetFrequency={handleSetFrequency}
-            onClearFrequency={handleClearFrequency}
-            onSetSplit={handleSetSplit}
-            onClearSplit={handleClearSplit}
-            systemStatus={systemStatus}
-            currentFrequency={currentFrequency}
-            loggerIntegrationEnabled={loggerIntegrationEnabled}
-            onToggleLoggerIntegration={handleToggleLoggerIntegration}
-          />
-        </main>
-
-        {/* Footer */}
-        <footer className="footer">
-          <div className="footer-content">
-            <a 
-              href="https://ei6jgb.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="github-link"
-            >
-            Maintained by EI6JGB. Original by BrianBruff (Ei6LF)
-            </a>
-          </div>
-        </footer>
+    <div className="container">
+      <Header frequency={frequency} split={split} systemStatus={systemStatus} />
+      
+      <div className="main-content">
+        <MapSection 
+          workedOperators={worked}
+          currentOperator={currentOperator}
+          queueItems={queue}
+        />
+        
+        <Sidebar 
+          currentOperator={currentOperator}
+          queueCount={queue.length}
+          workedCount={worked.length}
+          onWorkOperator={handleWorkCurrentOperator}
+          systemStatus={systemStatus}
+        />
       </div>
-  )
+      
+      <QueueBar 
+        queue={queue}
+        animatingCallsign={queueAnimation?.callsign}
+        animationClass={queueAnimation?.animation}
+        animatingItem={animatingQueueItem}
+      />
+    </div>
+  );
 }
 
-export default App
+function AppRouter() {
+  const location = useLocation();
+  
+  // If the path is /admin, show the admin page
+  if (location.pathname === '/admin') {
+    return <AdminPage />;
+  }
+  
+  // Otherwise, always show the main app (no 404)
+  return <MainApp />;
+}
+
+function App() {
+  return (
+    <Router>
+      <AppRouter />
+    </Router>
+  );
+}
+
+export default App;

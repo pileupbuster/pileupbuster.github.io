@@ -357,11 +357,8 @@ class WebSocketMessageHandler:
         request_id = data.get("request_id")
         
         try:
-            # Get current QSO before clearing it
-            current_qso = queue_db.get_current_qso()
-            
-            # Clear current QSO without advancing queue
-            cleared_qso = queue_db.clear_current_qso()
+            # Complete the QSO (this will add to worked callers and clear current QSO)
+            cleared_qso = queue_db.complete_current_qso()
             
             response = SuccessResponse(
                 request_id=request_id,
@@ -369,8 +366,20 @@ class WebSocketMessageHandler:
             )
             await self.manager.send_message(websocket, response.dict())
             
-            # Broadcast QSO update
+            # Broadcast QSO update (current QSO is now None)
             await self.broadcast_qso_update()
+            
+            # Broadcast worked callers update if we successfully completed a QSO
+            if cleared_qso:
+                worked_entry = cleared_qso.get('worked_entry')
+                if worked_entry:
+                    try:
+                        await event_broadcaster.broadcast_worked_callers_update({
+                            'worked_caller': worked_entry,  # Single entry
+                            'total': queue_db.get_worked_callers_count()
+                        })
+                    except Exception as e:
+                        logger.warning(f"Failed to broadcast worked callers update: {e}")
             
         except Exception as e:
             logger.error(f"Error completing QSO: {e}")
@@ -755,8 +764,30 @@ class WebSocketMessageHandler:
             current_active = current_status.get('active', False)
             new_active = not current_active  # Toggle the current state
             
+            # Get the session to get the username
+            session = self.manager.get_session(websocket)
+            username = session.username if session else "websocket-admin"
+            
             # Set the new status
-            queue_db.set_system_status(new_active)
+            queue_db.set_system_status(new_active, username)
+            
+            # If going offline, clear frequency and split
+            if not new_active:
+                try:
+                    split_data = queue_db.clear_split(username)
+                    await event_broadcaster.broadcast_split_update(split_data)
+                except Exception as e:
+                    logger.warning(f"Failed to clear split when going offline: {e}")
+                
+                try:
+                    frequency_data = queue_db.clear_frequency(username)
+                    await event_broadcaster.broadcast_frequency_update({
+                        'frequency': None,
+                        'last_updated': frequency_data['last_updated'],
+                        'updated_by': frequency_data['updated_by']
+                    })
+                except Exception as e:
+                    logger.warning(f"Failed to clear frequency when going offline: {e}")
             
             status_text = "activated" if new_active else "deactivated"
             response = SuccessResponse(

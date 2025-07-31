@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from app.database import queue_db
 import os
@@ -56,6 +56,48 @@ def get_current_split():
         return {
             'split': split_data.get('split'),
             'last_updated': split_data.get('last_updated')
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@public_router.get('/worked-callers')
+def get_public_worked_callers():
+    """Get the list of worked callers - always available (persistent with 24h TTL)"""
+    try:
+        # Get system status for informational purposes
+        system_status = queue_db.get_system_status()
+        
+        # Always return worked callers regardless of system status
+        # These persist with 24-hour TTL and represent stations worked in the last day
+        worked_list = queue_db.get_worked_callers()
+        count = queue_db.get_worked_callers_count()
+        return {
+            'worked_callers': worked_list,
+            'total': count,
+            'system_active': system_status.get('active', False)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@public_router.get('/previous-qsos')
+def get_previous_qsos(limit: int = Query(default=10, ge=1, le=100)):
+    """Get the last N previous QSOs - public endpoint"""
+    try:
+        # Check if system is active first
+        system_status = queue_db.get_system_status()
+        if not system_status.get('active', False):
+            # Return empty list if system is inactive
+            return {
+                'previous_qsos': [],
+                'limit': limit,
+                'system_active': False
+            }
+        
+        previous_qsos = queue_db.get_previous_qsos(limit)
+        return {
+            'previous_qsos': previous_qsos,
+            'limit': limit,
+            'system_active': True
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')

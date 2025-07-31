@@ -1,0 +1,76 @@
+/* EMERGENCY RESPONSIVE FIX - This will override everything */
+
+/* Force responsive image scaling */
+@media screen and (max-width: 1200px) {
+    .operator-image-large {
+        width: 150px !important;
+        height: 150px !important;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .operator-image-large {
+        width: 120px !important;
+        height: 120px !important;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .operator-image-large {
+        width: 100px !important;
+        height: 100px !important;
+    }
+}
+
+@media screen and (max-width: 400px) {
+    .operator-image-large {
+        width: 80px !important;
+        height: 80px !important;
+    }
+}
+
+/* Force responsive text scaling */
+@media screen and (max-width: 1200px) {
+    .active-callsign {
+        font-size: 36px !important;
+    }
+    .active-name {
+        font-size: 22px !important;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .active-callsign {
+        font-size: 28px !important;
+    }
+    .active-name {
+        font-size: 18px !important;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .active-callsign {
+        font-size: 24px !important;
+    }
+    .active-name {
+        font-size: 16px !important;
+    }
+}
+
+@media screen and (max-width: 400px) {
+    .active-callsign {
+        font-size: 20px !important;
+    }
+    .active-name {
+        font-size: 14px !important;
+    }
+}
+
+/* Ensure text doesn't overflow */
+.active-callsign,
+.active-name {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+}

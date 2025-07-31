@@ -267,6 +267,42 @@ class AdminApiService {
       throw error
     }
   }
+
+  async getWorkedCallers(): Promise<{ worked_callers: any[]; total: number; admin: boolean }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/worked-callers`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get worked callers')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to get worked callers:', error)
+      throw error
+    }
+  }
+
+  async clearWorkedCallers(): Promise<{ message: string; cleared_count: number }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/worked-callers/clear`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to clear worked callers')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to clear worked callers:', error)
+      throw error
+    }
+  }
 }
 
 export const adminApiService = new AdminApiService()

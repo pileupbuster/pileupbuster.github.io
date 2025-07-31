@@ -1,0 +1,307 @@
+/* Queue Bar Styles - Override App.css */
+
+.bottom-queue {
+    display: flex !important;
+    justify-content: flex-start !important; /* Change to flex-start since we're using row-reverse */
+    align-items: center !important;
+    gap: 15px !important;
+    padding: 20px 30px !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(0, 255, 157, 0.2) !important;
+    border-top: 1px solid rgba(0, 255, 157, 0.3) !important;
+    box-shadow: 
+        0 -8px 32px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(0, 255, 157, 0.1) !important;
+    min-height: 140px !important;
+    flex-shrink: 0 !important;
+    flex-direction: row-reverse !important; /* Rightmost is first in queue */
+    overflow-x: visible !important; /* Prevent horizontal scroll */
+    flex-wrap: nowrap !important;
+}
+
+.queue-card {
+    min-width: 250px;
+    background: rgba(255, 107, 107, 0.15);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 107, 107, 0.25);
+    border-radius: 20px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    cursor: pointer;
+    box-shadow: 
+        0 8px 32px rgba(255, 107, 107, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.queue-card:hover {
+    background: rgba(255, 107, 107, 0.25);
+    transform: translateY(-3px);
+    box-shadow: 
+        0 16px 40px rgba(255, 107, 107, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 107, 107, 0.4);
+}
+
+.queue-card.placeholder {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px dashed rgba(0, 255, 157, 0.2);
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(0, 255, 157, 0.05);
+}
+
+.queue-card.placeholder:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 20px rgba(0, 255, 157, 0.2),
+        inset 0 1px 0 rgba(0, 255, 157, 0.1);
+    background: rgba(0, 255, 157, 0.1);
+    border: 1px dashed rgba(0, 255, 157, 0.4);
+}
+
+.queue-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 107, 107, 0.5);
+    object-fit: cover;
+    box-shadow: 
+        0 4px 16px rgba(255, 107, 107, 0.2),
+        0 0 0 1px rgba(0, 255, 157, 0.1);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.queue-image:hover {
+    transform: scale(1.05);
+    border: 2px solid rgba(255, 107, 107, 0.7);
+    box-shadow: 
+        0 8px 24px rgba(255, 107, 107, 0.3),
+        0 0 0 1px rgba(0, 255, 157, 0.1);
+}
+
+.queue-image.placeholder-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.queue-placeholder-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px dashed rgba(0, 255, 157, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: rgba(0, 255, 157, 0.3);
+    transition: all 0.3s ease;
+}
+
+.queue-card.placeholder:hover .queue-placeholder-icon {
+    color: #00ff9d;
+    transform: scale(1.1);
+}
+
+.queue-info {
+    flex: 1;
+    position: relative;
+}
+
+.queue-callsign {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ff6b6b;
+    margin-bottom: 3px;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+.queue-location {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 2px;
+}
+
+/* Responsive Design - Narrow screens get 2 rows */
+@media (max-width: 768px) {
+    .bottom-queue {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-rows: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        padding: 15px !important;
+        justify-items: center !important;
+        align-items: center !important;
+        flex-direction: unset !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+        flex-wrap: unset !important;
+    }
+    
+    .queue-card {
+        min-width: unset !important;
+        width: 100% !important;
+        max-width: 200px !important;
+        flex-shrink: 0 !important;
+    }
+    
+    /* Dynamic positioning based on queue state */
+    /* 0 items: placeholder top-right */
+    .queue-card[data-queue-size="0"][data-position="empty"] { 
+        grid-column: 2;
+        grid-row: 1;
+    }
+    
+    /* 1 item: Item 1 top-right, placeholder top-left */
+    .queue-card[data-queue-size="1"][data-position="0"] { 
+        grid-column: 2;
+        grid-row: 1;
+    }
+    .queue-card[data-queue-size="1"][data-position="empty"] { 
+        grid-column: 1;
+        grid-row: 1;
+    }
+    
+    /* 2 items: Item 1 top-right, Item 2 top-left, placeholder bottom-right */
+    .queue-card[data-queue-size="2"][data-position="0"] { 
+        grid-column: 2;
+        grid-row: 1;
+    }
+    .queue-card[data-queue-size="2"][data-position="1"] { 
+        grid-column: 1;
+        grid-row: 1;
+    }
+    .queue-card[data-queue-size="2"][data-position="empty"] { 
+        grid-column: 2;
+        grid-row: 2;
+    }
+    
+    /* 3 items: Item 1 top-right, Item 2 top-left, Item 3 bottom-right, placeholder bottom-left */
+    .queue-card[data-queue-size="3"][data-position="0"] { 
+        grid-column: 2;
+        grid-row: 1;
+    }
+    .queue-card[data-queue-size="3"][data-position="1"] { 
+        grid-column: 1;
+        grid-row: 1;
+    }
+    .queue-card[data-queue-size="3"][data-position="2"] { 
+        grid-column: 2;
+        grid-row: 2;
+    }
+    .queue-card[data-queue-size="3"][data-position="empty"] { 
+        grid-column: 1;
+        grid-row: 2;
+    }
+    
+    /* 4 items: Full grid, no placeholder */
+    .queue-card[data-queue-size="4"][data-position="0"] { 
+        grid-column: 2;
+        grid-row: 1;
+    }
+    .queue-card[data-queue-size="4"][data-position="1"] { 
+        grid-column: 1;
+        grid-row: 1;
+    }
+    .queue-card[data-queue-size="4"][data-position="2"] { 
+        grid-column: 2;
+        grid-row: 2;
+    }
+    .queue-card[data-queue-size="4"][data-position="3"] { 
+        grid-column: 1;
+        grid-row: 2;
+    }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+    .bottom-queue {
+        gap: 8px !important;
+        padding: 10px !important;
+        min-height: auto !important;
+    }
+    
+    .queue-card {
+        max-width: 150px !important;
+        padding: 10px !important;
+        min-height: 90px !important;
+    }
+    
+    .queue-image {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .queue-placeholder-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+    
+    .queue-callsign {
+        font-size: 14px;
+    }
+    
+    .queue-location {
+        font-size: 11px;
+    }
+}
+
+/* Very small devices */
+@media (max-width: 360px) {
+    .queue-card {
+        max-width: 140px;
+    }
+    
+    .queue-placeholder-icon {
+        font-size: 1.5rem;
+    }
+}
+
+/* Animation classes for queue transitions */
+.queue-to-current-animation {
+    animation: queueToCurrentQso 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    position: relative;
+    z-index: 1000;
+}
+
+.queue-slide-animation {
+    animation: slideInFromRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes queueToCurrentQso {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-100px) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-150px) scale(1);
+        opacity: 0;
+    }
+}
+
+@keyframes slideInFromRight {
+    0% {
+        transform: translateX(50px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

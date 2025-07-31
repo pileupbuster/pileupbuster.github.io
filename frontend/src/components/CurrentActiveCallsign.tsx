@@ -1,6 +1,7 @@
+import { useEffect, useState, useRef } from 'react';
 import { QRZ_LOOKUP_URL_TEMPLATE } from '../config/api';
 
-interface CurrentActiveUser {
+export interface CurrentActiveUser {
   callsign: string;
   name: string;
   location: string;
@@ -14,7 +15,7 @@ interface QrzData {
 }
 
 interface QsoMetadata {
-  source?: 'queue' | 'direct';
+  source?: 'queue' | 'direct' | 'queue_specific';
   bridge_initiated?: boolean;
   frequency_mhz?: number;
   mode?: string;
@@ -25,11 +26,79 @@ interface CurrentActiveCallsignProps {
   activeUser: CurrentActiveUser | null;
   qrzData?: QrzData;
   metadata?: QsoMetadata;
-  onCompleteQso?: () => Promise<void>;
-  isAdminLoggedIn?: boolean;
+  systemStatus?: boolean | null;
 }
 
-function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, isAdminLoggedIn }: CurrentActiveCallsignProps) {
+interface PreviousUserData {
+  user: CurrentActiveUser;
+  qrzData?: QrzData;
+  metadata?: QsoMetadata;
+}
+
+function CurrentActiveCallsign({ activeUser, qrzData, metadata, systemStatus }: CurrentActiveCallsignProps) {
+  const [animationClass, setAnimationClass] = useState('');
+  const [previousCallsign, setPreviousCallsign] = useState<string | null>(null);
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+  const [previousUserData, setPreviousUserData] = useState<PreviousUserData | null>(null);
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    // Handle when activeUser changes
+    if (activeUser && activeUser.callsign !== previousCallsign) {
+      // Store the previous user data before updating
+      if (previousCallsign && previousUserData) {
+        // Keep showing previous user during animation
+      }
+      
+      // Check if this is a direct QSO (not from queue)
+      if (metadata?.source === 'direct') {
+        console.log('Setting dissolve-in animation for direct QSO:', activeUser.callsign);
+        setAnimationClass('dissolve-in-animation');
+      } else {
+        setAnimationClass('');
+      }
+      setPreviousCallsign(activeUser.callsign);
+      setPreviousUserData({ user: activeUser, qrzData, metadata });
+      setIsAnimatingOut(false);
+      
+      // Remove animation class after animation completes
+      const timer = setTimeout(() => {
+        setAnimationClass('');
+      }, 800);
+      
+      return () => clearTimeout(timer);
+    } else if (!activeUser && previousUserData && !isAnimatingOut) {
+      // Handle when QSO ends (activeUser becomes null)
+      console.log('QSO ended, starting animation out');
+      setIsAnimatingOut(true);
+      setAnimationClass('animating-out');
+      
+      // Clear any existing timer
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+      }
+      
+      // Clean up after animation
+      animationTimerRef.current = setTimeout(() => {
+        console.log('Animation out complete, clearing previous user data');
+        setPreviousCallsign(null);
+        setPreviousUserData(null);
+        setIsAnimatingOut(false);
+        setAnimationClass('');
+        animationTimerRef.current = null;
+      }, 1000);
+    }
+  }, [activeUser, metadata?.source, previousCallsign, isAnimatingOut, qrzData]);
+  
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+      }
+    };
+  }, []);
+
   // Helper function to generate QRZ lookup URL for a callsign
   const getQrzUrl = (callsign: string): string => {
     return QRZ_LOOKUP_URL_TEMPLATE.replace('{CALLSIGN}', callsign);
@@ -37,22 +106,38 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
 
   // Get QSO source display information
   const getQSOSourceDisplay = (metadata?: QsoMetadata) => {
-    if (!metadata) return null;
+    if (!metadata) return { text: '👥 Worked from Pileup Buster', className: 'qso-source manual-queue' };
+    
+    // If metadata exists but source is not specified, assume it's from queue
+    if (!metadata.source) {
+      return { text: '👥 Worked from Pileup Buster', className: 'qso-source manual-queue' };
+    }
     
     if (metadata.bridge_initiated) {
       return metadata.source === 'queue' 
-        ? { text: '📻 Worked from Pileupbuster (via QLog)', className: 'qso-source bridge-queue' }
-        : { text: '🔗 Worked Direct (via QLog)', className: 'qso-source bridge-direct' };
+        ? { text: '👥 Worked from Pileup Buster (via QLog)', className: 'qso-source bridge-queue' }
+        : { text: '📻 Worked Direct (via QLog)', className: 'qso-source bridge-direct' };
     }
     
     // Handle logging software initiated QSOs
     if (metadata.started_via === 'logging_software') {
       return metadata.source === 'queue' 
-        ? { text: '🎯 Worked from Pileupbuster', className: 'qso-source manual-queue' }
-        : { text: '🎯 Worked Direct', className: 'qso-source manual-direct' };
+        ? { text: '👥 Worked from Pileup Buster', className: 'qso-source manual-queue' }
+        : { text: '📻 Worked Direct', className: 'qso-source manual-direct' };
     }
     
-    return { text: '🎯 Worked from Pileupbuster', className: 'qso-source manual-queue' };
+    // Check source type
+    if (metadata.source === 'queue' || metadata.source === 'queue_specific') {
+      return { text: '👥 Worked from Pileup Buster', className: 'qso-source manual-queue' };
+    }
+    
+    // Only show "Worked Direct" if explicitly marked as direct
+    if (metadata.source === 'direct') {
+      return { text: '📻 Worked Direct', className: 'qso-source manual-direct' };
+    }
+    
+    // Default to queue if source is unknown
+    return { text: '👥 Worked from Pileup Buster', className: 'qso-source manual-queue' };
   };
 
   // Get QSO details (frequency/mode) for bridge or logging software QSOs
@@ -75,25 +160,56 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
     return null;
   };
 
-  // Handle avatar/image click for admin complete QSO action
-  const handleAvatarClick = async (e: React.MouseEvent) => {
+  // Handle avatar/image click to open QRZ profile
+  const handleAvatarClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isAdminLoggedIn && onCompleteQso && activeUser) {
-      try {
-        await onCompleteQso();
-      } catch (error) {
-        console.error('Failed to complete QSO:', error);
-      }
+    const userToOpen = isAnimatingOut && previousUserData ? previousUserData.user : activeUser;
+    if (userToOpen) {
+      window.open(getQrzUrl(userToOpen.callsign), '_blank');
     }
   };
 
-  // If no active user, show placeholder
-  if (!activeUser) {
+  // Determine which user to display (current or animating out previous)
+  const displayUser = isAnimatingOut && previousUserData ? previousUserData.user : activeUser;
+  const displayQrzData = isAnimatingOut && previousUserData ? previousUserData.qrzData : qrzData;
+  const displayMetadata = isAnimatingOut && previousUserData ? previousUserData.metadata : metadata;
+  
+  console.log('CurrentActiveCallsign state:', {
+    activeUser: activeUser?.callsign,
+    isAnimatingOut,
+    previousUserData: previousUserData?.user?.callsign,
+    displayUser: displayUser?.callsign,
+    animationClass
+  });
+  
+  // If no user to display, show placeholder based on system status
+  if (!displayUser) {
+    console.log('Showing placeholder - no active user, systemStatus:', systemStatus);
+    
+    // When system is offline
+    if (systemStatus === false) {
+      return (
+        <section className="current-active-section">
+          <div className="current-active-card centered-layout">
+            <div className="operator-image-large">
+              <div className="placeholder-image offline-icon">🎙️</div>
+            </div>
+            <div className="active-info">
+              <div className="active-callsign offline-text">Offline</div>
+              <div className="active-name">Map shows last 24 hours activity</div>
+              <div className="active-location">-</div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+    
+    // When system is online but no active callsign
     return (
       <section className="current-active-section">
-        <div className="current-active-card">
+        <div className="current-active-card centered-layout">
           <div className="operator-image-large">
-            <div className="placeholder-image" style={{ fontSize: '3rem' }}>👤</div>
+            <div className="placeholder-image">👤</div>
           </div>
           <div className="active-info">
             <div className="active-callsign">No active callsign</div>
@@ -106,35 +222,38 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
   }
 
   // Determine which image to show
-  const hasQrzImage = qrzData?.image;
-  const sourceDisplay = getQSOSourceDisplay(metadata);
-  const qsoDetails = getQSODetails(metadata);
+  const hasQrzImage = displayQrzData?.image;
+  const sourceDisplay = getQSOSourceDisplay(displayMetadata);
+  const qsoDetails = getQSODetails(displayMetadata);
+  
+  console.log('Rendering active user:', displayUser?.callsign, 'with animation:', animationClass);
   
   return (
     <section className="current-active-section">
-      <div className="current-active-card">
+      <div className={`current-active-card centered-layout ${animationClass}`}>
         <div 
-          className={`operator-image-large ${isAdminLoggedIn && activeUser ? 'admin-clickable' : ''}`}
+          className="operator-image-large clickable"
           onClick={handleAvatarClick}
-          title={isAdminLoggedIn && activeUser ? 'Click to complete current QSO' : undefined}
+          title={displayUser ? `View ${displayUser.callsign} on QRZ.com` : undefined}
+          style={{ cursor: displayUser ? 'pointer' : 'default' }}
         >
           {hasQrzImage ? (
-            <img src={qrzData.image} alt="Operator" className="operator-image" />
+            <img src={displayQrzData.image} alt="Operator" className="operator-image" />
           ) : (
-            <div className="placeholder-image" style={{ fontSize: '3rem' }}>👤</div>
+            <div className="placeholder-image">👤</div>
           )}
         </div>
         <div className="active-info">
           <a 
-            href={getQrzUrl(activeUser.callsign)}
+            href={getQrzUrl(displayUser.callsign)}
             target="_blank"
             rel="noopener noreferrer"
             className="active-callsign active-callsign-link"
           >
-            {activeUser.callsign}
+            {displayUser.callsign}
           </a>
-          <div className="active-name">{activeUser.name}</div>
-          <div className="active-location">{activeUser.location}</div>
+          <div className="active-name">{displayUser.name}</div>
+          <div className="active-location">{displayUser.location}</div>
           
           {/* QSO Source Indicator */}
           {sourceDisplay && (
@@ -150,10 +269,10 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
             </div>
           )}
           
-          {qrzData?.url && (
+          {displayQrzData?.url && (
             <button 
               className="qrz-button"
-              onClick={() => window.open(qrzData.url, '_blank')}
+              onClick={() => window.open(displayQrzData.url, '_blank')}
             >
               QRZ.COM INFO
             </button>
@@ -165,4 +284,3 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
 }
 
 export default CurrentActiveCallsign;
-export type { CurrentActiveUser };
