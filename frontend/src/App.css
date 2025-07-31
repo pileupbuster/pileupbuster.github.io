@@ -495,6 +495,7 @@ body {
 
 .queue-info {
     flex: 1;
+    position: relative;
 }
 
 .queue-callsign {
@@ -514,6 +515,181 @@ body {
 .queue-time {
     font-size: 12px;
     color: rgba(255, 255, 255, 0.6);
+}
+
+.work-now-button {
+    margin-top: 8px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(0, 255, 157, 0.2);
+    border: 1px solid rgba(0, 255, 157, 0.4);
+    border-radius: 6px;
+    color: #00ff9d;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    text-shadow: 0 0 5px rgba(0, 255, 157, 0.5);
+}
+
+.work-now-button:hover {
+    background: rgba(0, 255, 157, 0.3);
+    border-color: #00ff9d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 255, 157, 0.3);
+}
+
+.work-now-button:active {
+    transform: translateY(0);
+    background: rgba(0, 255, 157, 0.4);
+}
+
+.work-now-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Current Active Section */
+.current-active-section {
+    background: rgba(26, 26, 46, 0.9);
+    border-radius: 20px;
+    padding: 30px;
+    border: 2px solid rgba(0, 255, 157, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    margin-bottom: 20px;
+}
+
+.current-active-card {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.operator-image-large {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.operator-image-large.admin-clickable {
+    cursor: pointer;
+}
+
+.operator-image-large.admin-clickable:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+}
+
+.operator-image-large .operator-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 4px solid #00ff9d;
+    border-radius: 50%;
+}
+
+.operator-image-large .placeholder-image {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 255, 157, 0.1);
+    border: 4px solid rgba(0, 255, 157, 0.3);
+    border-radius: 50%;
+    font-size: 6rem;
+    color: rgba(0, 255, 157, 0.6);
+}
+
+.active-info {
+    flex: 1;
+}
+
+.active-callsign {
+    font-size: 48px;
+    font-weight: bold;
+    color: #00ff9d;
+    margin-bottom: 12px;
+    text-shadow: 0 0 15px rgba(0, 255, 157, 0.5);
+}
+
+.active-callsign-link {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+}
+
+.active-callsign-link:hover {
+    color: #33ffb5;
+    text-shadow: 0 0 20px rgba(0, 255, 157, 0.7);
+}
+
+.active-name {
+    font-size: 28px;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 8px;
+}
+
+.active-location {
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 12px;
+}
+
+.qso-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.qso-source.bridge-queue,
+.qso-source.manual-queue {
+    border: 1px solid rgba(0, 255, 157, 0.3);
+    color: #00ff9d;
+}
+
+.qso-source.bridge-direct,
+.qso-source.manual-direct {
+    border: 1px solid rgba(255, 195, 0, 0.3);
+    color: #ffc300;
+}
+
+.bridge-qso-details {
+    margin-top: 10px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.qrz-button {
+    margin-top: 16px;
+    padding: 10px 20px;
+    background: rgba(0, 255, 157, 0.2);
+    border: 1px solid rgba(0, 255, 157, 0.4);
+    border-radius: 10px;
+    color: #00ff9d;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.qrz-button:hover {
+    background: rgba(0, 255, 157, 0.3);
+    border-color: #00ff9d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 255, 157, 0.3);
 }
 
 /* Animations */

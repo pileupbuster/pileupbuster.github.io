@@ -1,9 +1,25 @@
+import CurrentActiveCallsign from './CurrentActiveCallsign';
+import type { CurrentActiveUser } from './CurrentActiveCallsign';
+
 interface CurrentOperator {
   callsign: string;
   name: string;
   location: string;
   coordinates: { lat: number; lon: number };
   profileImage: string;
+  qrz?: {
+    name?: string;
+    address?: string;
+    image?: string;
+    url?: string;
+  };
+  metadata?: {
+    source?: 'queue' | 'direct' | 'queue_specific';
+    bridge_initiated?: boolean;
+    frequency_mhz?: number;
+    mode?: string;
+    started_via?: string;
+  };
 }
 
 interface SidebarProps {
@@ -11,49 +27,28 @@ interface SidebarProps {
   queueCount: number;
   workedCount: number;
   onWorkOperator: () => void;
+  onCompleteQso?: () => Promise<void>;
+  isAdminLoggedIn?: boolean;
 }
 
-function Sidebar({ currentOperator, queueCount, workedCount, onWorkOperator }: SidebarProps) {
-  const openProfile = (callsign: string) => {
-    window.open(`https://www.qrz.com/db/${callsign}`, '_blank');
-  };
+function Sidebar({ currentOperator, queueCount, workedCount, onWorkOperator: _onWorkOperator, onCompleteQso, isAdminLoggedIn }: SidebarProps) {
+  // Convert CurrentOperator to CurrentActiveUser format
+  const activeUser: CurrentActiveUser | null = currentOperator ? {
+    callsign: currentOperator.callsign,
+    name: currentOperator.name,
+    location: currentOperator.location
+  } : null;
+
   return (
     <aside className="sidebar">
       {/* Current Operator Section */}
-      <div className="current-operator-section">
-        <div 
-          className="current-operator-card" 
-          onClick={() => currentOperator && openProfile(currentOperator.callsign)}
-          style={{ cursor: currentOperator ? 'pointer' : 'default' }}
-        >
-          {currentOperator ? (
-            currentOperator.profileImage ? (
-              <img 
-                src={currentOperator.profileImage} 
-                alt={currentOperator.callsign} 
-                className="current-operator-image" 
-              />
-            ) : (
-              <div className="current-operator-image placeholder-image">👤</div>
-            )
-          ) : (
-            <div className="current-operator-image placeholder-radio">
-              📻
-            </div>
-          )}
-          <div className="current-operator-info">
-            <h2 className="current-callsign">
-              {currentOperator?.callsign || 'No Active QSO'}
-            </h2>
-            <p className="current-name">
-              {currentOperator?.name || 'Waiting for Callers'}
-            </p>
-            <p className="current-location">
-              {currentOperator?.location || 'Queue is empty'}
-            </p>
-          </div>
-        </div>
-      </div>
+      <CurrentActiveCallsign 
+        activeUser={activeUser}
+        qrzData={currentOperator?.qrz}
+        metadata={currentOperator?.metadata}
+        onCompleteQso={onCompleteQso}
+        isAdminLoggedIn={isAdminLoggedIn}
+      />
 
       {/* Queue Stats */}
       <div className="queue-stats">

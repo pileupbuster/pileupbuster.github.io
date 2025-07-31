@@ -6,7 +6,8 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import QueueBar from './components/QueueBar';
 import AdminPage from './pages/AdminPage';
-import { apiService, type QueueEntry, type PreviousQsoData, type CurrentQsoData, type WorkedCallerData } from './services/api';
+import { apiService, type QueueEntry, type CurrentQsoData } from './services/api';
+import { adminApiService } from './services/adminApi';
 import { sseService, type StateChangeEvent } from './services/sse';
 
 interface QueueItem {
@@ -47,6 +48,19 @@ interface CurrentOperator {
   location: string;
   coordinates: { lat: number; lon: number };
   profileImage: string;
+  qrz?: {
+    name?: string;
+    address?: string;
+    image?: string;
+    url?: string;
+  };
+  metadata?: {
+    source?: 'queue' | 'direct' | 'queue_specific';
+    bridge_initiated?: boolean;
+    frequency_mhz?: number;
+    mode?: string;
+    started_via?: string;
+  };
 }
 
 // Helper function to convert QueueEntry to QueueItem
@@ -74,6 +88,12 @@ function MainApp() {
   const [frequency, setFrequency] = useState('');
   const [split, setSplit] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+
+  // Check admin login status
+  useEffect(() => {
+    setIsAdminLoggedIn(adminApiService.isLoggedIn());
+  }, []);
 
   // Function to fetch initial data
   const fetchInitialData = async () => {
@@ -152,7 +172,9 @@ function MainApp() {
         name: currentQsoData.qrz?.name || currentQsoData.callsign,
         location: currentQsoData.qrz?.address || currentQsoData.qrz?.dxcc_name || 'In QSO',
         coordinates: { lat: 53.3498, lon: -6.2603 }, // Default coordinates
-        profileImage: currentQsoData.qrz?.image || ''
+        profileImage: currentQsoData.qrz?.image || '',
+        qrz: currentQsoData.qrz,
+        metadata: currentQsoData.metadata
       });
     } else {
       // No active QSO - clear current operator regardless of queue status
@@ -277,6 +299,19 @@ function MainApp() {
     };
   }, []);
 
+  const handleCompleteQso = async () => {
+    if (!isAdminLoggedIn || !currentOperator) return;
+    
+    try {
+      await adminApiService.completeCurrentQso();
+      console.log('Current QSO completed');
+      // The SSE events will update the UI automatically
+    } catch (error) {
+      console.error('Failed to complete current QSO:', error);
+      throw error;
+    }
+  };
+
   const handleWorkCurrentOperator = () => {
     if (!currentOperator || queue.length === 0) return;
 
@@ -315,6 +350,7 @@ function MainApp() {
     }
   };
 
+
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
@@ -334,10 +370,14 @@ function MainApp() {
           queueCount={queue.length}
           workedCount={worked.length}
           onWorkOperator={handleWorkCurrentOperator}
+          onCompleteQso={handleCompleteQso}
+          isAdminLoggedIn={isAdminLoggedIn}
         />
       </div>
       
-      <QueueBar queue={queue} />
+      <QueueBar 
+        queue={queue} 
+      />
     </div>
   );
 }
