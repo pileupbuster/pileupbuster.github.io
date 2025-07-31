@@ -37,7 +37,10 @@ function Header({ frequency, split, systemStatus }: HeaderProps) {
       <HeaderFrequencyDisplay frequency={frequency} systemStatus={systemStatus} split={split} />
       
       <div className="clock-section">
-        <div className="clock">{currentTime}</div>
+        <div className="clock">
+          {currentTime}
+          <span className="utc-label">UTC</span>
+        </div>
       </div>
     </header>
   );

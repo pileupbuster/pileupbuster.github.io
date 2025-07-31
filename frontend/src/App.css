@@ -82,7 +82,12 @@ body {
     font-size: 32px;
     font-weight: bold;
     color: #00ff9d;
-    text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+    text-shadow: 
+        0 0 5px rgba(0, 255, 157, 1),
+        0 0 10px rgba(0, 255, 157, 0.8),
+        0 0 20px rgba(0, 255, 157, 0.6),
+        0 0 30px rgba(0, 255, 157, 0.4),
+        0 0 40px rgba(0, 255, 157, 0.2);
 }
 
 .frequency-unit {
@@ -137,7 +142,23 @@ body {
     font-size: 24px;
     font-weight: bold;
     color: #00ff9d;
-    text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+    text-shadow: 
+        0 0 5px rgba(0, 255, 157, 1),
+        0 0 10px rgba(0, 255, 157, 0.8),
+        0 0 20px rgba(0, 255, 157, 0.6),
+        0 0 30px rgba(0, 255, 157, 0.4),
+        0 0 40px rgba(0, 255, 157, 0.2);
+}
+
+.utc-label {
+    font-size: 12px;
+    font-weight: normal;
+    color: #00ff9d;
+    margin-left: 6px;
+    opacity: 0.8;
+    text-shadow: 
+        0 0 3px rgba(0, 255, 157, 0.8),
+        0 0 6px rgba(0, 255, 157, 0.4);
 }
 
 /* Main Content */

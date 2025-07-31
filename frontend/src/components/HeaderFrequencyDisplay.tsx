@@ -10,11 +10,11 @@ function HeaderFrequencyDisplay({ frequency, systemStatus, split }: HeaderFreque
     return null; // Component is completely hidden when offline
   }
 
-  // When online but no frequency, show "ONLINE"
+  // When online but no frequency, show "ON AIR"
   if (!frequency || frequency.trim() === '') {
     return (
       <div className="frequency-section">
-        <div className="frequency-value">ONLINE</div>
+        <div className="frequency-value">ON AIR</div>
         {split && (
           <div className="split-display">SPLIT {split}</div>
         )}
@@ -22,10 +22,10 @@ function HeaderFrequencyDisplay({ frequency, systemStatus, split }: HeaderFreque
     );
   }
 
-  // When online with frequency, show "ONLINE frequency MHz" on one line, split below
+  // When online with frequency, show "ON AIR frequency MHz" on one line, split below
   return (
     <div className="frequency-section">
-      <div className="frequency-value">ONLINE {frequency} MHz</div>
+      <div className="frequency-value">ON AIR {frequency} MHz</div>
       {split && (
         <div className="split-display">SPLIT {split}</div>
       )}

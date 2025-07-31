@@ -55,13 +55,13 @@ function MapSection({ workedOperators, currentOperator, queueItems = [] }: MapSe
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Initialize map with darker tiles using Stadia Maps
+    // Initialize map with darker tiles using CartoDB Dark Matter (English-only labels)
     const map = L.map(mapContainerRef.current).setView([45, -93], 4);
 
-    // Using Stadia Maps Alidade Smooth Dark (matching the sample)
-    // Note: The API key from the sample is embedded, but we'll use it as-is for now
-    L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=21ff9858-9e51-49fb-91eb-e587a86105e9', {
-      attribution: '© <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> © <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    // Using CartoDB Dark Matter tiles which typically show English-only place names
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
       maxZoom: 20
     }).addTo(map);
 
@@ -95,9 +95,9 @@ function MapSection({ workedOperators, currentOperator, queueItems = [] }: MapSe
           html: operator.image 
             ? `<div class="marker-avatar worked"><img src="${operator.image}" alt="${operator.callsign}" /></div>`
             : `<div class="marker-avatar worked placeholder">👤</div>`,
-          iconSize: [30, 30],  // Reduced from 60x60 to 30x30 (50% smaller)
-          iconAnchor: [15, 15],  // Adjusted anchor point (half of iconSize)
-          popupAnchor: [0, -15],  // Adjusted popup anchor
+          iconSize: [60, 60],  // Back to 60x60 for optimal visibility
+          iconAnchor: [30, 30],  // Adjusted anchor point (half of iconSize)
+          popupAnchor: [0, -30],  // Adjusted popup anchor
           className: 'custom-marker'
         });
 
