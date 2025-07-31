@@ -89,7 +89,7 @@ function MainApp() {
   const [frequency, setFrequency] = useState('');
   const [split, setSplit] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  // const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [queueAnimation, setQueueAnimation] = useState<{ callsign: string; animation: string } | null>(null);
   const previousQsoRef = useRef<CurrentOperator | null>(null);
   const [animatingQueueItem, setAnimatingQueueItem] = useState<QueueItem | null>(null);
@@ -97,9 +97,9 @@ function MainApp() {
   const queueRef = useRef<QueueItem[]>([]);
 
   // Check admin login status
-  useEffect(() => {
-    setIsAdminLoggedIn(adminApiService.isLoggedIn());
-  }, []);
+  // useEffect(() => {
+  //   setIsAdminLoggedIn(adminApiService.isLoggedIn());
+  // }, []);
 
   // Function to fetch initial data
   const fetchInitialData = async () => {
