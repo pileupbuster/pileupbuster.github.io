@@ -99,24 +99,24 @@ body::after {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: rgba(0, 157, 255, 0.1);
+    background: rgba(0, 255, 157, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 157, 255, 0.2);
+    border: 1px solid rgba(0, 255, 157, 0.2);
     border-radius: 16px;
     padding: 15px 40px;
     text-align: center;
     box-shadow: 
-        0 8px 32px 0 rgba(0, 157, 255, 0.2),
+        0 8px 32px 0 rgba(0, 255, 157, 0.2),
         inset 0 0 0 1px rgba(255, 255, 255, 0.1);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .frequency-section:hover {
-    background: rgba(0, 157, 255, 0.15);
+    background: rgba(0, 255, 157, 0.15);
     transform: translateY(-2px);
     box-shadow: 
-        0 12px 40px 0 rgba(0, 157, 255, 0.3),
+        0 12px 40px 0 rgba(0, 255, 157, 0.3),
         inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
@@ -124,14 +124,22 @@ body::after {
     font-size: 42px;
     font-weight: 700;
     font-family: 'Courier New', monospace;
-    color: #009dff;
+    color: #00ff9d;
     letter-spacing: 3px;
+    text-shadow: 
+        0 0 3px rgba(0, 255, 157, 0.8),
+        0 0 6px rgba(0, 255, 157, 0.6),
+        0 0 12px rgba(0, 255, 157, 0.4),
+        0 0 18px rgba(0, 255, 157, 0.2);
 }
 
 .frequency-unit {
     font-size: 18px;
-    color: rgba(0, 157, 255, 0.8);
+    color: rgba(0, 255, 157, 0.8);
     margin-top: 5px;
+    text-shadow: 
+        0 0 3px rgba(0, 255, 157, 0.8),
+        0 0 6px rgba(0, 255, 157, 0.4);
 }
 
 .split-frequency {
@@ -185,6 +193,11 @@ body::after {
     font-family: 'Courier New', monospace;
     color: #00ff9d;
     letter-spacing: 2px;
+    text-shadow: 
+        0 0 3px rgba(0, 255, 157, 0.8),
+        0 0 6px rgba(0, 255, 157, 0.6),
+        0 0 12px rgba(0, 255, 157, 0.4),
+        0 0 18px rgba(0, 255, 157, 0.2);
 }
 
 .utc-label {
