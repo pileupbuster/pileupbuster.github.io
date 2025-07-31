@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { formatLocationDisplay } from '../utils/addressFormatter';
 
 interface WorkedItem {
   callsign: string;
@@ -107,7 +108,7 @@ function MapSection({ workedOperators, currentOperator, queueItems = [] }: MapSe
           <div class="map-popup">
             <strong>${operator.callsign}</strong><br>
             ${operator.name || operator.callsign}<br>
-            ${operator.location || operator.address || operator.dxcc_name || 'Unknown'}<br>
+            ${formatLocationDisplay(operator.address, operator.dxcc_name)}<br>
             <span style="color: #4CAF50;">✅ QSO Completed</span><br>
             <a href="https://www.qrz.com/db/${operator.callsign}" target="_blank" style="color: #4a9eff;">View Profile</a>
           </div>

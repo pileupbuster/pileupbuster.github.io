@@ -6,6 +6,7 @@ import Sidebar from '../components/Sidebar';
 import QueueBar from '../components/QueueBar';
 import { apiService, type QueueEntry, type PreviousQsoData } from '../services/api';
 import { API_BASE_URL } from '../config/api';
+import { formatLocationDisplay } from '../utils/addressFormatter';
 
 interface QueueItem {
   callsign: string;
@@ -61,7 +62,7 @@ function convertQueueEntryToItem(entry: QueueEntry): QueueItem {
     },
     image: entry.qrz?.image,
     dxcc_name: entry.qrz?.dxcc_name,
-    location: entry.qrz?.address || entry.qrz?.dxcc_name
+    location: formatLocationDisplay(entry.qrz?.address, entry.qrz?.dxcc_name)
   };
 }
 
@@ -127,7 +128,7 @@ export default function HomePage() {
         },
         image: qso.qrz?.image,
         dxcc_name: qso.qrz?.dxcc_name,
-        location: qso.qrz?.address || qso.qrz?.dxcc_name
+        location: formatLocationDisplay(qso.qrz?.address, qso.qrz?.dxcc_name)
       })) || [];
       setWorked(convertedWorked);
       
@@ -136,7 +137,7 @@ export default function HomePage() {
         setCurrentOperator({
           callsign: currentQso.callsign,
           name: currentQso.qrz?.name || currentQso.callsign,
-          location: currentQso.qrz?.address || currentQso.qrz?.dxcc_name || 'Unknown',
+          location: formatLocationDisplay(currentQso.qrz?.address, currentQso.qrz?.dxcc_name),
           coordinates: { lat: 53.3498, lon: -6.2603 }, // Default coordinates
           profileImage: currentQso.qrz?.image || ''
         });
@@ -205,7 +206,7 @@ export default function HomePage() {
       setCurrentOperator({
         callsign: nextOperator.callsign,
         name: nextOperator.name || nextOperator.callsign,
-        location: nextOperator.address || nextOperator.dxcc_name || 'Unknown',
+        location: formatLocationDisplay(nextOperator.address, nextOperator.dxcc_name),
         coordinates: { 
           lat: nextOperator.grid?.lat || 53.3498, 
           lon: nextOperator.grid?.long || -6.2603 
