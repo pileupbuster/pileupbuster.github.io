@@ -397,7 +397,7 @@ body {
 /* Bottom Queue Bar */
 .bottom-queue {
     display: flex;
-    justify-content: flex-start;
+    justify-content: flex-end;
     align-items: center;
     gap: 15px;
     padding: 20px 30px;

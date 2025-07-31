@@ -110,13 +110,13 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
     displayQueue.unshift(animatingItem);
   }
   
-  // Reverse the queue so first person appears on the right
-  const reversedQueue = [...displayQueue].reverse();
+  // Don't reverse - keep original order (first in queue is first in array)
+  const orderedQueue = [...displayQueue];
   
   // Add actual queue items (up to 4)
-  for (let i = 0; i < Math.min(4, reversedQueue.length); i++) {
-    const item = reversedQueue[i];
-    const originalPosition = displayQueue.length - 1 - i; // Calculate original position in queue (0 = first in queue)
+  for (let i = 0; i < Math.min(4, orderedQueue.length); i++) {
+    const item = orderedQueue[i];
+    const originalPosition = i; // Position in queue (0 = first in queue)
     
     displayItems.push(
       <div 
