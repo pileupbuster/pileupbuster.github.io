@@ -147,7 +147,7 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
   
   // Add one empty slot if queue is not full (only show one empty slot)
   if (displayQueue.length < 4) {
-    displayItems.unshift(
+    displayItems.push(
       <div 
         key="empty-slot" 
         className="queue-card placeholder" 
