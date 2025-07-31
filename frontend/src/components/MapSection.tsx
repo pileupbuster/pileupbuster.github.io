@@ -94,9 +94,9 @@ function MapSection({ workedOperators, currentOperator, queueItems = [] }: MapSe
           html: operator.image 
             ? `<div class="marker-avatar worked"><img src="${operator.image}" alt="${operator.callsign}" /></div>`
             : `<div class="marker-avatar worked placeholder">👤</div>`,
-          iconSize: [60, 60],
-          iconAnchor: [30, 30],
-          popupAnchor: [0, -30],
+          iconSize: [30, 30],  // Reduced from 60x60 to 30x30 (50% smaller)
+          iconAnchor: [15, 15],  // Adjusted anchor point (half of iconSize)
+          popupAnchor: [0, -15],  // Adjusted popup anchor
           className: 'custom-marker'
         });
 
@@ -113,9 +113,7 @@ function MapSection({ workedOperators, currentOperator, queueItems = [] }: MapSe
           </div>
         `);
         
-        marker.on('click', () => {
-          window.open(`https://www.qrz.com/db/${operator.callsign}`, '_blank');
-        });
+        // Remove the automatic QRZ page opening - let users click the link in the popup instead
       }
     });
 

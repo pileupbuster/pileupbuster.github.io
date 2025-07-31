@@ -188,12 +188,12 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveC
       <section className="current-active-section">
         <div className="current-active-card">
           <div className="operator-image-large">
-            <div className="placeholder-image" style={{ fontSize: '6rem' }}>👤</div>
+            <div className="placeholder-image">👤</div>
           </div>
           <div className="active-info">
-            <div className="active-callsign" style={{ color: '#00ff9d' }}>No active callsign</div>
-            <div className="active-name" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Waiting for next QSO</div>
-            <div className="active-location" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>-</div>
+            <div className="active-callsign">No active callsign</div>
+            <div className="active-name">Waiting for next QSO</div>
+            <div className="active-location">-</div>
           </div>
         </div>
       </section>
@@ -219,7 +219,7 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveC
           {hasQrzImage ? (
             <img src={displayQrzData.image} alt="Operator" className="operator-image" />
           ) : (
-            <div className="placeholder-image" style={{ fontSize: '3rem' }}>👤</div>
+            <div className="placeholder-image">👤</div>
           )}
         </div>
         <div className="active-info">

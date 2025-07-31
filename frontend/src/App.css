@@ -172,8 +172,8 @@ body {
 
 /* Custom marker styles */
 .marker-avatar {
-    width: 60px;
-    height: 60px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     border: 4px solid;
     overflow: hidden;
@@ -219,7 +219,7 @@ body {
 }
 
 .marker-avatar.placeholder {
-    font-size: 32px;
+    font-size: 16px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
 }
@@ -246,7 +246,6 @@ body {
     flex-direction: column;
     gap: 20px;
     min-width: 350px;
-    overflow-y: auto;
 }
 
 /* Current Operator Section */
@@ -633,6 +632,131 @@ body {
 }
 
 .active-location {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .current-active-section {
+        padding: 15px !important;
+    }
+    
+    .current-active-card {
+        flex-direction: column !important;
+        text-align: center !important;
+        gap: 10px !important;
+    }
+    
+    .operator-image-large {
+        width: 80px !important;
+        height: 80px !important;
+    }
+    
+    .placeholder-image {
+        font-size: 2.5rem !important;
+    }
+    
+    .active-callsign {
+        font-size: 20px !important;
+    }
+    
+    .active-name {
+        font-size: 12px !important;
+    }
+    
+    .active-location {
+        font-size: 10px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .current-active-section {
+        padding: 10px !important;
+    }
+    
+    .operator-image-large {
+        width: 60px !important;
+        height: 60px !important;
+    }
+    
+    .placeholder-image {
+        font-size: 2rem !important;
+    }
+    
+    .active-callsign {
+        font-size: 16px !important;
+    }
+    
+    .active-name {
+        font-size: 10px !important;
+    }
+    
+    .active-location {
+        font-size: 9px !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .active-callsign {
+        font-size: 14px !important;
+    }
+    
+    .active-name {
+        font-size: 9px !important;
+    }
+    
+    .operator-image-large {
+        width: 50px !important;
+        height: 50px !important;
+    }
+    
+    .placeholder-image {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* Catch-all for very small screens */
+@media (max-width: 320px) {
+    .active-callsign {
+        font-size: 12px !important;
+        word-break: break-word !important;
+        hyphens: auto !important;
+    }
+    
+    .active-name {
+        font-size: 8px !important;
+    }
+    
+    .operator-image-large {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    .placeholder-image {
+        font-size: 1.2rem !important;
+    }
+    
+    .current-active-section {
+        padding: 8px !important;
+    }
+}
+
+/* Universal override for any screen under 400px */
+@media screen and (max-width: 400px) {
+    .active-callsign,
+    div.active-callsign,
+    section .active-callsign {
+        font-size: 14px !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+}
+
+.active-location {
     font-size: 20px;
     color: rgba(255, 255, 255, 0.7);
     margin-bottom: 12px;
@@ -832,16 +956,25 @@ body {
 
 /* Responsive design */
 @media (max-width: 1199px) {
+    .container {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+    
     .main-content {
         flex-direction: column;
+        overflow: visible;
     }
     
     .sidebar {
         min-width: auto;
+        overflow: visible;
     }
     
     .map-section {
-        height: 60vh;
+        height: 60vh !important;
+        flex: none !important;
     }
 }
 
