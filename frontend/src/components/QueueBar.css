@@ -2,7 +2,7 @@
 
 .bottom-queue {
     display: flex !important;
-    justify-content: flex-end !important;
+    justify-content: flex-start !important; /* Change to flex-start since we're using row-reverse */
     align-items: center !important;
     gap: 15px !important;
     padding: 20px 30px !important;
