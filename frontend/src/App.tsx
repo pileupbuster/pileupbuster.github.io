@@ -7,7 +7,7 @@ import Sidebar from './components/Sidebar';
 import QueueBar from './components/QueueBar';
 import AdminPage from './pages/AdminPage';
 import { apiService, type QueueEntry, type CurrentQsoData } from './services/api';
-import { adminApiService } from './services/adminApi';
+// import { adminApiService } from './services/adminApi';
 import { formatCountryWithState } from './utils/countryStateFormatter';
 import { sseService, type StateChangeEvent } from './services/sse';
 
@@ -367,43 +367,6 @@ function MainApp() {
     };
   }, []);
 
-  const handleWorkCurrentOperator = () => {
-    if (!currentOperator || queue.length === 0) return;
-
-    // Move current operator to worked list
-    const newWorkedItem: WorkedItem = {
-      callsign: currentOperator.callsign,
-      name: currentOperator.name,
-      completedAt: new Date().toISOString(),
-      source: 'pileupbuster',
-      location: currentOperator.location,
-      grid: {
-        lat: currentOperator.coordinates.lat,
-        long: currentOperator.coordinates.lon
-      },
-      image: currentOperator.profileImage
-    };
-
-    setWorked(prev => [newWorkedItem, ...prev]);
-
-    // Move next in queue to current position
-    if (queue.length > 0) {
-      const nextOperator = queue[0];
-      setCurrentOperator({
-        callsign: nextOperator.callsign,
-        name: nextOperator.name || nextOperator.callsign,
-        location: formatCountryWithState(nextOperator.dxcc_name, nextOperator.address),
-        coordinates: { 
-          lat: nextOperator.grid?.lat || 53.3498, 
-          lon: nextOperator.grid?.long || -6.2603 
-        },
-        profileImage: nextOperator.image || ''
-      });
-
-      // Remove from queue
-      setQueue(prev => prev.slice(1));
-    }
-  };
 
 
   if (loading) {
@@ -425,7 +388,6 @@ function MainApp() {
           currentOperator={currentOperator}
           queueCount={queue.length}
           workedCount={worked.length}
-          onWorkOperator={handleWorkCurrentOperator}
           systemStatus={systemStatus}
         />
       </div>

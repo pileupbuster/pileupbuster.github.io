@@ -26,11 +26,10 @@ interface SidebarProps {
   currentOperator: CurrentOperator | null;
   queueCount: number;
   workedCount: number;
-  onWorkOperator: () => void;
   systemStatus?: boolean | null;
 }
 
-function Sidebar({ currentOperator, queueCount, workedCount, onWorkOperator: _onWorkOperator, systemStatus }: SidebarProps) {
+function Sidebar({ currentOperator, queueCount, workedCount, systemStatus }: SidebarProps) {
   // Convert CurrentOperator to CurrentActiveUser format
   const activeUser: CurrentActiveUser | null = currentOperator ? {
     callsign: currentOperator.callsign,
