@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { apiService, ApiError } from '../services/api';
 import { formatLocationDisplay } from '../utils/addressFormatter';
+import './QueueBar.css';
 
 interface QueueItem {
   callsign: string;
@@ -101,7 +102,6 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
 
 
   // Create array for queue display
-  // We'll show only one empty slot if queue size < 4
   const displayItems = [];
   
   // If there's an animating item that's not in the queue anymore, include it
@@ -111,33 +111,12 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
     displayQueue.unshift(animatingItem);
   }
   
-  // Add one empty slot if queue is not full (only show one empty slot)
-  // Add button goes FIRST so it appears on the left when items exist
-  if (displayQueue.length < 4) {
-    displayItems.push(
-      <div 
-        key="empty-slot" 
-        className="queue-card placeholder" 
-        data-position="empty"
-        onClick={handlePlaceholderClick}
-        style={{ cursor: 'pointer' }}
-      >
-        <div className="queue-placeholder-icon">➕</div>
-        <div className="queue-info">
-          <h3 className="queue-callsign" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            Add Station
-          </h3>
-          <p className="queue-location" style={{ color: 'rgba(255,255,255,0.3)' }}>
-            Click to add
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Calculate actual queue size for CSS positioning
+  const actualQueueSize = Math.min(4, displayQueue.length);
   
   // Add actual queue items (up to 4)
   // Keep normal order - first in queue is first in array
-  for (let i = 0; i < Math.min(4, displayQueue.length); i++) {
+  for (let i = 0; i < actualQueueSize; i++) {
     const item = displayQueue[i];
     const originalPosition = i; // Position in queue (0 = first in queue)
     
@@ -146,6 +125,7 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
         key={item.callsign} 
         className={`queue-card ${animatingCallsign === item.callsign ? animationClass : ''}`}
         data-position={originalPosition}
+        data-queue-size={actualQueueSize}
         onClick={() => openProfile(item.callsign)}
         style={{ cursor: 'pointer' }}
       >
@@ -162,6 +142,30 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
           <h3 className="queue-callsign">{item.callsign}</h3>
           <p className="queue-location">
             {formatLocationDisplay(item.address, item.dxcc_name)}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Add placeholder at the end (will appear leftmost due to flex-direction: row-reverse)
+  if (actualQueueSize < 4) {
+    displayItems.push(
+      <div 
+        key="empty-slot" 
+        className="queue-card placeholder" 
+        data-position="empty"
+        data-queue-size={actualQueueSize}
+        onClick={handlePlaceholderClick}
+        style={{ cursor: 'pointer' }}
+      >
+        <div className="queue-placeholder-icon">➕</div>
+        <div className="queue-info">
+          <h3 className="queue-callsign" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            Add Station
+          </h3>
+          <p className="queue-location" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            Click to add
           </p>
         </div>
       </div>
