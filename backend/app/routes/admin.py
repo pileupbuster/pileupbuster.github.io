@@ -87,12 +87,12 @@ async def next_callsign(username: str = Depends(verify_admin_credentials)):
                 
                 # Broadcast the worked callers update
                 try:
-                    worked_list = queue_db.get_worked_callers()
-                    count = queue_db.get_worked_callers_count()
-                    await event_broadcaster.broadcast_worked_callers_update({
-                        'worked_callers': worked_list,
-                        'total': count
-                    })
+                    worked_entry = completed_qso.get('worked_entry')
+                    if worked_entry:
+                        await event_broadcaster.broadcast_worked_callers_update({
+                            'worked_caller': worked_entry,  # Single entry
+                            'total': queue_db.get_worked_callers_count()
+                        })
                 except Exception as e:
                     logger.warning(f"Failed to broadcast worked callers update: {e}")
         else:
@@ -219,12 +219,12 @@ async def work_specific_callsign(callsign: str, username: str = Depends(verify_a
                 
                 # Broadcast the worked callers update
                 try:
-                    worked_list = queue_db.get_worked_callers()
-                    count = queue_db.get_worked_callers_count()
-                    await event_broadcaster.broadcast_worked_callers_update({
-                        'worked_callers': worked_list,
-                        'total': count
-                    })
+                    worked_entry = completed_qso.get('worked_entry')
+                    if worked_entry:
+                        await event_broadcaster.broadcast_worked_callers_update({
+                            'worked_caller': worked_entry,  # Single entry
+                            'total': queue_db.get_worked_callers_count()
+                        })
                 except Exception as e:
                     logger.warning(f"Failed to broadcast worked callers update: {e}")
         else:
@@ -341,13 +341,13 @@ async def complete_current_qso(username: str = Depends(verify_admin_credentials)
         try:
             await event_broadcaster.broadcast_current_qso(None)
             
-            # Broadcast updated worked callers list
-            worked_list = queue_db.get_worked_callers()
-            count = queue_db.get_worked_callers_count()
-            await event_broadcaster.broadcast_worked_callers_update({
-                'worked_callers': worked_list,
-                'total': count
-            })
+            # Broadcast only the newly worked caller, not the entire list
+            worked_entry = cleared_qso.get('worked_entry')
+            if worked_entry:
+                await event_broadcaster.broadcast_worked_callers_update({
+                    'worked_caller': worked_entry,  # Single entry
+                    'total': queue_db.get_worked_callers_count()
+                })
         except Exception as e:
             logger.warning(f"Failed to broadcast QSO completion events: {e}")
         

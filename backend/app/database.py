@@ -409,6 +409,7 @@ class QueueDatabase:
         # Add the caller to worked callers list
         callsign = current_qso.get('callsign')
         qrz_info = current_qso.get('qrz', {})
+        worked_entry = None
         
         if callsign:
             try:
@@ -419,6 +420,10 @@ class QueueDatabase:
         
         # Clear the current QSO
         cleared_qso = self.clear_current_qso()
+        
+        # Return both the cleared QSO and the worked entry
+        if cleared_qso and worked_entry:
+            cleared_qso['worked_entry'] = worked_entry
         
         return cleared_qso
 

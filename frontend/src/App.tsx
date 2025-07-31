@@ -184,7 +184,31 @@ function MainApp() {
 
   const handleWorkedCallersUpdateEvent = (event: StateChangeEvent) => {
     console.log('Main app received worked_callers_update event:', event);
-    if (event.data?.worked_callers) {
+    
+    // Handle single worked caller (new format)
+    if (event.data?.worked_caller) {
+      const caller = event.data.worked_caller;
+      const newWorkedItem: WorkedItem = {
+        callsign: caller.callsign,
+        name: caller.name || caller.qrz?.name,
+        completedAt: caller.worked_timestamp,
+        source: caller.metadata?.source === 'queue' ? 'pileupbuster' : 'direct',
+        address: caller.location || caller.qrz?.address,
+        grid: caller.grid || {
+          lat: caller.qrz?.grid?.lat,
+          long: caller.qrz?.grid?.long,
+          grid: caller.qrz?.grid?.grid
+        },
+        image: caller.qrz_image || caller.qrz?.image,
+        dxcc_name: caller.country || caller.qrz?.dxcc_name,
+        location: caller.location || caller.qrz?.address || caller.qrz?.dxcc_name
+      };
+      
+      // Prepend new worked item to the list
+      setWorked(prev => [newWorkedItem, ...prev]);
+    }
+    // Handle array of worked callers (backwards compatibility)
+    else if (event.data?.worked_callers) {
       // Convert worked callers to the format expected by the UI
       const convertedWorked: WorkedItem[] = event.data.worked_callers.map((caller: any) => ({
         callsign: caller.callsign,
