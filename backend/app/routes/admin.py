@@ -435,12 +435,22 @@ async def set_system_status(
                     'total': 0
                 })
                 
-                # Clear split when system goes offline
+                # Clear split and frequency when system goes offline
                 try:
                     split_data = queue_db.clear_split(username)
                     await event_broadcaster.broadcast_split_update(split_data)
                 except Exception as e:
                     logger.warning(f"Failed to clear split when going offline: {e}")
+                
+                try:
+                    frequency_data = queue_db.clear_frequency(username)
+                    await event_broadcaster.broadcast_frequency_update({
+                        'frequency': None,
+                        'last_updated': frequency_data['last_updated'],
+                        'updated_by': frequency_data['updated_by']
+                    })
+                except Exception as e:
+                    logger.warning(f"Failed to clear frequency when going offline: {e}")
         except Exception as e:
             logger.warning(f"Failed to broadcast system status events: {e}")
         

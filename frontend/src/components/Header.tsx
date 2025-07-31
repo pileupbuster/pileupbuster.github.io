@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import HeaderFrequencyDisplay from './HeaderFrequencyDisplay';
 
 interface HeaderProps {
   frequency: string;
   split?: string;
+  systemStatus?: boolean | null;
 }
 
-function Header({ frequency, split }: HeaderProps) {
+function Header({ frequency, split, systemStatus }: HeaderProps) {
   const [currentTime, setCurrentTime] = useState('');
 
   useEffect(() => {
@@ -31,16 +33,9 @@ function Header({ frequency, split }: HeaderProps) {
           className="logo-image"
         />
       </div>
-      <div className="frequency-section">
-        <div className="frequency-value">{frequency}</div>
-        <div className="frequency-unit">MHz</div>
-        {split && (
-          <div className="split-frequency">
-            <span className="split-label">Split:</span>
-            <span className="split-value">{split}</span>
-          </div>
-        )}
-      </div>
+      
+      <HeaderFrequencyDisplay frequency={frequency} systemStatus={systemStatus} split={split} />
+      
       <div className="clock-section">
         <div className="clock">{currentTime}</div>
       </div>

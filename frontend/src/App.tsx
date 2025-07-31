@@ -92,6 +92,7 @@ function MainApp() {
   const [queueAnimation, setQueueAnimation] = useState<{ callsign: string; animation: string } | null>(null);
   const previousQsoRef = useRef<CurrentOperator | null>(null);
   const [animatingQueueItem, setAnimatingQueueItem] = useState<QueueItem | null>(null);
+  const [systemStatus, setSystemStatus] = useState<boolean | null>(null);
   const queueRef = useRef<QueueItem[]>([]);
 
   // Check admin login status
@@ -102,12 +103,13 @@ function MainApp() {
   // Function to fetch initial data
   const fetchInitialData = async () => {
     try {
-      const [queueData, workedCallersData, currentQsoData, frequencyData, splitData] = await Promise.all([
+      const [queueData, workedCallersData, currentQsoData, frequencyData, splitData, statusData] = await Promise.all([
         apiService.getQueueList(),
         apiService.getWorkedCallers(),
         apiService.getCurrentQso(),
         apiService.getCurrentFrequency(),
-        apiService.getCurrentSplit()
+        apiService.getCurrentSplit(),
+        fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/public/status`).then(r => r.json())
       ]);
 
       // Convert queue entries to the format expected by the UI
@@ -155,6 +157,10 @@ function MainApp() {
         console.log('Formatted split:', splitData.split, '->', formattedSplit);
         setSplit(formattedSplit);
       }
+      
+      // Set system status
+      console.log('Status data from API:', statusData);
+      setSystemStatus(statusData.active);
       
       setLoading(false);
     } catch (error) {
@@ -327,6 +333,17 @@ function MainApp() {
     }
   };
 
+  const handleSystemStatusUpdateEvent = (event: StateChangeEvent) => {
+    console.log('Main app received system_status event:', event);
+    setSystemStatus(event.data?.active);
+    
+    // When system goes offline, clear frequency and split
+    if (!event.data?.active) {
+      setFrequency('');
+      setSplit('');
+    }
+  };
+
   // SSE connection setup
   useEffect(() => {
     // Register SSE event listeners
@@ -335,6 +352,7 @@ function MainApp() {
     sseService.addEventListener('worked_callers_update', handleWorkedCallersUpdateEvent);
     sseService.addEventListener('frequency_update', handleFrequencyUpdateEvent);
     sseService.addEventListener('split_update', handleSplitUpdateEvent);
+    sseService.addEventListener('system_status', handleSystemStatusUpdateEvent);
 
     // Start SSE connection
     sseService.connect();
@@ -349,6 +367,7 @@ function MainApp() {
       sseService.removeEventListener('worked_callers_update', handleWorkedCallersUpdateEvent);
       sseService.removeEventListener('frequency_update', handleFrequencyUpdateEvent);
       sseService.removeEventListener('split_update', handleSplitUpdateEvent);
+      sseService.removeEventListener('system_status', handleSystemStatusUpdateEvent);
       sseService.disconnect();
     };
   }, []);
@@ -398,7 +417,7 @@ function MainApp() {
 
   return (
     <div className="container">
-      <Header frequency={frequency} split={split} />
+      <Header frequency={frequency} split={split} systemStatus={systemStatus} />
       
       <div className="main-content">
         <MapSection 

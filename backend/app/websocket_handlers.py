@@ -755,8 +755,30 @@ class WebSocketMessageHandler:
             current_active = current_status.get('active', False)
             new_active = not current_active  # Toggle the current state
             
+            # Get the session to get the username
+            session = self.manager.get_session(websocket)
+            username = session.username if session else "websocket-admin"
+            
             # Set the new status
-            queue_db.set_system_status(new_active)
+            queue_db.set_system_status(new_active, username)
+            
+            # If going offline, clear frequency and split
+            if not new_active:
+                try:
+                    split_data = queue_db.clear_split(username)
+                    await event_broadcaster.broadcast_split_update(split_data)
+                except Exception as e:
+                    logger.warning(f"Failed to clear split when going offline: {e}")
+                
+                try:
+                    frequency_data = queue_db.clear_frequency(username)
+                    await event_broadcaster.broadcast_frequency_update({
+                        'frequency': None,
+                        'last_updated': frequency_data['last_updated'],
+                        'updated_by': frequency_data['updated_by']
+                    })
+                except Exception as e:
+                    logger.warning(f"Failed to clear frequency when going offline: {e}")
             
             status_text = "activated" if new_active else "deactivated"
             response = SuccessResponse(

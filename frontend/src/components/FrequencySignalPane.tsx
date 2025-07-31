@@ -57,9 +57,11 @@ export default function FrequencySignalPane({ className = '' }: FrequencySignalP
       const statusData = event.data
       setSystemStatus(statusData.active)
       
-      // When system goes offline, clear split to 0
+      // When system goes offline, clear split and frequency
       if (!statusData.active) {
         setSplit('')
+        setFrequency(null)
+        setLastUpdated(null)
       }
     }
 
@@ -76,7 +78,7 @@ export default function FrequencySignalPane({ className = '' }: FrequencySignalP
 
   // Parse frequency string to display as KHz with thousand separators
   const formatFrequency = (freq: string | null): string => {
-    if (!freq) return '0,000.00'
+    if (!freq) return systemStatus === false ? '' : '0,000.00'
     
     // Try to parse frequency and format as KHz
     try {
@@ -109,7 +111,7 @@ export default function FrequencySignalPane({ className = '' }: FrequencySignalP
   return (
     <div className={`frequency-signal-pane ${className} ${systemStatus === false ? 'offline' : ''}`}>
       <div className="frequency-display-large">
-        {formatFrequency(frequency)} KHz
+        {formatFrequency(frequency)}{systemStatus !== false ? ' KHz' : ''}
         <span className={systemStatus ? 'online-indicator' : 'offline-indicator'}>
           {systemStatus ? 'ONLINE' : 'OFFLINE'}
         </span>
