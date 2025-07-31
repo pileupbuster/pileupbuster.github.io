@@ -1205,7 +1205,7 @@ body {
         overflow-y: visible;
     }
     
-    .queue-card {
+    .bottom-queue .queue-card {
         min-width: unset;
         width: calc(50% - 5px);
         max-width: 200px;
@@ -1214,7 +1214,7 @@ body {
     
     /* Firefox-specific fix for grid items */
     @-moz-document url-prefix() {
-        .queue-card {
+        .bottom-queue .queue-card {
             height: auto;
             min-height: 100px;
         }
