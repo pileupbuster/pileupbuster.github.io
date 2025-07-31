@@ -99,7 +99,7 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
   };
 
 
-  // Create array for queue display: working right to left, first person in queue on the right
+  // Create array for queue display
   // We'll show only one empty slot if queue size < 4
   const displayItems = [];
   
@@ -110,13 +110,13 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
     displayQueue.unshift(animatingItem);
   }
   
-  // Don't reverse - keep original order (first in queue is first in array)
-  const orderedQueue = [...displayQueue];
+  // Reverse the queue so first person appears on the right
+  const reversedQueue = [...displayQueue].reverse();
   
   // Add actual queue items (up to 4)
-  for (let i = 0; i < Math.min(4, orderedQueue.length); i++) {
-    const item = orderedQueue[i];
-    const originalPosition = i; // Position in queue (0 = first in queue)
+  for (let i = 0; i < Math.min(4, reversedQueue.length); i++) {
+    const item = reversedQueue[i];
+    const originalPosition = displayQueue.length - 1 - i; // Calculate original position
     
     displayItems.push(
       <div 
@@ -147,7 +147,7 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
   
   // Add one empty slot if queue is not full (only show one empty slot)
   if (displayQueue.length < 4) {
-    displayItems.unshift(
+    displayItems.push(
       <div 
         key="empty-slot" 
         className="queue-card placeholder" 
