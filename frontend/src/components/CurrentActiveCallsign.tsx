@@ -186,7 +186,7 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveC
     console.log('Showing placeholder - no active user');
     return (
       <section className="current-active-section">
-        <div className="current-active-card">
+        <div className="current-active-card centered-layout">
           <div className="operator-image-large">
             <div className="placeholder-image">👤</div>
           </div>
@@ -209,7 +209,7 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveC
   
   return (
     <section className="current-active-section">
-      <div className={`current-active-card ${animationClass}`}>
+      <div className={`current-active-card centered-layout ${animationClass}`}>
         <div 
           className="operator-image-large clickable"
           onClick={handleAvatarClick}
