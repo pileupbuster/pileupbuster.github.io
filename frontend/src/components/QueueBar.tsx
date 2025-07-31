@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { apiService, ApiError } from '../services/api';
-import { formatLocationDisplay } from '../utils/addressFormatter';
+import { formatCountryWithState } from '../utils/countryStateFormatter';
 import './QueueBar.css';
 
 interface QueueItem {
@@ -141,7 +141,7 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
         <div className="queue-info">
           <h3 className="queue-callsign">{item.callsign}</h3>
           <p className="queue-location">
-            {formatLocationDisplay(item.address, item.dxcc_name)}
+            {formatCountryWithState(item.dxcc_name, item.address)}
           </p>
         </div>
       </div>

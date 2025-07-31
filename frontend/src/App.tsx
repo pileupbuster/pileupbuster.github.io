@@ -8,7 +8,7 @@ import QueueBar from './components/QueueBar';
 import AdminPage from './pages/AdminPage';
 import { apiService, type QueueEntry, type CurrentQsoData } from './services/api';
 import { adminApiService } from './services/adminApi';
-import { formatLocationDisplay } from './utils/addressFormatter';
+import { formatCountryWithState } from './utils/countryStateFormatter';
 import { sseService, type StateChangeEvent } from './services/sse';
 
 interface QueueItem {
@@ -78,7 +78,7 @@ function convertQueueEntryToItem(entry: QueueEntry): QueueItem {
     },
     image: entry.qrz?.image,
     dxcc_name: entry.qrz?.dxcc_name,
-    location: formatLocationDisplay(entry.qrz?.address, entry.qrz?.dxcc_name)
+    location: formatCountryWithState(entry.qrz?.dxcc_name, entry.qrz?.address)
   };
 }
 
@@ -132,7 +132,7 @@ function MainApp() {
         },
         image: caller.qrz_image || caller.qrz?.image,
         dxcc_name: caller.country || caller.qrz?.dxcc_name,
-        location: formatLocationDisplay(caller.qrz?.address, caller.qrz?.dxcc_name)
+        location: formatCountryWithState(caller.qrz?.dxcc_name, caller.qrz?.address)
       })) || [];
       setWorked(convertedWorked);
       
@@ -185,7 +185,7 @@ function MainApp() {
       setCurrentOperator({
         callsign: currentQsoData.callsign,
         name: currentQsoData.qrz?.name || currentQsoData.callsign,
-        location: formatLocationDisplay(currentQsoData.qrz?.address, currentQsoData.qrz?.dxcc_name || 'In QSO'),
+        location: formatCountryWithState(currentQsoData.qrz?.dxcc_name || 'In QSO', currentQsoData.qrz?.address),
         coordinates: { lat: 53.3498, lon: -6.2603 }, // Default coordinates
         profileImage: currentQsoData.qrz?.image || '',
         qrz: currentQsoData.qrz,
@@ -278,7 +278,7 @@ function MainApp() {
         },
         image: caller.qrz_image || caller.qrz?.image,
         dxcc_name: caller.country || caller.qrz?.dxcc_name,
-        location: formatLocationDisplay(caller.qrz?.address, caller.qrz?.dxcc_name)
+        location: formatCountryWithState(caller.qrz?.dxcc_name, caller.qrz?.address)
       };
       
       // Trigger animation for QSO to map if this was the current operator
@@ -306,7 +306,7 @@ function MainApp() {
         },
         image: caller.qrz_image || caller.qrz?.image,
         dxcc_name: caller.country || caller.qrz?.dxcc_name,
-        location: formatLocationDisplay(caller.qrz?.address, caller.qrz?.dxcc_name)
+        location: formatCountryWithState(caller.qrz?.dxcc_name, caller.qrz?.address)
       }));
       setWorked(convertedWorked);
     }
@@ -398,7 +398,7 @@ function MainApp() {
       setCurrentOperator({
         callsign: nextOperator.callsign,
         name: nextOperator.name || nextOperator.callsign,
-        location: formatLocationDisplay(nextOperator.address, nextOperator.dxcc_name),
+        location: formatCountryWithState(nextOperator.dxcc_name, nextOperator.address),
         coordinates: { 
           lat: nextOperator.grid?.lat || 53.3498, 
           lon: nextOperator.grid?.long || -6.2603 
