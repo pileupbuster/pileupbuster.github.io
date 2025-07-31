@@ -1200,8 +1200,7 @@ body {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         grid-auto-rows: minmax(100px, auto);
-        grid-auto-flow: row dense;
-        direction: rtl;
+        grid-auto-flow: row;
         justify-content: center;
         align-items: stretch;
         overflow-x: visible;
@@ -1214,7 +1213,25 @@ body {
         max-width: 200px;
         justify-self: center;
         align-self: stretch;
-        direction: ltr;
+    }
+    
+    /* Use CSS order to arrange items properly */
+    .queue-card.placeholder {
+        order: -1; /* Add Station always first (leftmost) */
+    }
+    
+    /* Reorder queue items for right-to-left flow */
+    .queue-card[data-position="0"] {
+        order: 1;
+    }
+    .queue-card[data-position="1"] {
+        order: 0;
+    }
+    .queue-card[data-position="2"] {
+        order: 3;
+    }
+    .queue-card[data-position="3"] {
+        order: 2;
     }
     
     /* Firefox-specific fix for grid items */
