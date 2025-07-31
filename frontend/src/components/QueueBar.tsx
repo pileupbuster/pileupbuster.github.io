@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { apiService, ApiError } from '../services/api';
 
 interface QueueItem {
@@ -22,17 +22,13 @@ interface QueueBarProps {
 }
 
 function QueueBar({ queue }: QueueBarProps) {
-  const [timers, setTimers] = useState<Record<string, string>>({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCallsign, setNewCallsign] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  // Format time in queue as MM:SS
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  const openProfile = (callsign: string) => {
+    window.open(`https://www.qrz.com/db/${callsign}`, '_blank');
   };
 
   const validateCallsign = (callsign: string): string | null => {
@@ -99,21 +95,6 @@ function QueueBar({ queue }: QueueBarProps) {
     setError('');
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const newTimers: Record<string, string> = {};
-      
-      queue.forEach(item => {
-        const timeInQueueSeconds = Math.floor((now - item.timeInQueue) / 1000);
-        newTimers[item.callsign] = formatTime(timeInQueueSeconds);
-      });
-      
-      setTimers(newTimers);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [queue]);
 
   // Create array for queue display: working right to left, first person in queue on the right
   // We'll show only one empty slot if queue size < 4
@@ -128,7 +109,13 @@ function QueueBar({ queue }: QueueBarProps) {
     const originalPosition = queue.length - 1 - i; // Calculate original position in queue (0 = first in queue)
     
     displayItems.push(
-      <div key={item.callsign} className="queue-card" data-position={originalPosition}>
+      <div 
+        key={item.callsign} 
+        className="queue-card" 
+        data-position={originalPosition}
+        onClick={() => openProfile(item.callsign)}
+        style={{ cursor: 'pointer' }}
+      >
         {item.image ? (
           <img 
             src={item.image} 
@@ -142,9 +129,6 @@ function QueueBar({ queue }: QueueBarProps) {
           <h3 className="queue-callsign">{item.callsign}</h3>
           <p className="queue-location">
             {item.location || item.address || item.dxcc_name || 'Unknown'}
-          </p>
-          <p className="queue-time">
-            {timers[item.callsign] || '00:00'}
           </p>
         </div>
       </div>
@@ -168,9 +152,6 @@ function QueueBar({ queue }: QueueBarProps) {
           </h3>
           <p className="queue-location" style={{ color: 'rgba(255,255,255,0.3)' }}>
             Click to add
-          </p>
-          <p className="queue-time" style={{ color: 'rgba(255,255,255,0.3)' }}>
-            --:--
           </p>
         </div>
       </div>

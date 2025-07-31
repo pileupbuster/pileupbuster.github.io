@@ -81,15 +81,21 @@ function MapSection({ workedOperators, currentOperator }: MapSectionProps) {
           className: 'custom-marker'
         });
 
-        L.marker([operator.grid.lat, operator.grid.long], { icon })
-          .addTo(mapRef.current!)
-          .bindPopup(`
-            <div class="map-popup">
-              <strong>${operator.callsign}</strong><br>
-              ${operator.name || operator.callsign}<br>
-              ${operator.location || operator.address || operator.dxcc_name || 'Unknown'}
-            </div>
-          `);
+        const marker = L.marker([operator.grid.lat, operator.grid.long], { icon })
+          .addTo(mapRef.current!);
+        
+        marker.bindPopup(`
+          <div class="map-popup">
+            <strong>${operator.callsign}</strong><br>
+            ${operator.name || operator.callsign}<br>
+            ${operator.location || operator.address || operator.dxcc_name || 'Unknown'}<br>
+            <a href="https://www.qrz.com/db/${operator.callsign}" target="_blank" style="color: #4a9eff;">View Profile</a>
+          </div>
+        `);
+        
+        marker.on('click', () => {
+          window.open(`https://www.qrz.com/db/${operator.callsign}`, '_blank');
+        });
       }
     });
 
@@ -105,15 +111,21 @@ function MapSection({ workedOperators, currentOperator }: MapSectionProps) {
         className: 'custom-marker'
       });
 
-      L.marker([currentOperator.coordinates.lat, currentOperator.coordinates.lon], { icon })
-        .addTo(mapRef.current!)
-        .bindPopup(`
-          <div class="map-popup">
-            <strong>${currentOperator.callsign}</strong><br>
-            ${currentOperator.name}<br>
-            ${currentOperator.location}
-          </div>
-        `);
+      const currentMarker = L.marker([currentOperator.coordinates.lat, currentOperator.coordinates.lon], { icon })
+        .addTo(mapRef.current!);
+      
+      currentMarker.bindPopup(`
+        <div class="map-popup">
+          <strong>${currentOperator.callsign}</strong><br>
+          ${currentOperator.name}<br>
+          ${currentOperator.location}<br>
+          <a href="https://www.qrz.com/db/${currentOperator.callsign}" target="_blank" style="color: #4a9eff;">View Profile</a>
+        </div>
+      `);
+      
+      currentMarker.on('click', () => {
+        window.open(`https://www.qrz.com/db/${currentOperator.callsign}`, '_blank');
+      });
     }
   }, [workedOperators, currentOperator]);
 

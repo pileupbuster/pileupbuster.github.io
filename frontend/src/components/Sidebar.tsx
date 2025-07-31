@@ -14,17 +14,28 @@ interface SidebarProps {
 }
 
 function Sidebar({ currentOperator, queueCount, workedCount, onWorkOperator }: SidebarProps) {
+  const openProfile = (callsign: string) => {
+    window.open(`https://www.qrz.com/db/${callsign}`, '_blank');
+  };
   return (
     <aside className="sidebar">
       {/* Current Operator Section */}
       <div className="current-operator-section">
-        <div className="current-operator-card" onClick={onWorkOperator}>
+        <div 
+          className="current-operator-card" 
+          onClick={() => currentOperator && openProfile(currentOperator.callsign)}
+          style={{ cursor: currentOperator ? 'pointer' : 'default' }}
+        >
           {currentOperator ? (
-            <img 
-              src={currentOperator.profileImage} 
-              alt={currentOperator.callsign} 
-              className="current-operator-image" 
-            />
+            currentOperator.profileImage ? (
+              <img 
+                src={currentOperator.profileImage} 
+                alt={currentOperator.callsign} 
+                className="current-operator-image" 
+              />
+            ) : (
+              <div className="current-operator-image placeholder-image">👤</div>
+            )
           ) : (
             <div className="current-operator-image placeholder-radio">
               📻

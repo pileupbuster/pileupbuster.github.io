@@ -152,7 +152,7 @@ function MainApp() {
         name: currentQsoData.qrz?.name || currentQsoData.callsign,
         location: currentQsoData.qrz?.address || currentQsoData.qrz?.dxcc_name || 'In QSO',
         coordinates: { lat: 53.3498, lon: -6.2603 }, // Default coordinates
-        profileImage: currentQsoData.qrz?.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
+        profileImage: currentQsoData.qrz?.image || ''
       });
     } else {
       // No active QSO - clear current operator regardless of queue status
@@ -307,7 +307,7 @@ function MainApp() {
           lat: nextOperator.grid?.lat || 53.3498, 
           lon: nextOperator.grid?.long || -6.2603 
         },
-        profileImage: nextOperator.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
+        profileImage: nextOperator.image || ''
       });
 
       // Remove from queue

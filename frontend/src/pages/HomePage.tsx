@@ -138,7 +138,7 @@ export default function HomePage() {
           name: currentQso.qrz?.name || currentQso.callsign,
           location: currentQso.qrz?.address || currentQso.qrz?.dxcc_name || 'Unknown',
           coordinates: { lat: 53.3498, lon: -6.2603 }, // Default coordinates
-          profileImage: currentQso.qrz?.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
+          profileImage: currentQso.qrz?.image || ''
         });
       } else if (convertedQueue.length > 0) {
         const first = convertedQueue[0];
@@ -147,7 +147,7 @@ export default function HomePage() {
           name: first.name || first.callsign,
           location: first.location || 'Unknown',
           coordinates: { lat: 53.3498, lon: -6.2603 },
-          profileImage: first.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
+          profileImage: first.image || ''
         });
       } else {
         // Default operator
@@ -156,7 +156,7 @@ export default function HomePage() {
           name: 'Brian Keating',
           location: 'Worked from Pileupbuster',
           coordinates: { lat: 53.3498, lon: -6.2603 },
-          profileImage: 'https://i.pravatar.cc/200?img=68'
+          profileImage: ''
         });
       }
       
@@ -210,7 +210,7 @@ export default function HomePage() {
           lat: nextOperator.grid?.lat || 53.3498, 
           lon: nextOperator.grid?.long || -6.2603 
         },
-        profileImage: nextOperator.image || `https://i.pravatar.cc/200?img=${Math.floor(Math.random() * 70)}`
+        profileImage: nextOperator.image || ''
       });
 
       // Remove from queue
