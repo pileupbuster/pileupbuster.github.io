@@ -144,19 +144,15 @@ function MainApp() {
       // Set frequency if available
       console.log('Frequency data from API:', frequencyData);
       if (frequencyData.frequency) {
-        // Format frequency with comma separator
-        const formattedFreq = frequencyData.frequency.replace('.', ',');
-        console.log('Formatted frequency:', frequencyData.frequency, '->', formattedFreq);
-        setFrequency(formattedFreq);
+        console.log('Setting frequency:', frequencyData.frequency);
+        setFrequency(frequencyData.frequency);
       }
       
       // Set split if available
       console.log('Split data from API:', splitData);
       if (splitData.split) {
-        // Format split with comma separator
-        const formattedSplit = splitData.split.replace('.', ',');
-        console.log('Formatted split:', splitData.split, '->', formattedSplit);
-        setSplit(formattedSplit);
+        console.log('Setting split:', splitData.split);
+        setSplit(splitData.split);
       }
       
       // Set system status
@@ -315,9 +311,8 @@ function MainApp() {
   const handleFrequencyUpdateEvent = (event: StateChangeEvent) => {
     console.log('Main app received frequency_update event:', event);
     if (event.data?.frequency) {
-      const formattedFreq = event.data.frequency.replace('.', ',');
-      console.log('SSE formatted frequency:', event.data.frequency, '->', formattedFreq);
-      setFrequency(formattedFreq);
+      console.log('SSE setting frequency:', event.data.frequency);
+      setFrequency(event.data.frequency);
     } else {
       setFrequency('');
     }
@@ -326,9 +321,8 @@ function MainApp() {
   const handleSplitUpdateEvent = (event: StateChangeEvent) => {
     console.log('Main app received split_update event:', event);
     if (event.data?.split) {
-      const formattedSplit = event.data.split.replace('.', ',');
-      console.log('SSE formatted split:', event.data.split, '->', formattedSplit);
-      setSplit(formattedSplit);
+      console.log('SSE setting split:', event.data.split);
+      setSplit(event.data.split);
     } else {
       setSplit('');
     }
