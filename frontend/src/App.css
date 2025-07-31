@@ -653,6 +653,21 @@ body {
     text-shadow: 0 0 20px rgba(0, 255, 157, 0.7);
 }
 
+/* Offline state styles */
+.offline-icon {
+    font-size: 80px;
+    color: #ff6666;
+    opacity: 0.7;
+}
+
+.active-callsign.offline-text {
+    color: #ff6666;
+    text-shadow: 
+        0 0 5px rgba(255, 102, 102, 1),
+        0 0 10px rgba(255, 102, 102, 0.8),
+        0 0 20px rgba(255, 102, 102, 0.6);
+}
+
 .active-name {
     font-size: 28px;
     color: rgba(255, 255, 255, 0.9);

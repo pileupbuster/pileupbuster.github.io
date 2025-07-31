@@ -27,9 +27,10 @@ interface SidebarProps {
   queueCount: number;
   workedCount: number;
   onWorkOperator: () => void;
+  systemStatus?: boolean | null;
 }
 
-function Sidebar({ currentOperator, queueCount, workedCount, onWorkOperator: _onWorkOperator }: SidebarProps) {
+function Sidebar({ currentOperator, queueCount, workedCount, onWorkOperator: _onWorkOperator, systemStatus }: SidebarProps) {
   // Convert CurrentOperator to CurrentActiveUser format
   const activeUser: CurrentActiveUser | null = currentOperator ? {
     callsign: currentOperator.callsign,
@@ -44,6 +45,7 @@ function Sidebar({ currentOperator, queueCount, workedCount, onWorkOperator: _on
         activeUser={activeUser}
         qrzData={currentOperator?.qrz}
         metadata={currentOperator?.metadata}
+        systemStatus={systemStatus}
       />
 
       {/* Queue Stats */}

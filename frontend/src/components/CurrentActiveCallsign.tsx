@@ -26,6 +26,7 @@ interface CurrentActiveCallsignProps {
   activeUser: CurrentActiveUser | null;
   qrzData?: QrzData;
   metadata?: QsoMetadata;
+  systemStatus?: boolean | null;
 }
 
 interface PreviousUserData {
@@ -34,12 +35,12 @@ interface PreviousUserData {
   metadata?: QsoMetadata;
 }
 
-function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveCallsignProps) {
+function CurrentActiveCallsign({ activeUser, qrzData, metadata, systemStatus }: CurrentActiveCallsignProps) {
   const [animationClass, setAnimationClass] = useState('');
   const [previousCallsign, setPreviousCallsign] = useState<string | null>(null);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [previousUserData, setPreviousUserData] = useState<PreviousUserData | null>(null);
-  const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Handle when activeUser changes
@@ -181,9 +182,29 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveC
     animationClass
   });
   
-  // If no user to display, show placeholder
+  // If no user to display, show placeholder based on system status
   if (!displayUser) {
-    console.log('Showing placeholder - no active user');
+    console.log('Showing placeholder - no active user, systemStatus:', systemStatus);
+    
+    // When system is offline
+    if (systemStatus === false) {
+      return (
+        <section className="current-active-section">
+          <div className="current-active-card centered-layout">
+            <div className="operator-image-large">
+              <div className="placeholder-image offline-icon">🎙️</div>
+            </div>
+            <div className="active-info">
+              <div className="active-callsign offline-text">Offline</div>
+              <div className="active-name">Map shows last 24 hours activity</div>
+              <div className="active-location">-</div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+    
+    // When system is online but no active callsign
     return (
       <section className="current-active-section">
         <div className="current-active-card centered-layout">

@@ -426,6 +426,7 @@ function MainApp() {
           queueCount={queue.length}
           workedCount={worked.length}
           onWorkOperator={handleWorkCurrentOperator}
+          systemStatus={systemStatus}
         />
       </div>
       
