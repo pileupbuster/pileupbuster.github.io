@@ -110,13 +110,35 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
     displayQueue.unshift(animatingItem);
   }
   
-  // Reverse the queue so first person appears on the right
-  const reversedQueue = [...displayQueue].reverse();
+  // Add one empty slot if queue is not full (only show one empty slot)
+  // Add button goes FIRST so it appears on the left when items exist
+  if (displayQueue.length < 4) {
+    displayItems.push(
+      <div 
+        key="empty-slot" 
+        className="queue-card placeholder" 
+        data-position="empty"
+        onClick={handlePlaceholderClick}
+        style={{ cursor: 'pointer' }}
+      >
+        <div className="queue-placeholder-icon">➕</div>
+        <div className="queue-info">
+          <h3 className="queue-callsign" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            Add Station
+          </h3>
+          <p className="queue-location" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            Click to add
+          </p>
+        </div>
+      </div>
+    );
+  }
   
   // Add actual queue items (up to 4)
-  for (let i = 0; i < Math.min(4, reversedQueue.length); i++) {
-    const item = reversedQueue[i];
-    const originalPosition = displayQueue.length - 1 - i; // Calculate original position
+  // Keep normal order - first in queue is first in array
+  for (let i = 0; i < Math.min(4, displayQueue.length); i++) {
+    const item = displayQueue[i];
+    const originalPosition = i; // Position in queue (0 = first in queue)
     
     displayItems.push(
       <div 
@@ -139,29 +161,6 @@ function QueueBar({ queue, animatingCallsign, animationClass, animatingItem }: Q
           <h3 className="queue-callsign">{item.callsign}</h3>
           <p className="queue-location">
             {item.location || item.address || item.dxcc_name || 'Unknown'}
-          </p>
-        </div>
-      </div>
-    );
-  }
-  
-  // Add one empty slot if queue is not full (only show one empty slot)
-  if (displayQueue.length < 4) {
-    displayItems.push(
-      <div 
-        key="empty-slot" 
-        className="queue-card placeholder" 
-        data-position="empty"
-        onClick={handlePlaceholderClick}
-        style={{ cursor: 'pointer' }}
-      >
-        <div className="queue-placeholder-icon">➕</div>
-        <div className="queue-info">
-          <h3 className="queue-callsign" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            Add Station
-          </h3>
-          <p className="queue-location" style={{ color: 'rgba(255,255,255,0.3)' }}>
-            Click to add
           </p>
         </div>
       </div>
