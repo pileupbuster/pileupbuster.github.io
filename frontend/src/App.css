@@ -983,6 +983,29 @@ body {
         height: 60vh !important;
         flex: none !important;
     }
+    
+    /* Scale down operator image by 50% */
+    .operator-image-large {
+        width: 100px !important;
+        height: 100px !important;
+    }
+    
+    .operator-image-large .placeholder-image {
+        font-size: 3rem !important;
+    }
+    
+    /* Scale down text by 50% */
+    .active-callsign {
+        font-size: 24px !important;
+    }
+    
+    .active-name {
+        font-size: 14px !important;
+    }
+    
+    .active-location {
+        font-size: 8px !important;
+    }
 }
 
 /* Modal Styles */
