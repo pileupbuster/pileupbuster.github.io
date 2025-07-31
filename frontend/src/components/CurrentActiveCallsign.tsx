@@ -25,11 +25,9 @@ interface CurrentActiveCallsignProps {
   activeUser: CurrentActiveUser | null;
   qrzData?: QrzData;
   metadata?: QsoMetadata;
-  onCompleteQso?: () => Promise<void>;
-  isAdminLoggedIn?: boolean;
 }
 
-function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, isAdminLoggedIn }: CurrentActiveCallsignProps) {
+function CurrentActiveCallsign({ activeUser, qrzData, metadata }: CurrentActiveCallsignProps) {
   // Helper function to generate QRZ lookup URL for a callsign
   const getQrzUrl = (callsign: string): string => {
     return QRZ_LOOKUP_URL_TEMPLATE.replace('{CALLSIGN}', callsign);
@@ -37,7 +35,12 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
 
   // Get QSO source display information
   const getQSOSourceDisplay = (metadata?: QsoMetadata) => {
-    if (!metadata) return null;
+    if (!metadata) return { text: '👥 Worked from Pileup Buster', className: 'qso-source manual-queue' };
+    
+    // If metadata exists but source is not specified, assume it's from queue
+    if (!metadata.source) {
+      return { text: '👥 Worked from Pileup Buster', className: 'qso-source manual-queue' };
+    }
     
     if (metadata.bridge_initiated) {
       return metadata.source === 'queue' 
@@ -52,12 +55,18 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
         : { text: '📻 Worked Direct', className: 'qso-source manual-direct' };
     }
     
-    // Default case - check source type
+    // Check source type
     if (metadata.source === 'queue' || metadata.source === 'queue_specific') {
       return { text: '👥 Worked from Pileup Buster', className: 'qso-source manual-queue' };
     }
     
-    return { text: '📻 Worked Direct', className: 'qso-source manual-direct' };
+    // Only show "Worked Direct" if explicitly marked as direct
+    if (metadata.source === 'direct') {
+      return { text: '📻 Worked Direct', className: 'qso-source manual-direct' };
+    }
+    
+    // Default to queue if source is unknown
+    return { text: '👥 Worked from Pileup Buster', className: 'qso-source manual-queue' };
   };
 
   // Get QSO details (frequency/mode) for bridge or logging software QSOs
@@ -80,15 +89,11 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
     return null;
   };
 
-  // Handle avatar/image click for admin complete QSO action
-  const handleAvatarClick = async (e: React.MouseEvent) => {
+  // Handle avatar/image click to open QRZ profile
+  const handleAvatarClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isAdminLoggedIn && onCompleteQso && activeUser) {
-      try {
-        await onCompleteQso();
-      } catch (error) {
-        console.error('Failed to complete QSO:', error);
-      }
+    if (activeUser) {
+      window.open(getQrzUrl(activeUser.callsign), '_blank');
     }
   };
 
@@ -119,9 +124,10 @@ function CurrentActiveCallsign({ activeUser, qrzData, metadata, onCompleteQso, i
     <section className="current-active-section">
       <div className="current-active-card">
         <div 
-          className={`operator-image-large ${isAdminLoggedIn && activeUser ? 'admin-clickable' : ''}`}
+          className="operator-image-large clickable"
           onClick={handleAvatarClick}
-          title={isAdminLoggedIn && activeUser ? 'Click to complete current QSO' : undefined}
+          title={activeUser ? `View ${activeUser.callsign} on QRZ.com` : undefined}
+          style={{ cursor: activeUser ? 'pointer' : 'default' }}
         >
           {hasQrzImage ? (
             <img src={qrzData.image} alt="Operator" className="operator-image" />

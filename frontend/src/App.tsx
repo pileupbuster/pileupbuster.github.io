@@ -299,19 +299,6 @@ function MainApp() {
     };
   }, []);
 
-  const handleCompleteQso = async () => {
-    if (!isAdminLoggedIn || !currentOperator) return;
-    
-    try {
-      await adminApiService.completeCurrentQso();
-      console.log('Current QSO completed');
-      // The SSE events will update the UI automatically
-    } catch (error) {
-      console.error('Failed to complete current QSO:', error);
-      throw error;
-    }
-  };
-
   const handleWorkCurrentOperator = () => {
     if (!currentOperator || queue.length === 0) return;
 
@@ -370,8 +357,6 @@ function MainApp() {
           queueCount={queue.length}
           workedCount={worked.length}
           onWorkOperator={handleWorkCurrentOperator}
-          onCompleteQso={handleCompleteQso}
-          isAdminLoggedIn={isAdminLoggedIn}
         />
       </div>
       
