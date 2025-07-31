@@ -26,12 +26,28 @@ interface CurrentOperator {
   profileImage: string;
 }
 
+interface QueueItem {
+  callsign: string;
+  name?: string;
+  timeInQueue: number;
+  address?: string;
+  grid?: {
+    lat?: number;
+    long?: number;
+    grid?: string;
+  };
+  image?: string;
+  dxcc_name?: string;
+  location?: string;
+}
+
 interface MapSectionProps {
   workedOperators: WorkedItem[];
   currentOperator: CurrentOperator | null;
+  queueItems?: QueueItem[];
 }
 
-function MapSection({ workedOperators, currentOperator }: MapSectionProps) {
+function MapSection({ workedOperators, currentOperator, queueItems = [] }: MapSectionProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
@@ -68,7 +84,10 @@ function MapSection({ workedOperators, currentOperator }: MapSectionProps) {
       }
     });
 
-    // Add worked operators to map
+    // NOTE: Queue members should NOT appear on the map - only worked operators
+    // Queue members are displayed in the QueueBar component instead
+    
+    // Add worked operators to map (people who completed QSOs)
     workedOperators.forEach(operator => {
       if (operator.grid?.lat && operator.grid?.long) {
         const icon = L.divIcon({
@@ -89,6 +108,7 @@ function MapSection({ workedOperators, currentOperator }: MapSectionProps) {
             <strong>${operator.callsign}</strong><br>
             ${operator.name || operator.callsign}<br>
             ${operator.location || operator.address || operator.dxcc_name || 'Unknown'}<br>
+            <span style="color: #4CAF50;">✅ QSO Completed</span><br>
             <a href="https://www.qrz.com/db/${operator.callsign}" target="_blank" style="color: #4a9eff;">View Profile</a>
           </div>
         `);
@@ -99,35 +119,11 @@ function MapSection({ workedOperators, currentOperator }: MapSectionProps) {
       }
     });
 
-    // Add current operator if exists
-    if (currentOperator) {
-      const icon = L.divIcon({
-        html: currentOperator.profileImage 
-          ? `<div class="marker-avatar current"><img src="${currentOperator.profileImage}" alt="${currentOperator.callsign}" /></div>`
-          : `<div class="marker-avatar current placeholder">👤</div>`,
-        iconSize: [60, 60],
-        iconAnchor: [30, 30],
-        popupAnchor: [0, -30],
-        className: 'custom-marker'
-      });
-
-      const currentMarker = L.marker([currentOperator.coordinates.lat, currentOperator.coordinates.lon], { icon })
-        .addTo(mapRef.current!);
-      
-      currentMarker.bindPopup(`
-        <div class="map-popup">
-          <strong>${currentOperator.callsign}</strong><br>
-          ${currentOperator.name}<br>
-          ${currentOperator.location}<br>
-          <a href="https://www.qrz.com/db/${currentOperator.callsign}" target="_blank" style="color: #4a9eff;">View Profile</a>
-        </div>
-      `);
-      
-      currentMarker.on('click', () => {
-        window.open(`https://www.qrz.com/db/${currentOperator.callsign}`, '_blank');
-      });
-    }
-  }, [workedOperators, currentOperator]);
+    // Note: Current operator should NOT appear on the map until QSO is completed
+    // The map shows ONLY worked operators (completed QSOs) - persistent with 24h TTL
+    // Queue members are displayed in the QueueBar component
+    // Current operator is displayed in the CurrentActiveCallsign component
+  }, [workedOperators, currentOperator, queueItems]);
 
   return (
     <div className="map-section">

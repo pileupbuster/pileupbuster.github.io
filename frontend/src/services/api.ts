@@ -11,6 +11,11 @@ export interface QueueEntry {
     dxcc_name?: string
     image?: string
     error?: string
+    grid?: {
+      lat?: number
+      long?: number
+      grid?: string
+    }
   }
 }
 
@@ -23,6 +28,11 @@ export interface CurrentQsoData {
     dxcc_name?: string
     image?: string
     url?: string
+    grid?: {
+      lat?: number
+      long?: number
+      grid?: string
+    }
   }
   metadata?: {
     source?: 'queue' | 'direct'

@@ -357,11 +357,8 @@ class WebSocketMessageHandler:
         request_id = data.get("request_id")
         
         try:
-            # Get current QSO before clearing it
-            current_qso = queue_db.get_current_qso()
-            
-            # Clear current QSO without advancing queue
-            cleared_qso = queue_db.clear_current_qso()
+            # Complete the QSO (this will add to worked callers and clear current QSO)
+            cleared_qso = queue_db.complete_current_qso()
             
             response = SuccessResponse(
                 request_id=request_id,
@@ -369,8 +366,20 @@ class WebSocketMessageHandler:
             )
             await self.manager.send_message(websocket, response.dict())
             
-            # Broadcast QSO update
+            # Broadcast QSO update (current QSO is now None)
             await self.broadcast_qso_update()
+            
+            # Broadcast worked callers update if we successfully completed a QSO
+            if cleared_qso:
+                worked_entry = cleared_qso.get('worked_entry')
+                if worked_entry:
+                    try:
+                        await event_broadcaster.broadcast_worked_callers_update({
+                            'worked_caller': worked_entry,  # Single entry
+                            'total': queue_db.get_worked_callers_count()
+                        })
+                    except Exception as e:
+                        logger.warning(f"Failed to broadcast worked callers update: {e}")
             
         except Exception as e:
             logger.error(f"Error completing QSO: {e}")

@@ -429,11 +429,8 @@ async def set_system_status(
                     'system_active': False
                 })
                 
-                # Broadcast empty worked callers list when system is deactivated
-                await event_broadcaster.broadcast_worked_callers_update({
-                    'worked_callers': [],
-                    'total': 0
-                })
+                # NOTE: We no longer clear worked callers when system goes offline
+                # Worked callers persist with 24-hour TTL for continuous map display
                 
                 # Clear split and frequency when system goes offline
                 try:
@@ -837,5 +834,14 @@ def clear_worked_callers(username: str = Depends(verify_admin_credentials)):
             'message': f'Worked callers cleared. Removed {count} entries.',
             'cleared_count': count
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.get('/worked-callers/ttl-info')
+def get_worked_callers_ttl_info(username: str = Depends(verify_admin_credentials)):
+    """Get TTL configuration info for worked callers (debugging)"""
+    try:
+        ttl_info = queue_db.get_ttl_info()
+        return ttl_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')

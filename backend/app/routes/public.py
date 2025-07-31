@@ -62,24 +62,19 @@ def get_current_split():
 
 @public_router.get('/worked-callers')
 def get_public_worked_callers():
-    """Get the list of worked callers - public endpoint"""
+    """Get the list of worked callers - always available (persistent with 24h TTL)"""
     try:
-        # Check if system is active first
+        # Get system status for informational purposes
         system_status = queue_db.get_system_status()
-        if not system_status.get('active', False):
-            # Return empty list if system is inactive
-            return {
-                'worked_callers': [],
-                'total': 0,
-                'system_active': False
-            }
         
+        # Always return worked callers regardless of system status
+        # These persist with 24-hour TTL and represent stations worked in the last day
         worked_list = queue_db.get_worked_callers()
         count = queue_db.get_worked_callers_count()
         return {
             'worked_callers': worked_list,
             'total': count,
-            'system_active': True
+            'system_active': system_status.get('active', False)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')

@@ -42,6 +42,9 @@ class QueueDatabase:
             # Test connection with short timeout
             self.client.admin.command('ping')
             
+            # Set up TTL index for worked callers (expire after 24 hours)
+            self._setup_worked_callers_ttl()
+            
         except PyMongoError as e:
             print(f"MongoDB connection error: {e}")
             print("Note: In production, ensure MongoDB is accessible via MONGO_URI environment variable")
@@ -52,6 +55,22 @@ class QueueDatabase:
             self.status_collection = None
             self.currentqso_collection = None
             self.worked_callers_collection = None
+    
+    def _setup_worked_callers_ttl(self):
+        """Set up TTL index for worked callers collection to auto-expire after 24 hours"""
+        try:
+            if self.worked_callers_collection is not None:
+                # Create TTL index on 'expires_at' field - MongoDB will automatically delete documents
+                # when the expires_at time is reached
+                self.worked_callers_collection.create_index(
+                    "expires_at", 
+                    expireAfterSeconds=0,  # 0 means expire exactly at the expires_at time
+                    background=True  # Create index in background to avoid blocking
+                )
+                logger.info("TTL index created for worked_callers collection (24 hour expiry)")
+        except Exception as e:
+            logger.warning(f"Failed to create TTL index for worked callers: {e}")
+            # Continue without TTL - not critical for basic functionality
     
     def register_callsign(self, callsign: str, qrz_info: Dict[str, Any] = None) -> Dict[str, Any]:
         """Register a callsign in the queue with optional QRZ information"""
@@ -253,10 +272,9 @@ class QueueDatabase:
         cleared_qso = self.clear_current_qso()
         qso_cleared = cleared_qso is not None
         
-        # Clear worked callers when system is set to inactive
+        # NOTE: We no longer clear worked callers when system goes inactive
+        # Worked callers persist and expire automatically via MongoDB TTL (1 day)
         worked_callers_cleared = 0
-        if not active:
-            worked_callers_cleared = self.clear_worked_callers()
         
         # Update or create status document
         status_update = {
@@ -623,14 +641,19 @@ class QueueDatabase:
         }
 
     def add_worked_caller(self, callsign: str, qrz_info: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Add a caller to the worked callers list"""
+        """Add a caller to the worked callers list with 24-hour TTL"""
         if self.worked_callers_collection is None:
             raise Exception("Database connection not available")
+        
+        from datetime import timedelta
+        
+        # Calculate expiry time (24 hours from now)
+        expires_at = datetime.utcnow() + timedelta(hours=24)
         
         # Check if callsign is already in worked callers list
         existing = self.worked_callers_collection.find_one({"callsign": callsign.upper()})
         if existing:
-            # Update the existing entry with new timestamp
+            # Update the existing entry with new timestamp and reset expiry
             worked_entry = {
                 "callsign": callsign.upper(),
                 "name": qrz_info.get('name') if qrz_info else None,
@@ -648,7 +671,8 @@ class QueueDatabase:
                 },
                 "worked_timestamp": datetime.utcnow().isoformat(),
                 "first_worked": existing.get('first_worked', datetime.utcnow().isoformat()),
-                "times_worked": existing.get('times_worked', 0) + 1
+                "times_worked": existing.get('times_worked', 0) + 1,
+                "expires_at": expires_at  # TTL field for MongoDB automatic expiry
             }
             
             self.worked_callers_collection.replace_one(
@@ -674,30 +698,35 @@ class QueueDatabase:
                 },
                 "worked_timestamp": datetime.utcnow().isoformat(),
                 "first_worked": datetime.utcnow().isoformat(),
-                "times_worked": 1
+                "times_worked": 1,
+                "expires_at": expires_at  # TTL field for MongoDB automatic expiry
             }
             
             self.worked_callers_collection.insert_one(worked_entry)
         
-        # Remove MongoDB ObjectId from response
+        # Remove MongoDB ObjectId and expires_at from response (internal fields)
         if '_id' in worked_entry:
             del worked_entry['_id']
+        if 'expires_at' in worked_entry:
+            del worked_entry['expires_at']
         
         return worked_entry
 
     def get_worked_callers(self) -> List[Dict[str, Any]]:
-        """Get the list of all worked callers since system was activated"""
+        """Get the list of all worked callers (persistent, auto-expire after 24 hours via MongoDB TTL)"""
         if self.worked_callers_collection is None:
             raise Exception("Database connection not available")
         
         # Get all worked callers sorted by most recently worked
         entries = list(self.worked_callers_collection.find({}).sort("worked_timestamp", -1))
         
-        # Remove MongoDB ObjectIds
+        # Remove MongoDB ObjectIds and internal fields
         worked_list = []
         for entry in entries:
             if '_id' in entry:
                 del entry['_id']
+            if 'expires_at' in entry:
+                del entry['expires_at']  # Remove TTL field from API response
             worked_list.append(entry)
         
         return worked_list
@@ -717,6 +746,29 @@ class QueueDatabase:
             return 0
         
         return self.worked_callers_collection.count_documents({})
+    
+    def get_ttl_info(self) -> Dict[str, Any]:
+        """Get TTL index information for worked callers collection (for debugging)"""
+        if self.worked_callers_collection is None:
+            return {"error": "Database connection not available"}
+        
+        try:
+            indexes = list(self.worked_callers_collection.list_indexes())
+            ttl_info = []
+            for index in indexes:
+                if 'expireAfterSeconds' in index:
+                    ttl_info.append({
+                        'name': index.get('name'),
+                        'key': index.get('key'),
+                        'expireAfterSeconds': index.get('expireAfterSeconds')
+                    })
+            
+            return {
+                "ttl_indexes": ttl_info,
+                "collection_count": self.worked_callers_collection.count_documents({})
+            }
+        except Exception as e:
+            return {"error": str(e)}
     
     def get_previous_qsos(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Get the last N previous QSOs (default 10)"""

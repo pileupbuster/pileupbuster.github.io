@@ -71,9 +71,9 @@ function convertQueueEntryToItem(entry: QueueEntry): QueueItem {
     timeInQueue: new Date(entry.timestamp).getTime(),
     address: entry.qrz?.address,
     grid: {
-      lat: undefined, // API doesn't provide coordinates yet
-      long: undefined,
-      grid: undefined
+      lat: entry.qrz?.grid?.lat,
+      long: entry.qrz?.grid?.long,
+      grid: entry.qrz?.grid?.grid
     },
     image: entry.qrz?.image,
     dxcc_name: entry.qrz?.dxcc_name,
@@ -423,6 +423,7 @@ function MainApp() {
         <MapSection 
           workedOperators={worked}
           currentOperator={currentOperator}
+          queueItems={queue}
         />
         
         <Sidebar 

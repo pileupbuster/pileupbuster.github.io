@@ -14,6 +14,8 @@ export default function AdminPage() {
   const [split, setSplit] = useState('')
   const [frequencyError, setFrequencyError] = useState('')
   const [splitError, setSplitError] = useState('')
+  const [workedCallersCount, setWorkedCallersCount] = useState<number | null>(null)
+  const [workedCallersError, setWorkedCallersError] = useState('')
 
   useEffect(() => {
     // Check if already logged in
@@ -24,6 +26,7 @@ export default function AdminPage() {
       loadSystemStatus()
       loadCurrentFrequency()
       loadCurrentSplit()
+      loadWorkedCallersCount()
     }
   }, [])
 
@@ -61,6 +64,16 @@ export default function AdminPage() {
     }
   }
 
+  const loadWorkedCallersCount = async () => {
+    try {
+      const data = await adminApiService.getWorkedCallers()
+      setWorkedCallersCount(data.total)
+    } catch (error) {
+      console.error('Failed to load worked callers count:', error)
+      setWorkedCallersCount(null)
+    }
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoggingIn(true)
@@ -75,6 +88,7 @@ export default function AdminPage() {
         await loadSystemStatus()
         await loadCurrentFrequency()
         await loadCurrentSplit()
+        await loadWorkedCallersCount()
       } else {
         setError('Invalid credentials. Please try again.')
       }
@@ -179,6 +193,23 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Failed to clear split:', error)
       setSplitError('Failed to clear split')
+    }
+  }
+
+  const handleClearWorkedCallers = async () => {
+    if (!confirm('Are you sure you want to clear all worked callers? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      setWorkedCallersError('')
+      const result = await adminApiService.clearWorkedCallers()
+      setWorkedCallersCount(0)
+      // You could show a success message here if desired
+      console.log(`Cleared ${result.cleared_count} worked callers`)
+    } catch (error) {
+      console.error('Failed to clear worked callers:', error)
+      setWorkedCallersError('Failed to clear worked callers')
     }
   }
 
@@ -348,6 +379,24 @@ export default function AdminPage() {
                     Clear Split
                   </button>
                 </div>
+              </div>
+            </div>
+
+            <div className="admin-control-card">
+              <h3 className="admin-control-title">Worked Callers Management</h3>
+              <p className="admin-control-description">
+                {workedCallersCount !== null 
+                  ? `Currently ${workedCallersCount} worked callers in database (24h TTL).`
+                  : 'Manage worked callers database with 24-hour TTL.'}
+              </p>
+              {workedCallersError && <div className="admin-error">{workedCallersError}</div>}
+              <div className="admin-button-group">
+                <button className="admin-control-button" onClick={loadWorkedCallersCount}>
+                  Refresh Count
+                </button>
+                <button className="admin-control-button admin-secondary" onClick={handleClearWorkedCallers}>
+                  Clear All Callers
+                </button>
               </div>
             </div>
           </div>
