@@ -303,6 +303,29 @@ class AdminApiService {
       throw error
     }
   }
+
+  async updateWorkedCallersTtl(): Promise<{ 
+    success: boolean; 
+    message: string; 
+    modified_count: number; 
+    new_expires_at: string 
+  }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/worked-callers/update-ttl`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update worked callers TTL')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to update worked callers TTL:', error)
+      throw error
+    }
+  }
 }
 
 export const adminApiService = new AdminApiService()

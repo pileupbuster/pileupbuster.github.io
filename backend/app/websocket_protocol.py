@@ -18,6 +18,7 @@ MessageType = Literal[
     "admin_start_qso", "admin_set_frequency", "admin_clear_frequency",
     "admin_set_split", "admin_clear_split", "admin_toggle_system",
     "admin_get_status", "admin_get_current_qso", "admin_ping",
+    "admin_update_worked_callers_ttl",
     
     # Public Operations
     "register_callsign", "get_queue_status", "get_current_qso",
@@ -122,6 +123,12 @@ class AdminToggleSystemRequest(BaseModel):
 class AdminPingRequest(BaseModel):
     """Admin-only ping request with authentication"""
     type: Literal["admin_ping"] = "admin_ping"
+    request_id: str
+    session_token: str
+
+class AdminUpdateWorkedCallersTTLRequest(BaseModel):
+    """Request to update all worked callers TTL to 72 hours"""
+    type: Literal["admin_update_worked_callers_ttl"] = "admin_update_worked_callers_ttl"
     request_id: str
     session_token: str
 

@@ -42,7 +42,7 @@ class QueueDatabase:
             # Test connection with short timeout
             self.client.admin.command('ping')
             
-            # Set up TTL index for worked callers (expire after 24 hours)
+            # Set up TTL index for worked callers (expire after 72 hours)
             self._setup_worked_callers_ttl()
             
         except PyMongoError as e:
@@ -57,7 +57,7 @@ class QueueDatabase:
             self.worked_callers_collection = None
     
     def _setup_worked_callers_ttl(self):
-        """Set up TTL index for worked callers collection to auto-expire after 24 hours"""
+        """Set up TTL index for worked callers collection to auto-expire after 72 hours"""
         try:
             if self.worked_callers_collection is not None:
                 # Create TTL index on 'expires_at' field - MongoDB will automatically delete documents
@@ -67,7 +67,7 @@ class QueueDatabase:
                     expireAfterSeconds=0,  # 0 means expire exactly at the expires_at time
                     background=True  # Create index in background to avoid blocking
                 )
-                logger.info("TTL index created for worked_callers collection (24 hour expiry)")
+                logger.info("TTL index created for worked_callers collection (72 hour expiry)")
         except Exception as e:
             logger.warning(f"Failed to create TTL index for worked callers: {e}")
             # Continue without TTL - not critical for basic functionality
@@ -641,14 +641,14 @@ class QueueDatabase:
         }
 
     def add_worked_caller(self, callsign: str, qrz_info: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Add a caller to the worked callers list with 24-hour TTL"""
+        """Add a caller to the worked callers list with 72-hour TTL"""
         if self.worked_callers_collection is None:
             raise Exception("Database connection not available")
         
         from datetime import timedelta
         
-        # Calculate expiry time (24 hours from now)
-        expires_at = datetime.utcnow() + timedelta(hours=24)
+        # Calculate expiry time (72 hours from now)
+        expires_at = datetime.utcnow() + timedelta(hours=72)
         
         # Check if callsign is already in worked callers list
         existing = self.worked_callers_collection.find_one({"callsign": callsign.upper()})
@@ -713,7 +713,7 @@ class QueueDatabase:
         return worked_entry
 
     def get_worked_callers(self) -> List[Dict[str, Any]]:
-        """Get the list of all worked callers (persistent, auto-expire after 24 hours via MongoDB TTL)"""
+        """Get the list of all worked callers (persistent, auto-expire after 72 hours via MongoDB TTL)"""
         if self.worked_callers_collection is None:
             raise Exception("Database connection not available")
         
@@ -822,6 +822,40 @@ class QueueDatabase:
             previous_qsos.append(qso_data)
         
         return previous_qsos
+
+    def update_all_worked_callers_ttl(self) -> Dict[str, Any]:
+        """Update all existing worked callers to have 72-hour TTL from now"""
+        if self.worked_callers_collection is None:
+            raise Exception("Database connection not available")
+        
+        from datetime import timedelta
+        
+        try:
+            # Calculate new expiry time (72 hours from now)
+            new_expires_at = datetime.utcnow() + timedelta(hours=72)
+            
+            # Update all documents in the worked_callers collection
+            result = self.worked_callers_collection.update_many(
+                {},  # Empty filter means all documents
+                {"$set": {"expires_at": new_expires_at}}
+            )
+            
+            logger.info(f"Updated TTL for {result.modified_count} worked callers to 72 hours from now")
+            
+            return {
+                "success": True,
+                "message": f"Updated TTL for {result.modified_count} worked callers",
+                "modified_count": result.modified_count,
+                "new_expires_at": new_expires_at.isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to update worked callers TTL: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to update TTL: {str(e)}",
+                "modified_count": 0
+            }
 
 
 # Global database instance

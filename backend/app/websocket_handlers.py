@@ -307,6 +307,8 @@ class WebSocketMessageHandler:
             await self.handle_admin_toggle_system(websocket, data)
         elif message_type == "admin_ping":
             await self.handle_admin_ping(websocket, data)
+        elif message_type == "admin_update_worked_callers_ttl":
+            await self.handle_admin_update_worked_callers_ttl(websocket, data)
         else:
             await self.send_error(websocket, request_id, ErrorCodes.INVALID_REQUEST,
                                 f"Unknown admin message type: {message_type}")
@@ -843,6 +845,42 @@ class WebSocketMessageHandler:
             logger.error(f"Error handling admin ping: {e}")
             await self.send_error(websocket, request_id, ErrorCodes.SYSTEM_ERROR,
                                 "Failed to process ping request")
+                                
+    async def handle_admin_update_worked_callers_ttl(self, websocket: WebSocket, data: dict):
+        """Handle admin request to update all worked callers TTL to 72 hours"""
+        request_id = data.get("request_id")
+        
+        try:
+            # Authentication already verified in handle_admin_message
+            result = queue_db.update_all_worked_callers_ttl()
+            
+            if result["success"]:
+                # Broadcast the TTL update to all connected clients
+                await self.manager.broadcast({
+                    "type": "ttl_update",
+                    "message": f"Updated TTL for {result['modified_count']} worked callers to 72 hours",
+                    "modified_count": result["modified_count"],
+                    "new_expires_at": result["new_expires_at"]
+                })
+                
+                response = SuccessResponse(
+                    request_id=request_id,
+                    message=result["message"],
+                    data={
+                        "modified_count": result["modified_count"],
+                        "new_expires_at": result["new_expires_at"],
+                        "success": True
+                    }
+                )
+                await self.manager.send_message(websocket, response.dict())
+            else:
+                await self.send_error(websocket, request_id, ErrorCodes.SYSTEM_ERROR,
+                                    result["message"])
+                
+        except Exception as e:
+            logger.error(f"Error updating worked callers TTL: {e}")
+            await self.send_error(websocket, request_id, ErrorCodes.SYSTEM_ERROR,
+                                "Failed to update worked callers TTL")
                                 
     async def handle_get_queue_status(self, websocket: WebSocket, data: dict):
         """Handle public get queue status request"""

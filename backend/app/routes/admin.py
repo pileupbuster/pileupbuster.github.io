@@ -430,7 +430,7 @@ async def set_system_status(
                 })
                 
                 # NOTE: We no longer clear worked callers when system goes offline
-                # Worked callers persist with 24-hour TTL for continuous map display
+                # Worked callers persist with 72-hour TTL for continuous map display
                 
                 # Clear split and frequency when system goes offline
                 try:
@@ -843,5 +843,32 @@ def get_worked_callers_ttl_info(username: str = Depends(verify_admin_credentials
     try:
         ttl_info = queue_db.get_ttl_info()
         return ttl_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')
+
+@admin_router.post('/worked-callers/update-ttl')
+def update_worked_callers_ttl(username: str = Depends(verify_admin_credentials)):
+    """Update all existing worked callers to have 72-hour TTL from now"""
+    try:
+        result = queue_db.update_all_worked_callers_ttl()
+        
+        if result["success"]:
+            # Broadcast the TTL update to all connected clients
+            asyncio.create_task(event_broadcaster.broadcast_status_update({
+                "type": "ttl_update",
+                "message": f"Updated TTL for {result['modified_count']} worked callers to 72 hours",
+                "modified_count": result["modified_count"],
+                "new_expires_at": result["new_expires_at"]
+            }))
+            
+            return {
+                'success': True,
+                'message': result["message"],
+                'modified_count': result["modified_count"],
+                'new_expires_at': result["new_expires_at"]
+            }
+        else:
+            raise HTTPException(status_code=500, detail=result["message"])
+            
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Database error: {str(e)}')

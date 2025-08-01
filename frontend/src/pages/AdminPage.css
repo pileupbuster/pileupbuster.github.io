@@ -140,6 +140,15 @@
     margin-bottom: 1rem;
 }
 
+.admin-success {
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px solid rgba(0, 255, 0, 0.4);
+    padding: 1rem;
+    border-radius: 8px;
+    color: #aaffaa;
+    margin-bottom: 1rem;
+}
+
 /* Dashboard Screen */
 .admin-dashboard {
     padding: 2rem 0;
@@ -255,6 +264,18 @@
     background: linear-gradient(45deg, rgba(0, 255, 157, 0.4), rgba(0, 200, 120, 0.4));
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 255, 157, 0.3);
+}
+
+.admin-control-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.admin-control-button:disabled:hover {
+    background: linear-gradient(45deg, rgba(0, 255, 157, 0.3), rgba(0, 200, 120, 0.3));
+    transform: none;
+    box-shadow: none;
 }
 
 .admin-input-group {

@@ -16,6 +16,8 @@ export default function AdminPage() {
   const [splitError, setSplitError] = useState('')
   const [workedCallersCount, setWorkedCallersCount] = useState<number | null>(null)
   const [workedCallersError, setWorkedCallersError] = useState('')
+  const [ttlUpdateLoading, setTtlUpdateLoading] = useState(false)
+  const [ttlUpdateSuccess, setTtlUpdateSuccess] = useState('')
 
   useEffect(() => {
     // Check if already logged in
@@ -213,6 +215,33 @@ export default function AdminPage() {
     }
   }
 
+  const handleUpdateWorkedCallersTtl = async () => {
+    if (!confirm('Update all existing worked callers to have 72-hour TTL? This will extend their expiration time.')) {
+      return
+    }
+    
+    try {
+      setWorkedCallersError('')
+      setTtlUpdateSuccess('')
+      setTtlUpdateLoading(true)
+      
+      const result = await adminApiService.updateWorkedCallersTtl()
+      
+      if (result.success) {
+        setTtlUpdateSuccess(`Successfully updated TTL for ${result.modified_count} worked callers to 72 hours`)
+        // Clear success message after 5 seconds
+        setTimeout(() => setTtlUpdateSuccess(''), 5000)
+      } else {
+        setWorkedCallersError('Failed to update TTL')
+      }
+    } catch (error) {
+      console.error('Failed to update worked callers TTL:', error)
+      setWorkedCallersError('Failed to update worked callers TTL')
+    } finally {
+      setTtlUpdateLoading(false)
+    }
+  }
+
   if (!isLoggedIn) {
     return (
       <div className="admin-page">
@@ -386,13 +415,21 @@ export default function AdminPage() {
               <h3 className="admin-control-title">Worked Callers Management</h3>
               <p className="admin-control-description">
                 {workedCallersCount !== null 
-                  ? `Currently ${workedCallersCount} worked callers in database (24h TTL).`
-                  : 'Manage worked callers database with 24-hour TTL.'}
+                  ? `Currently ${workedCallersCount} worked callers in database (72h TTL).`
+                  : 'Manage worked callers database with 72-hour TTL.'}
               </p>
               {workedCallersError && <div className="admin-error">{workedCallersError}</div>}
+              {ttlUpdateSuccess && <div className="admin-success">{ttlUpdateSuccess}</div>}
               <div className="admin-button-group">
                 <button className="admin-control-button" onClick={loadWorkedCallersCount}>
                   Refresh Count
+                </button>
+                <button 
+                  className="admin-control-button" 
+                  onClick={handleUpdateWorkedCallersTtl}
+                  disabled={ttlUpdateLoading}
+                >
+                  {ttlUpdateLoading ? 'Updating TTL...' : 'Extend TTL to 72h'}
                 </button>
                 <button className="admin-control-button admin-secondary" onClick={handleClearWorkedCallers}>
                   Clear All Callers

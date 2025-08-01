@@ -62,13 +62,13 @@ def get_current_split():
 
 @public_router.get('/worked-callers')
 def get_public_worked_callers():
-    """Get the list of worked callers - always available (persistent with 24h TTL)"""
+    """Get the list of worked callers - always available (persistent with 72h TTL)"""
     try:
         # Get system status for informational purposes
         system_status = queue_db.get_system_status()
         
         # Always return worked callers regardless of system status
-        # These persist with 24-hour TTL and represent stations worked in the last day
+        # These persist with 72-hour TTL and represent stations worked in the last 3 days
         worked_list = queue_db.get_worked_callers()
         count = queue_db.get_worked_callers_count()
         return {
